@@ -1,0 +1,13 @@
+name: FastAPI_full
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - request
+  - fastapi
+  - uvicorn
+  - pip
+  - pip:
+    - cloudpickle
+
