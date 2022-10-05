@@ -53,11 +53,10 @@ from fastapi import FastAPI
 api = FastAPI(title="My first API \m/",
               description="My first API powered by FastAPI.",
               version="1.0.0",
-              openapi_tags=[{'name': 'Main',
-                             'description': 'main functions'},
-                             {'name': 'Questions management',
-                             'description': 'Questions management'}
-                            ])
+              openapi_tags=[{'name': 'Main','description': 'main functions'},
+                            {'name': 'Questions management','description': 'Questions management'}
+                            ]
+              )
 
 
 # ===================== Common responses customization
@@ -68,6 +67,8 @@ responses = {200: {"description": "OK"},
              }
 
 # ===================== Requests management
+
+# Health request
 @api.get('/health',responses=responses, name="Health check of the API",tags=['Main'])
 def get_health():
     """_summary_
@@ -84,37 +85,26 @@ def get_health():
 
 
 
+# ===========================================================================================================================
+# =                                                Debug WORLD !!!!!                                                        =
+# ===========================================================================================================================
 
+if __name__ == '__main__':
 
+    # Identifying the parent directory of the script
+    curr_script_dir = os.path.dirname(__file__)
 
+    # Read the "database"
+    database = pd.read_csv(filepath_or_buffer = curr_script_dir+"/DB/questions.csv")
 
+    # # Debug only
+    # print(df.head())
 
+    # users = {"alice": "wonderland",
+    #         "bob": "builder",
+    #         "clementine": "mandarine"}
 
+    # @api.get("/")
+    # async def root():
+    #     return {"message": "Hello World"}
 
-
-
-
-
-
-
-
-# # Displaying the parent directory of the script
-# curr_script_dir = os.path.dirname(__file__)
-
-# # Debug only
-# print(curr_script_dir)
-
-
-
-# df = pd.read_csv(filepath_or_buffer = curr_script_dir+"/DB/questions.csv")
-
-# # Debug only
-# print(df.head())
-
-# users = {"alice": "wonderland",
-#         "bob": "builder",
-#         "clementine": "mandarine"}
-
-# @api.get("/")
-# async def root():
-#     return {"message": "Hello World"}
