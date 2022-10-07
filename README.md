@@ -7,12 +7,16 @@ Please, install the environment associated to this application
 
     conda env create -f environment.yml
 
-### Database
+### Start datas DB
 The DB will be replaced by a csv file. To download it :
 
     wget https://dst-de.s3.eu-west-3.amazonaws.com/fastapi_fr/questions.csv
 
-Please, download it to ./DB
+It must be downloaded here : ./DB
+
+### Users DB
+User credential are also stored ./DB
+It is a bad practice but this is just for the demo)
 
 ### API start
 In your CLI, place you in the "train_DST_FastAPI_full" folder then enter the command line below :
