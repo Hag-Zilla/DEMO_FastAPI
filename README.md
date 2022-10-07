@@ -15,7 +15,7 @@ The DB will be replaced by a csv file. To download it :
 Please, download it to ./DB
 
 ### API start
-Enter the commande line below in your CLI :
+In your CLI, place you in the "train_DST_FastAPI_full" folder then enter the command line below :
 
     uvicorn main:api --reload 
 
