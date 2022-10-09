@@ -13,10 +13,14 @@ Notes :
     Main script for the Fastapi exam
 
 """
-# ================================================       Optimisations        ================================================
+# ================================================       Optimizations        ================================================
 
 """ 
 shh, an idea grows
+
+/admin/new_quest : Ensure that the db_quest is saved after each new entries
+
+Delete all lines concerned by : Debug (to delete)
 
 """
 
@@ -54,6 +58,15 @@ from typing import Optional
 
 # ================================================          Warfield          ================================================
 
+# ===================== Data loading 
+
+# Load users database
+with open('./DB/users.json', 'r') as f:
+    users = json.load(f)
+
+# Load questions database
+db_quest = pd.read_csv(filepath_or_buffer = "./DB/questions.csv")
+
 # ==================== API instace
 api = FastAPI(title="My first API \m/",
               description="My first API powered by Fastapi.",
@@ -64,8 +77,6 @@ api = FastAPI(title="My first API \m/",
                             ]
               )
 
-
-
 # ===================== Common responses customization
 responses = {200: {"description": "OK"},
              404: {"description": "Item not found"},
@@ -73,17 +84,6 @@ responses = {200: {"description": "OK"},
              403: {"description": "Not enough privileges"},
              }
 
-# ===================== Load users database
-
-with open('./DB/users.json', 'r') as f:
-    users = json.load(f)
-
-# Debug (to delete)
-print(users)
-
-# ===================== Load questions database
-
-db_quest = pd.read_csv(filepath_or_buffer = "./DB/questions.csv")
 
 
 # ===================== Requests management
@@ -125,13 +125,27 @@ def post_content(added_data: quest_struct = Body(None)):
     print(type(added_data))
     print(added_data)
     print(added_data.dict())  
-       
     
-    # [value1, value2, value3, ...]
+    # Create a list to input a new row at the db_quest
+    quest_add_list = [added_data.question,
+                      added_data.subject,
+                      added_data.use,
+                      added_data.correct,
+                      added_data.responseA,
+                      added_data.responseB,
+                      added_data.responseD ,
+                      added_data.responseD,
+                      added_data.remark]
     
-    # df.loc[len(df.index)] = [value1, value2, value3, ...]
+    # Debug (to delete)
+    print(quest_add_list)
     
-    return {"Following data have been added to the base :" : added_data}
+    db_quest.loc[len(db_quest.index)] = quest_add_list
+    
+    # Debug (to delete)
+    print(db_quest.tail())
+    
+    return {"Following data have been added to the question base :" : added_data}
 
 
 
