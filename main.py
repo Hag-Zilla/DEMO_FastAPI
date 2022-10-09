@@ -22,6 +22,18 @@ shh, an idea grows
 
 Delete all lines concerned by : Debug (to delete)
 
+Clean the code concerning commented lines
+
+Check if the code is well commented and also each request !!!
+
+Realize dostrings for each functions !
+
+Add the async prefix when necessary
+
+Put all functions and class in utils
+
+Verify that all functions are used
+
 """
 
 # ================================================    Modules import     =====================================================
@@ -52,9 +64,52 @@ from typing import Optional
 # import time
 # start_time = time.time()
 
-# ================================================          Functions          ================================================
+# ================================================          Functions / Class          ================================================
 
-""" Nothing there """
+# Defning a structure for a row in the DB questions
+class quest_struct(BaseModel):
+    """
+    Define the structure of a question
+    """
+    question: str
+    subject: str
+    use: str
+    correct: str
+    responseA: str
+    responseB: str
+    responseD: Optional[str] = None 
+    responseD: Optional[str] = None 
+    remark : Optional[str] = None 
+
+
+# Defning a structure for a row in the DB questions
+class Quest_batch_request(BaseModel):
+    """
+    Define the structure of a question batch request
+    """
+    subject: str
+    use: str
+    quest_num: int
+
+
+def get_var_inf (df,var):
+    """_summary_
+    
+    Get count of each unique value for a defined variable of a dataframe.
+
+    Args:
+        df (pandas.DataFrame): Entry dataframe
+        var (string): Target variable
+
+    Returns:
+        dict: count of each unique value for a defined variable of a dataframe
+    """
+    name_list = list(df[var].unique())
+    count_list = []
+    for name in name_list:
+        count_list.append(len(df.loc[df[var]==name,:]))
+    
+    return dict(zip(name_list,count_list))
 
 # ================================================          Warfield          ================================================
 
@@ -84,8 +139,6 @@ responses = {200: {"description": "OK"},
              403: {"description": "Not enough privileges"},
              }
 
-
-
 # ===================== Requests management
 
 # Health request
@@ -98,24 +151,14 @@ def get_health():
     Returns:
         JSON : Current state of the API
     """
-
     return {'state': 'API is currently running. Please proceed'}
 
-#  ========================================================================================================================
-
-class quest_struct(BaseModel):
-    """
-    Define the structure of a question
-    """
-    question: str
-    subject: str
-    use: str
-    correct: str
-    responseA: str
-    responseB: str
-    responseD: Optional[str] = None 
-    responseD: Optional[str] = None 
-    remark : Optional[str] = None 
+# Question batch request
+@api.get('/quest_batch_rqst', name="Question batch request",tags=['main'],responses=responses)
+# def get_quest_batch_rqst(quest_conf:Quest_batch_request):
+def get_quest_batch_rqst(toto):
+    # toto = quest_conf.quest_num
+    return toto
 
 # Admin / Add questions to the base
 @api.post('/admin/new_quest', name='Add question to the base',tags=['Administration'],responses=responses)
@@ -146,10 +189,6 @@ def post_content(added_data: quest_struct = Body(None)):
     print(db_quest.tail())
     
     return {"Following data have been added to the question base :" : added_data}
-
-
-
-
 
 
 # @app.get('/data', name='Get data', tags=['items'])
@@ -219,11 +258,12 @@ def post_content(added_data: quest_struct = Body(None)):
 
 
 # Test requests
-@api.get('/test/read_users', name="Debug endpoint",tags=['Testing area'],responses=responses)
+@api.get('/test/read_users', name="Read users credentials from DB",tags=['Testing area'],responses=responses)
 def get_users():
     return users
 
-@api.post('/test/wright_users', name="Debug endpoint",tags=['Testing area'],responses=responses)
+# Test requests
+@api.post('/test/wright_users', name="Add users credentials to DB",tags=['Testing area'],responses=responses)
 def post_add_users(username:str,pwd:str):
 
     if username not in users.keys():
@@ -232,13 +272,23 @@ def post_add_users(username:str,pwd:str):
     return {f"{username}:{pwd} added"}
 
 # Test request
-@api.get('/test/read_db_quest', name="Debug endpoint",tags=['Testing area'],responses=responses)
-def get_users():
+@api.get('/test/read_db_quest', name="Read the question's DB",tags=['Testing area'],responses=responses)
+def get_read_db_quest():
     return db_quest.to_json()
 
+# Test request
+@api.get('/test/read_db_quest_tail', name="Read the question's DB (last 5 rows)",tags=['Testing area'],responses=responses)
+def get_read_db_quest_tail():
+    return db_quest.tail().to_json()
 
+# Test request
+@api.get('/test/db_quest_var_count', name="Count the number of unique value for the selected variable of the question's DB",tags=['Testing area'],responses=responses)
+def get_db_quest_var_count(variable:str):
+    return get_var_inf (db_quest,variable)
+
+# Test request
 @api.get('/test/header', name='Get custom header',tags=['Testing area'],responses=responses)
-def get_content(custom_header: Optional[str] = Header(Required, description='My own personal header')):
+def get_header(custom_header: Optional[str] = Header(Required, description='My own personal header')):
     """returns a custom header
     """
     print(custom_header)
