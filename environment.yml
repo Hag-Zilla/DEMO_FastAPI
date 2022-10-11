@@ -10,6 +10,7 @@ dependencies:
   - pip
   - pandas
   - numpy
+  - passlib
   - pip:
     - cloudpickle
 
