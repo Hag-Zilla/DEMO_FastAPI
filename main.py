@@ -16,7 +16,9 @@ Notes :
 # ================================================       Optimizations        ================================================
 
 """ 
-shh, an idea grows
+shh, an idea is growing ^^
+
+Concentrate on the main demand, note on the extras. Excepted if I have time ...
 
 /admin/new_quest : Ensure that the db_quest is saved after each new entries
 
@@ -34,6 +36,16 @@ Put all functions and class in utils
 
 Verify that all functions are used
 
+Customize error codes
+
+Delete unused vars
+
+Finish responses
+
+use or not if mane at the end ?
+
+/quest_batch_rqst manage request entry fault messages 
+
 """
 
 # ================================================    Modules import     =====================================================
@@ -42,13 +54,17 @@ Verify that all functions are used
 import pandas as pd
 import os
 import json
+import random
 
 # Fast api
 from fastapi import FastAPI
-from fastapi import Header, Body
+from fastapi import Header, Body, Query
 from pydantic import Required
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
+
+# String jobs
+import re
 
 # # URL management
 # from urllib.parse import urlparse
@@ -102,14 +118,35 @@ def get_var_inf (df,var):
         var (string): Target variable
 
     Returns:
+        list : List of names
+        list : List of names as a string
+        list : Counts by names
         dict: count of each unique value for a defined variable of a dataframe
     """
+    
     name_list = list(df[var].unique())
+    name_string = re.sub(r"\[|\]|\'","",str(name_list))
     count_list = []
     for name in name_list:
         count_list.append(len(df.loc[df[var]==name,:]))
     
-    return dict(zip(name_list,count_list))
+    return name_list, name_string, count_list, dict(zip(name_list,count_list))
+
+def string_spliter(x, sep=None):
+    return x.split(sep)
+    
+
+def space_stripper (x):
+    """_summary_
+    This function strip spaces at the begining and at the end of a string
+    Args:
+        x (string): _description_
+
+    Returns:
+        string: a string without spaces at the begining and at the end
+        
+    """
+    return re.sub(r"^\s+|\s+$","",x)
 
 # ================================================          Warfield          ================================================
 
@@ -121,6 +158,10 @@ with open('./DB/users.json', 'r') as f:
 
 # Load questions database
 db_quest = pd.read_csv(filepath_or_buffer = "./DB/questions.csv")
+
+# Get some questions database informations
+(use_name_list, use_name_string, use_count_list,use_dict) = get_var_inf (db_quest,'use')
+(subject_name_list, subject_name_string, subject_count_list,subject_dict) = get_var_inf (db_quest,'subject')
 
 # ==================== API instace
 api = FastAPI(title="My first API \m/",
@@ -153,12 +194,95 @@ def get_health():
     """
     return {'state': 'API is currently running. Please proceed'}
 
+
+
+
+
+
+
 # Question batch request
 @api.get('/quest_batch_rqst', name="Question batch request",tags=['main'],responses=responses)
-# def get_quest_batch_rqst(quest_conf:Quest_batch_request):
-def get_quest_batch_rqst(toto):
-    # toto = quest_conf.quest_num
-    return toto
+def get_quest_batch_rqst(use:str = Query(description=f"Please, choose ONE(!) of these possibilities : {use_name_string}"),
+                         subject:str= Query(description=f"Please, choose one or more of these possibilities. Seperate them by a comma (,) : {subject_name_string}"),
+                         quest_num:str= Query(description="Please, choose a number of questions (5, 10 or 20)."
+                                              "Be carefull about the number choosen because, according to the previous selection concerning use and subject, "
+                                              "you may not have all questions requested."
+                                              " FOR INFORMATION :"
+                                              f" ===> USE question counts {use_dict}"
+                                              f" ===> SUBJECT question counts {subject_dict}" ,
+                                              regex="5|10|20",
+                                              )
+                         ):
+    """_summary_
+
+    Args:
+        use (str): _description_
+        subject (str): _description_
+        quest_num (int): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
+    ##### Use management 
+    
+    # We strip spaces to avoid misunderstanding concerning the entered value
+    use = space_stripper (use)
+    
+    # Filter the dataset according to the use
+    db_quest_filt = db_quest.loc[db_quest["use"]==use,:].copy()    
+    
+    ##### subject management.
+    
+    # Conversion of the string to a list
+    subject_requested = string_spliter(subject,sep=',')
+    
+    # We strip spaces to avoid misunderstanding concerning the entered value
+    subject_requested = [space_stripper (i) for i in subject_requested]
+    
+    # Keep subjects that are in the database   
+    subject_target = [i for i in subject_requested if i in subject_name_list]
+    
+    # Create a list of subjects that are not in the database   
+    subject_errors = [i for i in subject_requested if i not in subject_name_list]
+
+    # Filter the dataset according to the valid subjects
+    db_quest_filt = db_quest.loc[db_quest["subject"].isin(subject_target),:].copy()  
+        
+    ##### quest_num management
+    
+    # Conversion 
+    quest_num = int(quest_num)
+    
+    # Get the indexes of questions
+    quest_num_idx_avail = list(db_quest_filt.index)
+    
+    # quest_num cases management
+    if quest_num_idx_avail == 0 :
+        pass
+    elif quest_num > len(quest_num_idx_avail):
+        quest_num_idx_target = random.sample(quest_num_idx_avail, k= len(quest_num_idx_avail))
+        db_quest_filt = db_quest_filt.loc[quest_num_idx_target,:].copy()
+    elif quest_num <= len(quest_num_idx_avail):
+        quest_num_idx_target = random.sample(quest_num_idx_avail, k=quest_num)
+        db_quest_filt = db_quest_filt.loc[quest_num_idx_target,:].copy()
+     
+    ##### Warning message management
+    warnings_msg = list()
+    if use not in use_name_list:
+        warnings_msg.append(f"The use requested ({use}) is not in the database. ")
+    if len(subject_errors) > 0:
+        warnings_msg.append(f"The following subjects are not in the database : {subject_errors}.")
+    if quest_num > len(quest_num_idx_avail):
+        warnings_msg.append(f"The initial request of {quest_num} questions is not possible. Only {len(quest_num_idx_avail)} are available considering your use and subject selection")
+    if len(db_quest_filt) == 0:
+        warnings_msg.append(f"The dataset returned is empty !")
+
+    
+    return {"Request reminder":{use, subject, quest_num},
+            "Warnings":warnings_msg,
+            'Questions': db_quest_filt.to_json()}
+   
 
 # Admin / Add questions to the base
 @api.post('/admin/new_quest', name='Add question to the base',tags=['Administration'],responses=responses)
@@ -189,69 +313,6 @@ def post_content(added_data: quest_struct = Body(None)):
     print(db_quest.tail())
     
     return {"Following data have been added to the question base :" : added_data}
-
-
-# @app.get('/data', name='Get data', tags=['items'])
-# def get_data(index):
-#     """returns data
-#     """
-#     try:
-#         return {
-#             'data': data[int(index)]
-#         }
-#     except IndexError:
-#         raise HTTPException(
-#             status_code=404,
-#             detail='Unknown Index')
-
-
-
-# class user(BaseModel):
-#     """
-#     Define the structure of a user's informations
-#     """
-#     name: str
-#     pwd: str
-
-# @app.put('/identification', name='Create a new computer', tags=['Default'])
-# def put_computer(user: user = Body()):
-#     """Creates a new computer within the database
-#     """
-#     user.name
-#     return {"good"}
-
-
-# # Admin ID
-# @app.get('/admin',responses=responses, name="Admin endpoint",tags=['quest_mgt'])
-# def get_health():
-#     """_summary_
-#     \n
-#     Do somme blabla test
-#     \n
-#     Returns:
-#         JSON : blabla test
-#     """
-
-#     return users
-
-# from fastapi import Header
-# @app.get('/header', name='Get custom header',tags=['items'])
-# def get_content(custom_header: Optional[str] = Header(None, description='My own personal header')):
-#     """returns a custom header
-#     """
-#     return {
-#         'Custom-Header': custom_header
-#     }
-   
-    
-
-# @app.put('/identification', name='Create a new computer', tags=['items'])
-# def put_computer(identification: identification):
-#     """Creates a new computer within the database
-#     """
-#     return identification
-
-
 
 
 #  ========================================================================================================================
@@ -315,4 +376,3 @@ if __name__ == '__main__':
     # async def root():
     #     return {"message": "Hello World"}
 
-# Mettre les users dans un .json
