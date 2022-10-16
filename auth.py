@@ -1,108 +1,60 @@
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from passlib.context import CryptContext
+import secrets
 
+api = FastAPI()
+security = HTTPBasic()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ================================================    Modules import     =====================================================
+users = {
 
-# Classics
-import pandas as pd
-import os
-import json
+    "daniel": {
+        "username": "daniel",
+        "hashed_password": pwd_context.hash('datascientest'),
+        "access_level":"administrator"
+    },
 
-# Fast api
-from fastapi import FastAPI
-from fastapi import Header, Body
-
-
-
-
-# ================================================          Warfield          ================================================
-
-# ==================== API instace
-app = Fastapp(title="My first API \m/",
-              description="My first API powered by Fastapi.",
-              version="1.0.0",
-              openapp_tags=[{'name': 'main','description': 'main functions'},
-                            {'name': 'quest_mgt','description': 'Questions management'}
-                            ]
-              )
-
-# ===================== Common responses customization
-responses = {200: {"description": "OK"},
-             404: {"description": "Item not found"},
-             302: {"description": "The item was moved"},
-             403: {"description": "Not enough privileges"},
-             }
-
-# ===================== Requests management
-     
-
-
-from fastapi import Depends   
-from fastapi.security import OAuth2PasswordBearer
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-@app.get("/items/")
-async def read_items(token: str = Depends(oauth2_scheme)):
-    return {"token": token}
-
-
-Faire simple pour l'authentification afin de me concentrer sur le reste.
-Une fois fait, j'insérerais l'authentification
-Attention, le Header ne supporte pas le mot Authentification !!!!
-+voir notes sur cahier
-Suivre le tutoriel https://fastapi.tiangolo.com/tutorial/security/first-steps/
-et https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
-
-https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization
-
-
-
-
-#  ========================================================================================================================
-
-
-# Test request
-@app.get('/test/read', name="Debug endpoint",tags=['Default'],responses=responses)
-def get_users():
-    return users
-
-@app.post('/test/wright', name="Debug endpoint",tags=['Default'],responses=responses)
-def post_add_users(username:str,pwd:str):
-
-    if username not in users.keys():
-        users[username]=pwd
-        
-    return {f"{username}:{pwd} added"}
-
-
-@app.get('/test/header', name='Get custom header',tags=['Default'],responses=responses)
-def get_content(custom_header: Optional[str] = Header(Required, description='My own personal header')):
-    """returns a custom header
-    """
-    print(custom_header)
-    return {
-        'Custom-Header': custom_header
+    "john" : {
+        "username" :  "john",
+        "hashed_password" : pwd_context.hash('secret'),
+        "access_level":"user"
     }
+
+}
+
+
+
+def check_user(credentials: HTTPBasicCredentials = Depends(security)):
+    
+    if (credentials.username not in users.keys()) or not(pwd_context.verify(credentials.password, users[credentials.username]['hashed_password'])):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    else:
+        access_level = users[credentials.username]['access_level']
    
-
-# ===========================================================================================================================
-# =                                                Debug WORLD !!!!!                                                        =
-# ===========================================================================================================================
-
-if __name__ == '__main__':
-
-    # Identifying the parent directory of the script
-    curr_script_dir = os.path.dirname(__file__)
-
-    # Read the "database"
-    database = pd.read_csv(filepath_or_buffer = curr_script_dir+"/DB/questions.csv")
-
-    # Debug only
-    print(database.head())
+    return {"user_name":credentials.username,"access_level":access_level}
 
 
-    # @app.get("/")
-    # async def root():
-    #     return {"message": "Hello World"}
 
-# Mettre les users dans un .json
+@api.get("/users/test1")
+def get_try_check_user(test_var_sup:str,user_validation: dict = Depends(check_user)):
+    
+    access_level_requested = "administrator"
+    
+    if user_validation["access_level"] != access_level_requested :
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden access",
+        )
+    
+    return {"ça biche !"}
+
+
+
+@api.get("/users/show_current")
+def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
+    return {"username": credentials.username, "password": pwd_context.hash(credentials.password)}
