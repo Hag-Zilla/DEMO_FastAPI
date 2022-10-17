@@ -27,6 +27,7 @@ The DB will be replaced by a csv file. To download it :
 It must be downloaded here : ./DB
 
 Dataset informations :
+
     Data columns (total 9 columns):
     #   Column     Non-Null Count  Dtype 
     ---  ------     --------------  ----- 
