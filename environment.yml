@@ -1,4 +1,4 @@
-name: FastAPI_full
+name: FastAPI_lite_demo
 channels:
   - conda-forge
   - defaults
