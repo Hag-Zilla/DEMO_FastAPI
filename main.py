@@ -61,7 +61,7 @@ class quest_struct(BaseModel):
     correct: str
     responseA: str
     responseB: str
-    responseC: Optional[str] = None 
+    responseC: str
     responseD: Optional[str] = None 
     remark : Optional[str] = None 
 
