@@ -29,11 +29,7 @@ or for a PIP way :
     pip install -r requirements.txt
 
 ### Start datas DB
-The DB will be replaced by a csv file. To download it :
-
-    wget https://dst-de.s3.eu-west-3.amazonaws.com/fastapi_fr/questions.csv
-
-It must be downloaded here : ./DB
+The DB will be replaced by a csv file stored here : ./DB
 
 Dataset informations :
 
