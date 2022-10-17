@@ -13,16 +13,12 @@ Notes :
     Main script for the dev of my first API with fast API
 
 """
-# ================================================       Optimizations        ================================================
+# =============================================     Optimizations to be done     ==============================================
 
 """ 
 shh, an idea is growing ^^
 
-Concentrate on the main demand, note on the extras. Excepted if I have time ...
-
 Put all functions and class in utils
-
-See the exercise notice
 
 """
 
