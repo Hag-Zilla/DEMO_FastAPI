@@ -194,7 +194,7 @@ db_quest = pd.read_csv(filepath_or_buffer = "./DB/questions.csv")
 api = FastAPI(title="My first API \m/",
               description="My first API powered by Fastapi.",
               version="1.0.0",
-              openapp_tags=[{'name': 'main','description': 'main functions'},
+              openapp_tags=[{'name': 'Main','description': 'main functions'},
                             {'name': 'Administration','description': 'Questions management'},
                             {'name': 'Testing area','description': 'Testing area'}
                             ]
@@ -210,7 +210,7 @@ responses = {200: {"description": "OK"},
 # ===================== Requests management
 
 # Health request
-@api.get('/health', name="Health check of the API",tags=['main'],responses=responses)
+@api.get('/health', name="Health check of the API",tags=['Main'],responses=responses)
 async def get_health():
     """_summary_
     \n
@@ -222,7 +222,7 @@ async def get_health():
     return {'state': 'API is currently running. Please proceed'}
 
 # Question batch request
-@api.get('/quest_batch_rqst', name="Question batch request",tags=['main'],responses=responses)
+@api.get('/quest_batch_rqst', name="Question batch request",tags=['Main'],responses=responses)
 async def get_quest_batch_rqst(use:str = Query(description=f"Please, choose ONE(!) of these possibilities : {use_name_string}"),
                          subject:str= Query(description=f"Please, choose one or more of these possibilities. Seperate them by a comma (,) : {subject_name_string}"),
                          quest_num:str= Query(description="Please, choose a number of questions (5, 10 or 20)."
