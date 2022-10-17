@@ -3,7 +3,6 @@ A TRAITER !!!!
 
 XXXXXXXXXXXXXXXX
 Ajouter la doc du dataset
-Ajouter la doc du json des users
 Ajouter la structure des dossiers
 créer un fichier requirement.txt pour les utilisateurs de pip
 Compléter la doc
@@ -11,7 +10,7 @@ renomer le dossier ainsi que l'env (pas train_DST_FastAPI_full)
 
 
 
-# train_DST_FastAPI_full
+# train_FastAPI_lite_demo
 
 ## Set up
 
@@ -27,11 +26,25 @@ The DB will be replaced by a csv file. To download it :
 
 It must be downloaded here : ./DB
 
+Dataset informations :
+    Data columns (total 9 columns):
+    #   Column     Non-Null Count  Dtype 
+    ---  ------     --------------  ----- 
+    0   question   76 non-null     object
+    1   subject    76 non-null     object
+    2   use        76 non-null     object
+    3   correct    68 non-null     object
+    4   responseA  76 non-null     object
+    5   responseB  76 non-null     object
+    6   responseC  69 non-null     object
+    7   responseD  33 non-null     object
+    8   remark     1 non-null      object
+
 ### Users DB
 Users credentials are stored in the main.py (It is a bad practice but just for the demo :) )
 
 ### API start
-In your CLI, place you in the "train_DST_FastAPI_full" folder then enter the command line below :
+In your CLI, place you in the "train_FastAPI_lite_demo" folder then enter the command line below :
 
     uvicorn main:api --reload 
 
