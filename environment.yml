@@ -1,16 +1,9 @@
-name: FastAPI_lite_demo
+name: demo_fastapi
 channels:
   - conda-forge
   - defaults
 dependencies:
   - python=3.8
-  - request
-  - fastapi
-  - uvicorn
   - pip
-  - pandas
-  - numpy
-  - passlib
   - pip:
-    - cloudpickle
-
+    - -r requirements.txt
