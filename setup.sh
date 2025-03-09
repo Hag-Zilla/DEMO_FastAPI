@@ -1,10 +1,26 @@
 #!/bin/bash
 
-# Environment name
-ENV_NAME="demo_fastapi"
+# Update system packages
+echo "Updating system packages..."
+sudo apt update
+if [ $? -ne 0 ]; then
+    echo "Failed to update system packages."
+    exit 1
+fi
 
 # Path to the environment.yml file
 ENV_FILE="environment.yml"
+
+# Function to extract values from environment.yml
+extract_value() {
+    local key=$1
+    grep "^$key:" $ENV_FILE | sed "s/^$key: //"
+}
+
+# Extract the environment name and Python version from environment.yml
+ENV_NAME=$(extract_value "name")
+FULL_PYTHON_VERSION=$(grep -A 1 "^dependencies:" $ENV_FILE | grep "python=" | sed "s/.*python=//")
+PYTHON_VERSION=${FULL_PYTHON_VERSION: -4}
 
 # Function to create a Conda environment
 create_conda_env() {
@@ -18,36 +34,96 @@ create_conda_env() {
     # Create the Conda environment
     echo "Creating the Conda environment..."
     conda env create -f $ENV_FILE
+    if [ $? -ne 0 ]; then
+        echo "Failed to create the Conda environment."
+        exit 1
+    fi
 
     # Activate the environment
     echo "Activating the Conda environment..."
     source activate $ENV_NAME
-
-    echo "The Conda environment '$ENV_NAME' has been created and activated successfully."
-}
-
-# Function to create a venv environment
-create_venv_env() {
-    # Check if Python is installed
-    if ! command -v python3 &> /dev/null
-    then
-        echo "Python3 is not installed. Please install Python3 before proceeding."
+    if [ $? -ne 0 ]; then
+        echo "Failed to activate the Conda environment."
         exit 1
     fi
 
-    # Create the venv environment
-    echo "Creating the venv environment..."
-    python3 -m venv $ENV_NAME
-
-    # Activate the environment
-    echo "Activating the venv environment..."
-    source $ENV_NAME/bin/activate
+    # Upgrade pip
+    echo "Upgrading pip..."
+    pip install --upgrade pip
+    if [ $? -ne 0 ]; then
+        echo "Failed to upgrade pip."
+        exit 1
+    fi
 
     # Install dependencies from requirements.txt
     echo "Installing dependencies from requirements.txt..."
     pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo "Failed to install dependencies from requirements.txt."
+        exit 1
+    fi
 
-    echo "The venv environment '$ENV_NAME' has been created and activated successfully."
+    echo "The Conda environment '$ENV_NAME' has been created and activated successfully."
+}
+
+# Function to create a venv environment using pyenv
+create_venv_env() {
+    # Check if pyenv is installed
+    if ! command -v pyenv &> /dev/null
+    then
+        echo "pyenv is not installed. Please install pyenv before proceeding."
+        exit 1
+    fi
+
+    # Install the specified Python version using pyenv
+    echo "Installing Python $PYTHON_VERSION using pyenv..."
+    pyenv install -s $PYTHON_VERSION
+    if [ $? -ne 0 ]; then
+        echo "Failed to install Python $PYTHON_VERSION using pyenv."
+        exit 1
+    fi
+
+    # Set the local Python version for the project
+    echo "Setting local Python version to $PYTHON_VERSION..."
+    pyenv local $PYTHON_VERSION
+    if [ $? -ne 0 ]; then
+        echo "Failed to set local Python version to $PYTHON_VERSION."
+        exit 1
+    fi
+
+    # Create the venv environment
+    echo "Creating the venv environment with Python $PYTHON_VERSION..."
+    python -m venv --prompt $ENV_NAME venv
+    if [ $? -ne 0 ]; then
+        echo "Failed to create the venv environment."
+        exit 1
+    fi
+
+    # Activate the environment
+    echo "Activating the venv environment..."
+    source ./venv/bin/activate
+    if [ $? -ne 0 ]; then
+        echo "Failed to activate the venv environment."
+        exit 1
+    fi
+
+    # Upgrade pip
+    echo "Upgrading pip..."
+    pip install --upgrade pip
+    if [ $? -ne 0 ]; then
+        echo "Failed to upgrade pip."
+        exit 1
+    fi
+
+    # Install dependencies from requirements.txt
+    echo "Installing dependencies from requirements.txt..."
+    pip install -r requirements.txt
+    if [ $? -ne 0 ]; then
+        echo "Failed to install dependencies from requirements.txt."
+        exit 1
+    fi
+
+    echo "The venv environment 'venv' has been created and activated successfully."
 }
 
 # Ask the user which environment manager to use
