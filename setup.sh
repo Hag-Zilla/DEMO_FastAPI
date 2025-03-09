@@ -33,15 +33,31 @@ create_conda_env() {
 
     # Create the Conda environment
     echo "Creating the Conda environment..."
-    conda env create -f $ENV_FILE
+    conda env create --file=$ENV_FILE
     if [ $? -ne 0 ]; then
         echo "Failed to create the Conda environment."
         exit 1
     fi
 
+    # Initialize Conda
+    echo "Initializing Conda..."
+    conda init
+    if [ $? -ne 0 ]; then
+        echo "Failed to initialize Conda."
+        exit 1
+    fi
+
+    # Reload the shell to apply changes made by conda init
+    echo "Reloading the shell..."
+    if [ "$SHELL" = "/bin/zsh" ]; then
+        source ~/.zshrc
+    else
+        source ~/.bashrc
+    fi
+
     # Activate the environment
     echo "Activating the Conda environment..."
-    source activate $ENV_NAME
+    conda activate $ENV_NAME
     if [ $? -ne 0 ]; then
         echo "Failed to activate the Conda environment."
         exit 1
