@@ -3,17 +3,22 @@
 # Function to run commands and handle errors
 run_command() {
     local cmd="$1"
-    echo "Exécution : $cmd"
-    # Exécuter la commande et capturer stderr
+    echo "Executing : $cmd"
+    # Execute the command and capture stderr
     output=$($cmd 2>&1)
     exit_code=$?
-    # Vérifier le code de sortie
+    # Check the exit code
     if [ $exit_code -ne 0 ]; then
-        echo "Erreur : la commande '$cmd' a échoué avec le code de sortie : $exit_code"
-        echo "Message d'erreur : $output"
-        exit $exit_code
+        if echo "$output" | grep -q "warning"; then
+            echo "Warning : the command '$cmd' generated a warning with exit code : $exit_code"
+            echo "Warning message : $output"
+        else
+            echo "Error : the command '$cmd' failed with exit code : $exit_code"
+            echo "Error message : $output"
+            exit $exit_code
+        fi
     fi
-    # Afficher la sortie standard si nécessaire
+    # Display the standard output if necessary
     echo "$output"
 }
 
@@ -43,6 +48,9 @@ create_conda_env() {
         exit 1
     fi
 
+    # # Update Conda
+    # run_command "conda update -n base -c defaults conda"
+    
     # Create the Conda environment
     run_command "conda env create --file=$ENV_FILE"
 
@@ -89,6 +97,10 @@ create_venv_env() {
 
     # Activate the environment
     source ./venv/bin/activate
+    if [ $? -ne 0 ]; then
+        echo "Error : source ./venv/bin/activate a échoué."
+        exit 1
+    fi
 
     # Upgrade pip
     run_command "pip install --upgrade pip"
