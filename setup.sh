@@ -1,12 +1,24 @@
 #!/bin/bash
 
+# Function to run commands and handle errors
+run_command() {
+    local cmd="$1"
+    echo "Exécution : $cmd"
+    # Exécuter la commande et capturer stderr
+    output=$($cmd 2>&1)
+    exit_code=$?
+    # Vérifier le code de sortie
+    if [ $exit_code -ne 0 ]; then
+        echo "Erreur : la commande '$cmd' a échoué avec le code de sortie : $exit_code"
+        echo "Message d'erreur : $output"
+        exit $exit_code
+    fi
+    # Afficher la sortie standard si nécessaire
+    echo "$output"
+}
+
 # Update system packages
-echo "Updating system packages..."
-sudo apt update
-if [ $? -ne 0 ]; then
-    echo "Failed to update system packages."
-    exit 1
-fi
+run_command "sudo apt-get update"
 
 # Path to the environment.yml file
 ENV_FILE="environment.yml"
@@ -32,20 +44,10 @@ create_conda_env() {
     fi
 
     # Create the Conda environment
-    echo "Creating the Conda environment..."
-    conda env create --file=$ENV_FILE
-    if [ $? -ne 0 ]; then
-        echo "Failed to create the Conda environment."
-        exit 1
-    fi
+    run_command "conda env create --file=$ENV_FILE"
 
     # Initialize Conda
-    echo "Initializing Conda..."
-    conda init
-    if [ $? -ne 0 ]; then
-        echo "Failed to initialize Conda."
-        exit 1
-    fi
+    run_command "conda init"
 
     # Reload the shell to apply changes made by conda init
     echo "Reloading the shell..."
@@ -56,28 +58,13 @@ create_conda_env() {
     fi
 
     # Activate the environment
-    echo "Activating the Conda environment..."
-    conda activate $ENV_NAME
-    if [ $? -ne 0 ]; then
-        echo "Failed to activate the Conda environment."
-        exit 1
-    fi
+    conda activate "$ENV_NAME"
 
     # Upgrade pip
-    echo "Upgrading pip..."
-    pip install --upgrade pip
-    if [ $? -ne 0 ]; then
-        echo "Failed to upgrade pip."
-        exit 1
-    fi
+    run_command "pip install --upgrade pip"
 
     # Install dependencies from requirements.txt
-    echo "Installing dependencies from requirements.txt..."
-    pip install -r requirements.txt
-    if [ $? -ne 0 ]; then
-        echo "Failed to install dependencies from requirements.txt."
-        exit 1
-    fi
+    run_command "pip install -r requirements.txt"
 
     echo "The Conda environment '$ENV_NAME' has been created and activated successfully."
 }
@@ -92,54 +79,24 @@ create_venv_env() {
     fi
 
     # Install the specified Python version using pyenv
-    echo "Installing Python $PYTHON_VERSION using pyenv..."
-    pyenv install -s $PYTHON_VERSION
-    if [ $? -ne 0 ]; then
-        echo "Failed to install Python $PYTHON_VERSION using pyenv."
-        exit 1
-    fi
+    run_command "pyenv install -s $PYTHON_VERSION"
 
     # Set the local Python version for the project
-    echo "Setting local Python version to $PYTHON_VERSION..."
-    pyenv local $PYTHON_VERSION
-    if [ $? -ne 0 ]; then
-        echo "Failed to set local Python version to $PYTHON_VERSION."
-        exit 1
-    fi
+    run_command "pyenv local $PYTHON_VERSION"
 
     # Create the venv environment
-    echo "Creating the venv environment with Python $PYTHON_VERSION..."
-    python -m venv --prompt $ENV_NAME venv
-    if [ $? -ne 0 ]; then
-        echo "Failed to create the venv environment."
-        exit 1
-    fi
+    run_command "python -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
-    echo "Activating the venv environment..."
     source ./venv/bin/activate
-    if [ $? -ne 0 ]; then
-        echo "Failed to activate the venv environment."
-        exit 1
-    fi
 
     # Upgrade pip
-    echo "Upgrading pip..."
-    pip install --upgrade pip
-    if [ $? -ne 0 ]; then
-        echo "Failed to upgrade pip."
-        exit 1
-    fi
+    run_command "pip install --upgrade pip"
 
     # Install dependencies from requirements.txt
-    echo "Installing dependencies from requirements.txt..."
-    pip install -r requirements.txt
-    if [ $? -ne 0 ]; then
-        echo "Failed to install dependencies from requirements.txt."
-        exit 1
-    fi
+    run_command "pip install -r requirements.txt"
 
-    echo "The venv environment 'venv' has been created and activated successfully."
+    echo "The venv environment 'venv' has been created successfully."
 }
 
 # Ask the user which environment manager to use
