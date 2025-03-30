@@ -47,9 +47,6 @@ create_conda_env() {
         echo "Conda is not installed. Please install Conda before proceeding."
         exit 1
     fi
-
-    # # Update Conda
-    # run_command "conda update -n base -c defaults conda"
     
     # Create the Conda environment
     run_command "conda env create --file=$ENV_FILE"
@@ -74,7 +71,7 @@ create_conda_env() {
     # Install dependencies from requirements.txt
     run_command "pip install -r requirements.txt"
 
-    echo "The Conda environment '$ENV_NAME' has been created and activated successfully."
+    echo "The Conda environment '$ENV_NAME' has been created successfully."
 }
 
 # Function to create a venv environment using pyenv
