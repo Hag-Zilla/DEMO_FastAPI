@@ -104,6 +104,14 @@ The Personal Expense Tracking API allows users to manage their expenses efficien
 - Manage users (create, update, delete).
 - Access reports for all users.
 
+### Main Endpoints
+
+- **Health Check**: A simple endpoint to verify the API's health.
+  - **Endpoint**: `/health`
+  - **Method**: `GET`
+  - **Description**: Returns the current state of the API.
+  - **Response**: `{ "state": "API is currently running. Please proceed" }`
+
 With this structure, you can create a robust API for personal expense tracking.
 
 ---
