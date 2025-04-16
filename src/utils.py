@@ -3,13 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from database import get_db
 from models import User
+from src.config import SECRET_KEY, ALGORITHM
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# Secret key and algorithm for JWT
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """Retrieve the current authenticated user based on the token."""

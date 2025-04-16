@@ -22,6 +22,7 @@ from src.routes.alert_routes import router as alert_router
 from src.routes.admin_routes import router as admin_router
 from src.routes.health_routes import router as health_router
 from src.database.database import Base, engine
+from src.config import SECRET_KEY
 
 # FastAPI app
 app = FastAPI(
