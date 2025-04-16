@@ -21,7 +21,7 @@ from routes.report_routes import router as report_router
 from routes.alert_routes import router as alert_router
 from routes.admin_routes import router as admin_router
 from routes.health_routes import router as health_router
-from database import Base, engine
+from src.database.database import Base, engine
 
 # FastAPI app
 app = FastAPI(
