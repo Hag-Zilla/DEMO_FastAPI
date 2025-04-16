@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import User
-from utils import responses, get_current_user
+from src.utils import responses, get_current_user
 from pydantic import BaseModel
 from database import get_db
 

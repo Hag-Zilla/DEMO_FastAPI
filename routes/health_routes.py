@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from utils import responses
+from src.utils import responses
 
 router = APIRouter()
 
