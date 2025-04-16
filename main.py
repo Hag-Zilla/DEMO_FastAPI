@@ -15,12 +15,12 @@
 # ================================================    Modules import     =====================================================
 
 from fastapi import FastAPI
-from routes.user_routes import router as user_router
-from routes.expense_routes import router as expense_router
-from routes.report_routes import router as report_router
-from routes.alert_routes import router as alert_router
-from routes.admin_routes import router as admin_router
-from routes.health_routes import router as health_router
+from src.routes.user_routes import router as user_router
+from src.routes.expense_routes import router as expense_router
+from src.routes.report_routes import router as report_router
+from src.routes.alert_routes import router as alert_router
+from src.routes.admin_routes import router as admin_router
+from src.routes.health_routes import router as health_router
 from src.database.database import Base, engine
 
 # FastAPI app
