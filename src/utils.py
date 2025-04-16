@@ -1,36 +1,8 @@
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
 from database import get_db
 from models import User
-
-# ResponseManager class for centralized responses
-class ResponseManager:
-    responses = {
-        200: {"description": "OK"},
-        404: {"description": "Item not found"},
-        302: {"description": "The item was moved"},
-        403: {"description": "Not enough privileges"},
-    }
-
-    @classmethod
-    def get_response(cls, status_code: int):
-        """Retrieve a response by status code."""
-        return cls.responses.get(status_code, {"description": "Unknown status code"})
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    """Hash a plain password."""
-    return pwd_context.hash(password)
-
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
