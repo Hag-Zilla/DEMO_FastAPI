@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from models import User
-from src.utils import get_password_hash, responses, verify_password, get_current_user
+from src.utils import get_password_hash, verify_password, get_current_user
 from pydantic import BaseModel
 from database import get_db
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from src.response_manager import ResponseManager
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ class UserCreate(BaseModel):
     password: str
     budget: float
 
-@router.post("/", responses=responses, name="Create User", tags=["User Management"])
+@router.post("/", responses=ResponseManager.responses, name="Create User", tags=["User Management"])
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password, budget=user.budget)

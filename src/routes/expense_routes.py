@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import Expense, User
-from src.utils import responses, get_current_user
+from src.response_manager import ResponseManager
 from pydantic import BaseModel
 from datetime import date
 from database import get_db
@@ -20,7 +20,7 @@ CATEGORIES = [
     "Education", "Travel", "Savings and Investments", "Insurance", "Entertainment", "Gifts and Donations", "Miscellaneous"
 ]
 
-@router.post("/", responses=responses, name="Create Expense", tags=["Expense Management"])
+@router.post("/", responses=ResponseManager.responses, name="Create Expense", tags=["Expense Management"])
 async def create_expense(expense: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if expense.category not in CATEGORIES:
         raise HTTPException(status_code=400, detail=f"Invalid category. Allowed categories are: {', '.join(CATEGORIES)}")
@@ -35,7 +35,7 @@ async def create_expense(expense: ExpenseCreate, db: Session = Depends(get_db), 
 
     return {"expense": db_expense, "remaining_budget": current_user.budget}
 
-@router.put("/{expense_id}/", responses=responses, name="Update Expense", tags=["Expense Management"])
+@router.put("/{expense_id}/", responses=ResponseManager.responses, name="Update Expense", tags=["Expense Management"])
 async def update_expense(expense_id: int, updated_expense: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Update an existing expense for the authenticated user."""
     expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
@@ -47,7 +47,7 @@ async def update_expense(expense_id: int, updated_expense: ExpenseCreate, db: Se
     db.refresh(expense)
     return expense
 
-@router.delete("/{expense_id}/", responses=responses, name="Delete Expense", tags=["Expense Management"])
+@router.delete("/{expense_id}/", responses=ResponseManager.responses, name="Delete Expense", tags=["Expense Management"])
 async def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Delete an existing expense for the authenticated user."""
     expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()

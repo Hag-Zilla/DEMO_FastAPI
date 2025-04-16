@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from models import User
-from src.utils import responses, get_current_user
+from src.response_manager import ResponseManager
+from src.utils import get_current_user
 from pydantic import BaseModel
 from database import get_db
 
@@ -14,7 +15,7 @@ class AlertResponse(BaseModel):
     total_expenses: float
     alert: str
 
-@router.get("/", responses=responses, name="Get Alerts", tags=["Alerts"])
+@router.get("/", responses=ResponseManager.responses, name="Get Alerts", tags=["Alerts"])
 async def get_alerts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = db.query(User).all()
     alerts = []

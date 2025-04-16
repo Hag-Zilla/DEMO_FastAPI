@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models import Expense, User
-from src.utils import responses, get_current_user
+from src.response_manager import ResponseManager
 from pydantic import BaseModel
 from datetime import date
 from database import get_db
@@ -12,7 +12,7 @@ class PeriodReportRequest(BaseModel):
     start_date: date
     end_date: date
 
-@router.get("/monthly/{user_id}/", responses=responses, name="Monthly Report", tags=["Reports"])
+@router.get("/monthly/{user_id}/", responses=ResponseManager.responses, name="Monthly Report", tags=["Reports"])
 async def get_monthly_report(user_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this report.")

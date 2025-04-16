@@ -6,13 +6,19 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User
 
-# Centralized responses dictionary for FastAPI routes
-responses = {
-    200: {"description": "OK"},
-    404: {"description": "Item not found"},
-    302: {"description": "The item was moved"},
-    403: {"description": "Not enough privileges"},
-}
+# ResponseManager class for centralized responses
+class ResponseManager:
+    responses = {
+        200: {"description": "OK"},
+        404: {"description": "Item not found"},
+        302: {"description": "The item was moved"},
+        403: {"description": "Not enough privileges"},
+    }
+
+    @classmethod
+    def get_response(cls, status_code: int):
+        """Retrieve a response by status code."""
+        return cls.responses.get(status_code, {"description": "Unknown status code"})
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
