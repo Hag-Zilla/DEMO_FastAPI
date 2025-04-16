@@ -1,3 +1,11 @@
+from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from database import get_db
+from models import User
+
 # Centralized responses dictionary for FastAPI routes
 responses = {
     200: {"description": "OK"},
@@ -5,8 +13,6 @@ responses = {
     302: {"description": "The item was moved"},
     403: {"description": "Not enough privileges"},
 }
-
-from passlib.context import CryptContext
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -19,12 +25,6 @@ def get_password_hash(password: str) -> str:
     """Hash a plain password."""
     return pwd_context.hash(password)
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from sqlalchemy.orm import Session
-from database import get_db
-from models import User
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
