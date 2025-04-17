@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from models import User
+from src.database.models import User
 from src.password_manager import get_password_hash, verify_password
 from src.authentication_manager import get_current_user
 from pydantic import BaseModel
-from database import get_db
+from src.database.database import get_db
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -54,7 +54,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.put("/budget/", responses=responses, name="Update Budget", tags=["Budget Management"])
+@router.put("/budget/", responses=ResponseManager.responses, name="Update Budget", tags=["Budget Management"])
 async def update_budget(new_budget: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Update the global monthly budget for the authenticated user."""
     current_user.budget = new_budget

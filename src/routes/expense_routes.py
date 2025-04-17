@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models import Expense, User
+from src.database.models import Expense
+from src.database.models import User
 from src.response_manager import ResponseManager
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import date
-from database import get_db
+from src.database.database import get_db
+from src.authentication_manager import get_current_user
 
 router = APIRouter()
 
@@ -12,7 +14,7 @@ class ExpenseCreate(BaseModel):
     description: str
     amount: float
     category: str
-    date: date = date.today()
+    date: date = None
 
 # Predefined expense categories
 CATEGORIES = [
@@ -22,6 +24,8 @@ CATEGORIES = [
 
 @router.post("/", responses=ResponseManager.responses, name="Create Expense", tags=["Expense Management"])
 async def create_expense(expense: ExpenseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not expense.date:
+        expense.date = date.today()
     if expense.category not in CATEGORIES:
         raise HTTPException(status_code=400, detail=f"Invalid category. Allowed categories are: {', '.join(CATEGORIES)}")
     db_expense = Expense(**expense.dict(), user_id=current_user.id)

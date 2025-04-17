@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models import Expense, User
+from src.database.models import Expense
+from src.database.models import User
 from src.response_manager import ResponseManager
 from pydantic import BaseModel
 from datetime import date
-from database import get_db
+from src.database.database import get_db
+from src.authentication_manager import get_current_user
 
 router = APIRouter()
 
@@ -35,7 +37,7 @@ async def get_monthly_report(user_id: int, month: int, year: int, db: Session = 
     }
     return report
 
-@router.post("/period/{user_id}/", responses=responses, name="Period Report", tags=["Reports"])
+@router.post("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report", tags=["Reports"])
 async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

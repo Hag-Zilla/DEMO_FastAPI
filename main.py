@@ -30,6 +30,7 @@ app = FastAPI(
     description="An API to manage personal expenses, set budgets, generate alerts, and create detailed reports.",
     version="1.0.0",
     openapi_tags=[
+        {"name": "Main", "description": "Health check and main operations."},
         {"name": "User Management", "description": "Operations related to user creation and management."},
         {"name": "Expense Management", "description": "Operations to add, update, and delete expenses."},
         {"name": "Budget Management", "description": "Operations to set and update budgets."},
@@ -43,12 +44,13 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 # Include routers
+app.include_router(health_router, tags=["Main"])
 app.include_router(user_router, prefix="/users", tags=["User Management"])
 app.include_router(expense_router, prefix="/expenses", tags=["Expense Management"])
 app.include_router(report_router, prefix="/reports", tags=["Reports"])
 app.include_router(alert_router, prefix="/alerts", tags=["Alerts"])
 app.include_router(admin_router, prefix="/admin", tags=["Administrative"])
-app.include_router(health_router, tags=["Main"])
+
 
 # ===========================================================================================================================
 # =                                                Standalone way                                                        =
