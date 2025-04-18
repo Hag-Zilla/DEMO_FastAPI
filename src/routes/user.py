@@ -29,7 +29,7 @@ class UserCreate(BaseModel):
     password: str
     budget: float
 
-@router.post("/", responses=ResponseManager.responses, name="Create User", tags=["User Management"])
+@router.post("/", responses=ResponseManager.responses, name="Create User")
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password, budget=user.budget)
@@ -38,7 +38,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return {"username": db_user.username, "budget": db_user.budget}
 
-@router.post("/token", name="Login", tags=["User Management"])
+@router.post("/token", name="Login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -50,11 +50,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me", name="Get Current User", tags=["User Management"])
+@router.get("/me", name="Get Current User")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.put("/budget/", responses=ResponseManager.responses, name="Update Budget", tags=["Budget Management"])
+@router.put("/budget/", responses=ResponseManager.responses, name="Update Budget")
 async def update_budget(new_budget: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Update the global monthly budget for the authenticated user."""
     current_user.budget = new_budget

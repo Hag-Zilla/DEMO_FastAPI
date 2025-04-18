@@ -15,11 +15,11 @@
 # ================================================    Modules import     =====================================================
 
 from fastapi import FastAPI
-from src.routes.user_routes import router as user_router
-from src.routes.expense_routes import router as expense_router
-from src.routes.report_routes import router as report_router
-from src.routes.alert_routes import router as alert_router
-from src.routes.admin_routes import router as admin_router
+from src.routes.user import router as user_router
+from src.routes.expense import router as expense_router
+from src.routes.report import router as report_router
+from src.routes.alert import router as alert_router
+from src.routes.admin import router as admin_router
 from src.routes.health import router as health_router
 from src.database.database import Base, engine
 from src.config import SECRET_KEY
@@ -58,7 +58,7 @@ tags_metadata = [
         "prefix": "/alerts"
     },
     {
-        "name": "Administrative",
+        "name": "Administration",
         "description": "Administrative operations like managing users and accessing reports.",
         "router": admin_router,
         "prefix": "/admin"

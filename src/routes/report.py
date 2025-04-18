@@ -14,7 +14,7 @@ class PeriodReportRequest(BaseModel):
     start_date: date
     end_date: date
 
-@router.get("/monthly/{user_id}/", responses=ResponseManager.responses, name="Monthly Report", tags=["Reports"])
+@router.get("/monthly/{user_id}/", responses=ResponseManager.responses, name="Monthly Report")
 async def get_monthly_report(user_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this report.")
@@ -37,7 +37,7 @@ async def get_monthly_report(user_id: int, month: int, year: int, db: Session = 
     }
     return report
 
-@router.post("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report", tags=["Reports"])
+@router.post("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report")
 async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

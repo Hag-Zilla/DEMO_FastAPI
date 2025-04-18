@@ -12,7 +12,7 @@ class UserUpdate(BaseModel):
     username: str
     budget: float
 
-@router.put("/users/{user_id}/", responses=ResponseManager.responses, name="Update User", tags=["Administrative"])
+@router.put("/users/{user_id}/", responses=ResponseManager.responses, name="Update User")
 async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -23,7 +23,7 @@ async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depen
     db.refresh(user)
     return {"user_id": user.id, "username": user.username, "budget": user.budget}
 
-@router.delete("/users/{user_id}/", responses=ResponseManager.responses, name="Delete User", tags=["Administrative"])
+@router.delete("/users/{user_id}/", responses=ResponseManager.responses, name="Delete User")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -32,7 +32,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": f"User with id {user_id} has been deleted."}
 
-@router.get("/reports/", responses=ResponseManager.responses, name="All Users Reports", tags=["Administrative"])
+@router.get("/reports/", responses=ResponseManager.responses, name="All Users Reports")
 async def get_all_users_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Generate reports for all users (admin only)."""
     if current_user.username != "admin":
