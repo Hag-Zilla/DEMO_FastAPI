@@ -2,3 +2,7 @@ requests
 fastapi
 uvicorn
 pandas
+sqlalchemy
+passlib
+python-jose
+python-multipart
