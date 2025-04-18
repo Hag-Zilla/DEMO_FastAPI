@@ -38,7 +38,7 @@ async def get_monthly_report(user_id: int, month: int, year: int, db: Session = 
     return report
 
 @router.get("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report")
-async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db)):
+async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
