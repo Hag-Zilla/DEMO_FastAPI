@@ -37,7 +37,7 @@ async def get_monthly_report(user_id: int, month: int, year: int, db: Session = 
     }
     return report
 
-@router.post("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report")
+@router.get("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report")
 async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -57,3 +57,21 @@ async def get_period_report(user_id: int, report_request: PeriodReportRequest, d
         ]
     }
     return report
+
+@router.get("/all/", responses=ResponseManager.responses, name="All Users Reports")
+async def get_all_users_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Generate reports for all users (admin only)."""
+    if current_user.username != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to access this resource.")
+
+    users = db.query(User).all()
+    reports = []
+    for user in users:
+        total_expenses = sum(expense.amount for expense in user.expenses)
+        reports.append({
+            "user_id": user.id,
+            "username": user.username,
+            "total_expenses": total_expenses,
+            "remaining_budget": user.budget
+        })
+    return reports

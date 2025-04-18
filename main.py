@@ -40,7 +40,7 @@ tags_metadata = [
         "prefix": "/users"
     },
     {
-        "name": "Expense Management",
+        "name": "Expenses",
         "description": "Operations to add, update, and delete expenses.",
         "router": expense_router,
         "prefix": "/expenses"
