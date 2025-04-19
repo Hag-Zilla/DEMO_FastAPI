@@ -29,7 +29,7 @@ class UserCreate(BaseModel):
     password: str
     budget: float
 
-@router.post("/", responses=ResponseManager.responses, name="Create User")
+@router.post("/create", responses=ResponseManager.responses, name="Create User")
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password, budget=user.budget)
