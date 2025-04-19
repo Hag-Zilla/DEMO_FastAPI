@@ -60,3 +60,11 @@ async def delete_expense(expense_id: int, db: Session = Depends(get_db), current
     db.delete(expense)
     db.commit()
     return {"message": "Expense deleted successfully"}
+
+@router.put("/budget/", responses=ResponseManager.responses, name="Update Budget")
+async def update_budget(new_budget: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Update the global monthly budget for the authenticated user."""
+    current_user.budget = new_budget
+    db.commit()
+    db.refresh(current_user)
+    return {"message": "Budget updated successfully", "new_budget": current_user.budget}

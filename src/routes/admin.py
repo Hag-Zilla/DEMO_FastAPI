@@ -13,7 +13,7 @@ class UserUpdate(BaseModel):
     budget: float
 
 @router.put("/users/{user_id}/", responses=ResponseManager.responses, name="Update User")
-async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -24,7 +24,7 @@ async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depen
     return {"user_id": user.id, "username": user.username, "budget": user.budget}
 
 @router.delete("/users/{user_id}/", responses=ResponseManager.responses, name="Delete User")
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

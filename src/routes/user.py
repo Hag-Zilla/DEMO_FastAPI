@@ -53,11 +53,3 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.get("/me", name="Get Current User")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
-
-@router.put("/budget/", responses=ResponseManager.responses, name="Update Budget")
-async def update_budget(new_budget: float, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Update the global monthly budget for the authenticated user."""
-    current_user.budget = new_budget
-    db.commit()
-    db.refresh(current_user)
-    return {"message": "Budget updated successfully", "new_budget": current_user.budget}
