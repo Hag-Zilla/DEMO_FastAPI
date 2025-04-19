@@ -19,7 +19,6 @@ from src.routes.user import router as user_router
 from src.routes.expense import router as expense_router
 from src.routes.report import router as report_router
 from src.routes.alert import router as alert_router
-from src.routes.admin import router as admin_router
 from src.routes.health import router as health_router
 from src.database.database import Base, engine
 from src.config import SECRET_KEY
@@ -56,12 +55,6 @@ tags_metadata = [
         "description": "Endpoints to generate alerts for budget overruns.",
         "router": alert_router,
         "prefix": "/alerts"
-    },
-    {
-        "name": "Administration",
-        "description": "Administrative operations like managing users and accessing reports.",
-        "router": admin_router,
-        "prefix": "/admin"
     }
 ]
 

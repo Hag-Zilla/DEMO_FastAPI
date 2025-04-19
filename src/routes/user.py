@@ -53,3 +53,27 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.get("/me", name="Get Current User")
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+class UserUpdate(BaseModel):
+    username: str
+    budget: float
+
+@router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Update User")
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.username = user_update.username
+    user.budget = user_update.budget
+    db.commit()
+    db.refresh(user)
+    return {"user_id": user.id, "username": user.username, "budget": user.budget}
+
+@router.delete("/delete/{user_id}/", responses=ResponseManager.responses, name="Delete User")
+async def delete_user(user_id: int, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return {"message": f"User with id {user_id} has been deleted."}
