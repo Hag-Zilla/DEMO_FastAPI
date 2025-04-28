@@ -7,7 +7,7 @@ from src.database.models import User
 from src.config import SECRET_KEY, ALGORITHM
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """Retrieve the current authenticated user based on the token."""
