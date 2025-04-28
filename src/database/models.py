@@ -11,6 +11,7 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     budget = Column(Float)
+    role = Column(String, default="user")  # Default role is "user"
     expenses = relationship("Expense", back_populates="owner")
 
 # Expense model
