@@ -54,20 +54,43 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-class UserUpdate(BaseModel):
+class UserUpdateWithRole(BaseModel):
     username: str
     budget: float
+    role: str = None  # Optional field for role
 
 @router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Update User")
-async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def update_user(
+    user_id: int,
+    user_update: UserUpdateWithRole,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Update username and budget
     user.username = user_update.username
     user.budget = user_update.budget
+
+    # Update role if provided and the current user is an admin
+    if user_update.role is not None:
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to update roles."
+            )
+        user.role = user_update.role
+
     db.commit()
     db.refresh(user)
-    return {"user_id": user.id, "username": user.username, "budget": user.budget}
+    return {
+        "user_id": user.id,
+        "username": user.username,
+        "budget": user.budget,
+        "role": user.role
+    }
 
 @router.delete("/delete/{user_id}/", responses=ResponseManager.responses, name="Delete User")
 async def delete_user(user_id: int, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
