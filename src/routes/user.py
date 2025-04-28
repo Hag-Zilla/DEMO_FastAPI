@@ -9,17 +9,17 @@ from jose import jwt
 from datetime import datetime, timedelta
 from src.response_manager import ResponseManager
 from pydantic import BaseModel, Field
+from src.config import JWT_EXPIRATION_MINUTES
 
 router = APIRouter()
 
 # Secret key and algorithm for JWT
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -28,7 +28,6 @@ class UserCreate(BaseModel):
     username: str = Field(..., description="The unique username of the user", example="john_doe")
     password: str = Field(..., description="The password for the user account", example="secure_password123")
     budget: float = Field(..., description="The budget allocated to the user", example=1000.0)
-    role: str = Field("user", description="The role of the user (default is 'user')", example="admin")
 
 class UserUpdateWithRole(BaseModel):
     username: str = Field(..., description="The updated username of the user", example="jane_doe")
