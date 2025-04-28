@@ -28,6 +28,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
     budget: float
+    role: str = "user"  # Default role is 'user'
 
 @router.post("/create", responses=ResponseManager.responses, name="Create User")
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
