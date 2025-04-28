@@ -11,5 +11,10 @@ async def get_health():
     \n
     Returns:
         JSON : Current state of the API
+    \n
+    Example Response:
+        {
+            "state": "API is currently running. Please proceed"
+        }
     """
     return {'state': 'API is currently running. Please proceed'}
