@@ -2,6 +2,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
 from src.database.database import get_db
 from src.database.models import User
 from src.config import SECRET_KEY, ALGORITHM
@@ -9,7 +11,18 @@ from src.config import SECRET_KEY, ALGORITHM
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+# Define a sanitized user response model
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    budget: float
+    role: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserResponse:
     """Retrieve the current authenticated user based on the token."""
     try:
         print(f"Token received: {token}")  # Debug: Print the token
@@ -37,7 +50,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return user
+    return UserResponse.from_orm(user)
 
 def is_admin(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
