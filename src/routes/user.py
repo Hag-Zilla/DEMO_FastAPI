@@ -9,18 +9,14 @@ from jose import jwt
 from datetime import datetime, timedelta
 from src.response_manager import ResponseManager
 from pydantic import BaseModel, Field
-from src.config import JWT_EXPIRATION_MINUTES
+from src.config import JWT_EXPIRATION_MINUTES, SECRET_KEY, ALGORITHM
 
 router = APIRouter()
-
-# Secret key and algorithm for JWT
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
 
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
