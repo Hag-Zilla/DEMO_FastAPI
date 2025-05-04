@@ -12,7 +12,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """Retrieve the current authenticated user based on the token."""
     try:
+        print(f"Token received: {token}")  # Debug: Print the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Payload decoded: {payload}")  # Debug: Print the payload
         username: str = payload.get("sub")
         if username is None:
             raise HTTPException(
@@ -20,7 +22,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT Error: {e}")  # Debug: Print the error
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
