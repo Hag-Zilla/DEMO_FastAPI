@@ -13,13 +13,6 @@ from src.config import JWT_EXPIRATION_MINUTES, SECRET_KEY, ALGORITHM
 
 router = APIRouter()
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
-    to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
 class UserCreate(BaseModel):
     username: str = Field(..., description="The unique username of the user", example="john_doe")
     password: str = Field(..., description="The password for the user account", example="secure_password123")
@@ -38,18 +31,6 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     return {"username": db_user.username, "budget": db_user.budget, "role": db_user.role}
-
-@router.post("/token", name="Login")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", name="Get Current User")
 async def read_users_me(current_user: User = Depends(get_current_user)):
