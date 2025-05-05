@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from src.authentication_manager import get_current_user
+from src.database.database import get_db
 from src.database.models import User
 from src.response_manager import ResponseManager
-from src.authentication_manager import get_current_user
-from pydantic import BaseModel
-from src.database.database import get_db
 
 router = APIRouter()
 
