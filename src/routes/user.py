@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Path
-from sqlalchemy.orm import Session
-from src.database.models import User
-from src.password_manager import get_password_hash, verify_password
-from src.authentication_manager import get_current_user
-from src.database.database import get_db
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
-from datetime import datetime, timedelta
-from src.response_manager import ResponseManager
 from pydantic import BaseModel, Field
-from src.config import JWT_EXPIRATION_MINUTES, SECRET_KEY, ALGORITHM
+from sqlalchemy.orm import Session
+
+from src.authentication_manager import get_current_user
+from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
+from src.database.database import get_db
+from src.database.models import User
+from src.password_manager import get_password_hash
+from src.response_manager import ResponseManager
 
 router = APIRouter()
 
@@ -79,6 +81,8 @@ async def delete_user(user_id: int, db: Session = Depends(get_db),current_user: 
     return {"message": f"User with id {user_id} has been deleted."}
 
 from fastapi import Query
+
+
 @router.get("/test/", responses=ResponseManager.responses, name="test User")
 async def test_user(user_id: int = Query(description="Put the user ID"), db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
