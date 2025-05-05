@@ -20,6 +20,7 @@ from src.routes.expense import router as expense_router
 from src.routes.report import router as report_router
 from src.routes.alert import router as alert_router
 from src.routes.health import router as health_router
+from src.routes.auth import router as auth_router
 from src.database.database import Base, engine
 from src.config import SECRET_KEY
 
@@ -31,6 +32,12 @@ tags_metadata = [
         "description": "Health check and main operations.",
         "router": health_router,
         "prefix": None
+    },
+    {
+        "name": "Authentication",
+        "description": "Endpoints for user authentication.",
+        "router": auth_router,
+        "prefix": "/auth"
     },
     {
         "name": "User Management",
