@@ -1,13 +1,14 @@
+from datetime import datetime, timedelta
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
 
+from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User
-from src.config import SECRET_KEY, ALGORITHM, JWT_EXPIRATION_MINUTES
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
