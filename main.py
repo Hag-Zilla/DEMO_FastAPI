@@ -36,7 +36,7 @@ tags_metadata = [
         "name": "Authentication",
         "description": "Endpoints for user authentication.",
         "router": auth_router,
-        "prefix": "/auth"
+        "prefix": "/token"
     },
     {
         "name": "User Management",

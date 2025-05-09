@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -24,7 +25,7 @@ class UserResponse(BaseModel):
         orm_mode = True
         from_attributes = True
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserResponse:
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]) -> UserResponse:
     """Retrieve the current authenticated user based on the token."""
     try:
         print(f"Token received: {token}")  # Debug: Print the token
@@ -54,7 +55,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         )
     return UserResponse.from_orm(user)
 
-def is_admin(current_user: User = Depends(get_current_user)):
+def is_admin(current_user: Annotated[User, Depends(get_current_user)]):
     """
     Verifies if the current user has an admin role.
 
