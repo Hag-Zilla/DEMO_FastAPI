@@ -20,7 +20,7 @@ from src.routes.expense import router as expense_router
 from src.routes.report import router as report_router
 from src.routes.alert import router as alert_router
 from src.routes.health import router as health_router
-from src.routes.auth import router as auth_router
+from src.routes.token import router as auth_router
 from src.database.database import Base, engine
 
 
