@@ -1,16 +1,23 @@
+from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from src.authentication_manager import get_current_user
+from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User
 from src.password_manager import get_password_hash
 from src.response_manager import ResponseManager
 
 router = APIRouter()
+
+# OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+################### PYDANTIC MODELS ###################
 
 class UserCreate(BaseModel):
     username: str = Field(..., description="The unique username of the user", example="john_doe")
@@ -21,6 +28,72 @@ class UserUpdateWithRole(BaseModel):
     username: str = Field(..., description="The updated username of the user", example="jane_doe")
     budget: float = Field(..., description="The updated budget for the user", example=1500.0)
     role: str = Field(None, description="The updated role of the user (optional)", example="admin")
+
+# Define a sanitized user response model
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    budget: float
+    role: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+################### FUNCTIONS ###################
+
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]) -> UserResponse:
+    """Retrieve the current authenticated user based on the token."""
+    try:
+        print(f"Token received: {token}")  # Debug: Print the token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Payload decoded: {payload}")  # Debug: Print the payload
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except JWTError as e:
+        print(f"JWT Error: {e}")  # Debug: Print the error
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return UserResponse.from_orm(user)
+
+def is_admin(current_user: Annotated[User, Depends(get_current_user)]):
+    """
+    Verifies if the current user has an admin role.
+
+    Args:
+        current_user (User): The user object retrieved from the dependency injection.
+
+    Raises:
+        HTTPException: If the user's role is not "admin", an HTTP 403 Forbidden exception is raised.
+
+    Returns:
+        User: The current user object if the user has an admin role.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action."
+        )
+    return current_user
+
+
+################### ROUTES ###################
 
 @router.post("/create", name="Create User")
 async def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
