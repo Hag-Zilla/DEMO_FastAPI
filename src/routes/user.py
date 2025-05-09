@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -6,11 +5,13 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
+from src.config import ALGORITHM, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User
 from src.password_manager import get_password_hash
 from src.response_manager import ResponseManager
+
+from jose import jwt, JWTError
 
 router = APIRouter()
 
@@ -42,7 +43,8 @@ class UserResponse(BaseModel):
 
 ################### FUNCTIONS ###################
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(get_db)]) -> UserResponse:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
+                           db: Annotated[Session, Depends(get_db)]) -> UserResponse:
     """Retrieve the current authenticated user based on the token."""
     try:
         print(f"Token received: {token}")  # Debug: Print the token
@@ -60,8 +62,8 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            headers={"WWW-Authenticate": "Bearer"}
+        ) from e
 
     user = db.query(User).filter(User.username == username).first()
     if user is None:
@@ -73,18 +75,6 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
     return UserResponse.from_orm(user)
 
 def is_admin(current_user: Annotated[User, Depends(get_current_user)]):
-    """
-    Verifies if the current user has an admin role.
-
-    Args:
-        current_user (User): The user object retrieved from the dependency injection.
-
-    Raises:
-        HTTPException: If the user's role is not "admin", an HTTP 403 Forbidden exception is raised.
-
-    Returns:
-        User: The current user object if the user has an admin role.
-    """
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
