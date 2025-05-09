@@ -43,13 +43,23 @@ class UserResponse(BaseModel):
 
 ################### FUNCTIONS ###################
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
-                           db: Annotated[Session, Depends(get_db)]) -> UserResponse:
-    """Retrieve the current authenticated user based on the token."""
+def decode_jwt_token(token: str) -> dict:
+    """Decode and return the payload of a JWT token."""
     try:
-        print(f"Token received: {token}")  # Debug: Print the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"Payload decoded: {payload}")  # Debug: Print the payload
+        return payload
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
+                           db: Annotated[Session, Depends(get_db)]
+                           ) -> UserResponse:
+    try:
+        payload = decode_jwt_token(token)
         username: str = payload.get("sub")
         if username is None:
             raise HTTPException(
@@ -57,22 +67,22 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except JWTError as e:
-        print(f"JWT Error: {e}")  # Debug: Print the error
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"}
-        ) from e
 
-    user = db.query(User).filter(User.username == username).first()
-    if user is None:
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return UserResponse.from_orm(user)
+
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return UserResponse.from_orm(user)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        ) from e
 
 def is_admin(current_user: Annotated[User, Depends(get_current_user)]):
     if current_user.role != "admin":
