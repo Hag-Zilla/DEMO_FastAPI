@@ -85,7 +85,12 @@ def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
 @router.post("/create", name="Create User")
 async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)]):
     hashed_password = get_password_hash(user.password)
-    db_user = UserModel(username=user.username, hashed_password=hashed_password, budget=user.budget, role=user.role or "user")
+    db_user = UserModel(
+        username=user.username,
+        hashed_password=hashed_password,
+        budget=user.budget,
+        role="user"  # Force role to 'user' regardless of input
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
