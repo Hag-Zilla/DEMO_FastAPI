@@ -25,6 +25,7 @@ class UserSchema(BaseModel):
     password: str = Field(..., description="The password for the user account", example="secure_password123")
     budget: float = Field(..., description="The budget allocated to the user", example=1000.0)
     role: str = Field(None, description="The updated role of the user (optional)", example="user")
+    disabled: bool = Field(False, description="Indicates if the user account is disabled", example=False)
 
     class Config:
         orm_mode = True
@@ -63,6 +64,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if user.disabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is disabled",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return user  # Return the SQLAlchemy model instance directly
 
     except Exception as e:
@@ -89,12 +96,13 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
         username=user.username,
         hashed_password=hashed_password,
         budget=user.budget,
-        role="user"  # Force role to 'user' regardless of input
+        role="user",  # Force role to 'user' regardless of input
+        disabled=user.disabled
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return {"username": db_user.username, "budget": db_user.budget, "role": db_user.role}
+    return {"username": db_user.username, "budget": db_user.budget, "role": db_user.role, "disabled": db_user.disabled}
 
 @router.get("/me", name="Read Current User")
 async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
@@ -103,7 +111,8 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
         "id": current_user.id,
         "username": current_user.username,
         "budget": current_user.budget,
-        "role": current_user.role
+        "role": current_user.role,
+        "disabled": current_user.disabled
     }
 
 @router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Update User")
@@ -119,6 +128,7 @@ async def update_user(
 
     user.username = user_update.username
     user.budget = user_update.budget
+    user.disabled = user_update.disabled
     if user_update.password:
         user.hashed_password = get_password_hash(user_update.password)
     if user_update.role is not None:
@@ -134,7 +144,8 @@ async def update_user(
         "user_id": user.id,
         "username": user.username,
         "budget": user.budget,
-        "role": user.role
+        "role": user.role,
+        "disabled": user.disabled
     }
 
 @router.delete("/delete/{user_id}/", responses=ResponseManager.responses, name="Delete User")

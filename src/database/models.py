@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from src.database.database import Base
 from datetime import date
@@ -12,6 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     budget = Column(Float)
     role = Column(String, default="user")  # Default role is "user"
+    disabled = Column(Boolean, default=False)  # Indicates if the user account is disabled
     expenses = relationship("Expense", back_populates="owner")
 
 # Expense model
