@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,13 +17,17 @@ router = APIRouter()
 ################### FUNCTIONS ###################
 
 # Function to create an access token
-def create_access_token(data: dict):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """
     Generates a JSON Web Token (JWT) for authentication.
 
     Args:
         data (dict): A dictionary containing the payload data for the token. 
                      Must include a "sub" key representing the subject (e.g., user ID).
+        expires_delta (timedelta | None): Optional. A timedelta object representing the 
+                                           desired expiration time for the token. If not 
+                                           provided, the token will expire based on the 
+                                           JWT_EXPIRATION_MINUTES constant.
 
     Returns:
         str: The encoded JWT as a string.
@@ -34,11 +38,14 @@ def create_access_token(data: dict):
     Notes:
         - The token includes an expiration time ("exp") and a subject ("sub").
         - The expiration time is calculated based on the current UTC time and 
-          the JWT_EXPIRATION_MINUTES constant.
+          the JWT_EXPIRATION_MINUTES constant, or based on the provided expires_delta.
         - The token is signed using the SECRET_KEY and the specified ALGORITHM.
     """
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
