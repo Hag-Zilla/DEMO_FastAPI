@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestFormStrict
 from jose import jwt
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
 from src.database.database import get_db
@@ -50,12 +51,18 @@ def authenticate_user(db: Session, username: str, password: str):
         return None
     return user
 
+################### MODELS ###################
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 ################### ROUTES ###################
 
-@router.post("/", name="Login")
+@router.post("/", name="Login", response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
                                  db: Annotated[Session, Depends(get_db)]
-                                 ) -> dict:
+                                 ) -> Token:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -70,4 +77,4 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestFormS
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Token(access_token=access_token, token_type="bearer")
