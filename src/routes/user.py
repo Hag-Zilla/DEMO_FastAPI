@@ -109,28 +109,46 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
         "disabled": current_user.disabled
     }
 
-@router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Update User")
-async def update_user(
-    user_id: int,
+@router.put("/update/", responses=ResponseManager.responses, name="Self Update User")
+async def self_update_user(
     user_update: UserSchema,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ):
+    user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.username = user_update.username
+    user.budget = user_update.budget
+    if user_update.password:
+        user.hashed_password = get_password_hash(user_update.password)
+    # Do not allow self-update of role or disabled
+    db.commit()
+    db.refresh(user)
+    return {
+        "user_id": user.id,
+        "username": user.username,
+        "budget": user.budget,
+        "role": user.role,
+        "disabled": user.disabled
+    }
+
+@router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Admin Update User")
+async def admin_update_user(
+    user_id: int,
+    user_update: UserSchema,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[UserModel, Depends(is_admin)]
+):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     user.username = user_update.username
     user.budget = user_update.budget
     user.disabled = user_update.disabled
     if user_update.password:
         user.hashed_password = get_password_hash(user_update.password)
     if user_update.role is not None:
-        if current_user.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to update roles."
-            )
         user.role = user_update.role
     db.commit()
     db.refresh(user)
@@ -143,7 +161,9 @@ async def update_user(
     }
 
 @router.delete("/delete/{user_id}/", responses=ResponseManager.responses, name="Delete User")
-async def delete_user(user_id: int, db: Annotated[Session, Depends(get_db)], current_user: Annotated[UserModel, Depends(get_current_user)]):
+async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
+                      admin: Annotated[UserModel, Depends(is_admin)]
+):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
