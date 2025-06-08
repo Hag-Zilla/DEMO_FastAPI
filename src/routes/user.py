@@ -48,22 +48,18 @@ def decode_jwt_token(token: str) -> dict:
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
                            db: Annotated[Session, Depends(get_db)]
                            ) -> UserModel:
+    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                          detail="Could not validate credentials",
+                                          headers={"WWW-Authenticate": "Bearer"},
+                                          )
     try:
         payload = decode_jwt_token(token)
         username: str = payload.get("sub")
         if username is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise credentials_exception
         user = db.query(UserModel).filter(UserModel.username == username).first()
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise credentials_exception
         if user.disabled:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
