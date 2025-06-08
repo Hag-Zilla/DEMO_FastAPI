@@ -27,9 +27,7 @@ class UserSchema(BaseModel):
     role: str = Field(None, description="The updated role of the user (optional)", example="user")
     disabled: bool = Field(False, description="Indicates if the user account is disabled", example=False)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 ################### FUNCTIONS ###################
 
