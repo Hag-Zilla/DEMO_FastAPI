@@ -64,6 +64,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+    model_config = {"from_attributes": True}
+
 ################### ROUTES ###################
 
 @router.post("/", name="Login", response_model=Token)
@@ -83,5 +85,10 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestFormS
             detail="User account is disabled",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.username})
+
+    access_token_expires = timedelta(minutes=JWT_EXPIRATION_MINUTES)
+    access_token = create_access_token(data={"sub": user.username},
+                                       expires_delta=access_token_expires
+                                       )
+    
     return Token(access_token=access_token, token_type="bearer")
