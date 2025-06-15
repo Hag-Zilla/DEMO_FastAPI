@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -19,15 +19,59 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 ################### PYDANTIC MODELS ###################
-
+   
 class UserSchema(BaseModel):
-    username: str = Field(..., description="The unique username of the user", example="john_doe")
-    password: str = Field(..., description="The password for the user account", example="secure_password123")
-    budget: float = Field(..., description="The budget allocated to the user", example=1000.0)
-    role: str = Field(None, description="The updated role of the user (optional)", example="user")
-    disabled: bool = Field(False, description="Indicates if the user account is disabled", example=False)
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        description="The user's unique username",
+        example="john_doe"
+    )
+    password: str = Field(
+        ...,
+        min_length=3,
+        description="The user's password",
+        example="secure_password123"
+    )
+    budget: float = Field(
+        ...,
+        ge=0,
+        description="The user's budget",
+        example=1000.0
+    )
+    # role and disabled removed from creation schema
 
-    model_config = {"from_attributes": True}
+class UserUpdateSchema(BaseModel):
+    username: Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=50,
+        description="The user's unique username",
+        example="john_doe_updated"
+    )
+    password: Optional[str] = Field(
+        default=None,
+        min_length=6,
+        description="The user's password",
+        example="new_secure_password123"
+    )
+    budget: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="The user's budget",
+        example=1200.0
+    )
+    role: Optional[str] = Field(
+        default=None,
+        description="The user's role (admin or user)",
+        example="user"
+    )
+    disabled: Optional[bool] = Field(
+        default=None,
+        description="Whether the user is disabled",
+        example=False
+    )
 
 ################### FUNCTIONS ###################
 
@@ -91,7 +135,7 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
         hashed_password=hashed_password,
         budget=user.budget,
         role="user",  # Force role to 'user' regardless of input
-        disabled=user.disabled
+        disabled=False  # Default to not disabled
     )
     db.add(db_user)
     db.commit()
@@ -141,16 +185,23 @@ async def self_update_user(
 @router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Admin Update User")
 async def admin_update_user(
     user_id: int,
-    user_update: UserSchema,
+    user_update: UserUpdateSchema,  # <-- use the new schema
     db: Annotated[Session, Depends(get_db)],
     admin: Annotated[UserModel, Depends(is_admin)]
 ):
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.username = user_update.username
-    user.budget = user_update.budget
-    user.disabled = user_update.disabled
+    if user_update.username is not None:
+        # Check for unique username
+        existing_user = db.query(UserModel).filter(UserModel.username == user_update.username, UserModel.id != user_id).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        user.username = user_update.username
+    if user_update.budget is not None:
+        user.budget = user_update.budget
+    if user_update.disabled is not None:
+        user.disabled = user_update.disabled
     if user_update.password:
         user.hashed_password = get_password_hash(user_update.password)
     if user_update.role is not None:
