@@ -118,6 +118,11 @@ async def self_update_user(
     user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Check if the new username is already taken by another user
+    if user_update.username and user_update.username != user.username:
+        existing_user = db.query(UserModel).filter(UserModel.username == user_update.username).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already taken")
     user.username = user_update.username
     user.budget = user_update.budget
     if user_update.password:
@@ -170,16 +175,3 @@ async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
     db.delete(user)
     db.commit()
     return {"message": f"User with id {user_id} has been deleted."}
-
-# @router.get("/test/", responses=ResponseManager.responses, name="test User")
-# async def test_user(
-#     db: Annotated[Session, Depends(get_db)],
-#     current_user: Annotated[User, Depends(get_current_user)],
-#     user_id: int = Query(description="Put the user ID")
-# ):
-#     user = db.query(User).filter(User.id == user_id).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     db.delete(user)
-#     db.commit()
-#     return {"message": f"User with id {user_id} has been deleted."}
