@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.models import Expense
 from src.database.models import User
-from src.response_manager import ResponseManager
 from pydantic import BaseModel
 from datetime import date
 from src.database.database import get_db
@@ -14,7 +13,7 @@ router = APIRouter()
 #     start_date: date
 #     end_date: date
 
-# @router.get("/monthly/{user_id}/", responses=ResponseManager.responses, name="Monthly Report")
+# @router.get("/monthly/{user_id}/", name="Monthly Report")
 # async def get_monthly_report(user_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 #     if current_user.id != user_id:
 #         raise HTTPException(status_code=403, detail="Not authorized to view this report.")
@@ -37,7 +36,7 @@ router = APIRouter()
 #     }
 #     return report
 
-# @router.get("/period/{user_id}/", responses=ResponseManager.responses, name="Period Report")
+# @router.get("/period/{user_id}/", name="Period Report")
 # async def get_period_report(user_id: int, report_request: PeriodReportRequest, db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
 #     user = db.query(User).filter(User.id == user_id).first()
 #     if not user:
@@ -58,7 +57,7 @@ router = APIRouter()
 #     }
 #     return report
 
-# @router.get("/all/", responses=ResponseManager.responses, name="All Users Reports")
+# @router.get("/all/", name="All Users Reports")
 # async def get_all_users_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 #     """Generate reports for all users (admin only)."""
 #     if current_user.username != "admin":
