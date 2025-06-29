@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestFormStrict
 from jose import jwt
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from src.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User
 from src.password_manager import verify_password
+from src.schemas import Token
 
 router = APIRouter()
 
@@ -57,14 +57,6 @@ def authenticate_user(db: Session, username: str, password: str):
     if not verify_password(password, user.hashed_password):
         return None
     return user
-
-################### MODELS ###################
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-    model_config = {"from_attributes": True}
 
 ################### ROUTES ###################
 
