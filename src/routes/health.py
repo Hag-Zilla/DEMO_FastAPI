@@ -1,9 +1,8 @@
 from fastapi import APIRouter
-from src.response_manager import ResponseManager
 
 router = APIRouter()
 
-@router.get('/health', name="Health check of the API", responses=ResponseManager.responses)
+@router.get('/health', name="Health check of the API")
 async def get_health():
     """_summary_
     \n
