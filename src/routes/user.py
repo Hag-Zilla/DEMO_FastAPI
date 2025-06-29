@@ -1,58 +1,17 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from src.config import ALGORITHM, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User as UserModel
-from src.password_manager import get_password_hash, decode_jwt_token
+from src.auth_manager import get_password_hash
 from src.schemas import UserSchema, UserUpdateSchema
-from jose import jwt, JWTError
+from src.auth_manager import get_current_user, is_admin
 
 router = APIRouter()
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-################### FUNCTIONS ###################
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
-                           db: Annotated[Session, Depends(get_db)]
-                           ) -> UserModel:
-    credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                          detail="Could not validate credentials",
-                                          headers={"WWW-Authenticate": "Bearer"},
-                                          )
-    try:
-        payload = decode_jwt_token(token)
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        user = db.query(UserModel).filter(UserModel.username == username).first()
-        if user is None:
-            raise credentials_exception
-        if user.disabled:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is disabled",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return user  # Return the SQLAlchemy model instance directly
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
-        ) from e
-
-def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action."
-        )
-    return current_user
-
 
 ################### ROUTES ###################
 
