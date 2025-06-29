@@ -6,7 +6,6 @@ from typing import Annotated
 # from src.authentication_manager import get_current_user
 from src.database.database import get_db
 from src.database.models import User
-from src.response_manager import ResponseManager
 
 router = APIRouter()
 
@@ -17,7 +16,7 @@ router = APIRouter()
 #     total_expenses: float
 #     alert: str
 
-# @router.get("/", responses=ResponseManager.responses, name="Get Alerts")
+# @router.get("/", name="Get Alerts")
 # async def get_alerts(
 #     db: Annotated[Session, Depends(get_db)],
 #     current_user: Annotated[User, Depends(get_current_user)]
