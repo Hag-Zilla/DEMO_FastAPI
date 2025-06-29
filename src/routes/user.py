@@ -2,14 +2,13 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from src.config import ALGORITHM, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User as UserModel
 from src.password_manager import get_password_hash
-from src.response_manager import ResponseManager
+from src.schemas import UserSchema, UserUpdateSchema
 
 from jose import jwt, JWTError
 
@@ -17,61 +16,6 @@ router = APIRouter()
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-################### PYDANTIC MODELS ###################
-   
-class UserSchema(BaseModel):
-    username: str = Field(
-        ...,
-        min_length=3,
-        max_length=50,
-        description="The user's unique username",
-        example="john_doe"
-    )
-    password: str = Field(
-        ...,
-        min_length=3,
-        description="The user's password",
-        example="secure_password123"
-    )
-    budget: float = Field(
-        ...,
-        ge=0,
-        description="The user's budget",
-        example=1000.0
-    )
-    # role and disabled removed from creation schema
-
-class UserUpdateSchema(BaseModel):
-    username: Optional[str] = Field(
-        default=None,
-        min_length=3,
-        max_length=50,
-        description="The user's unique username",
-        example="john_doe_updated"
-    )
-    password: Optional[str] = Field(
-        default=None,
-        min_length=6,
-        description="The user's password",
-        example="new_secure_password123"
-    )
-    budget: Optional[float] = Field(
-        default=None,
-        ge=0,
-        description="The user's budget",
-        example=1200.0
-    )
-    role: Optional[str] = Field(
-        default=None,
-        description="The user's role (admin or user)",
-        example="user"
-    )
-    disabled: Optional[bool] = Field(
-        default=None,
-        description="Whether the user is disabled",
-        example=False
-    )
 
 ################### FUNCTIONS ###################
 
@@ -153,7 +97,7 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
         "disabled": current_user.disabled
     }
 
-@router.put("/update/", responses=ResponseManager.responses, name="Self Update User")
+@router.put("/update/", name="Self Update User")
 async def self_update_user(
     user_update: UserSchema,
     db: Annotated[Session, Depends(get_db)],
@@ -182,7 +126,7 @@ async def self_update_user(
         "disabled": user.disabled
     }
 
-@router.put("/update/{user_id}/", responses=ResponseManager.responses, name="Admin Update User")
+@router.put("/update/{user_id}/", name="Admin Update User")
 async def admin_update_user(
     user_id: int,
     user_update: UserUpdateSchema,  # <-- use the new schema
@@ -216,7 +160,7 @@ async def admin_update_user(
         "disabled": user.disabled
     }
 
-@router.delete("/delete/{user_id}/", responses=ResponseManager.responses, name="Delete User")
+@router.delete("/delete/{user_id}/", name="Delete User")
 async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
                       admin: Annotated[UserModel, Depends(is_admin)]
 ):
