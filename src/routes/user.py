@@ -1,15 +1,12 @@
-from typing import Annotated, Optional
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-
 from src.config import ALGORITHM, SECRET_KEY
 from src.database.database import get_db
 from src.database.models import User as UserModel
-from src.password_manager import get_password_hash
+from src.password_manager import get_password_hash, decode_jwt_token
 from src.schemas import UserSchema, UserUpdateSchema
-
 from jose import jwt, JWTError
 
 router = APIRouter()
@@ -18,18 +15,6 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 ################### FUNCTIONS ###################
-
-def decode_jwt_token(token: str) -> dict:
-    """Decode and return the payload of a JWT token."""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],
                            db: Annotated[Session, Depends(get_db)]
