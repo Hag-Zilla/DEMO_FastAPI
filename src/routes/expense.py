@@ -1,5 +1,4 @@
 from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -7,7 +6,6 @@ from sqlalchemy.orm import Session
 # from src.authentication_manager import get_current_user
 # from src.database.database import get_db
 # from src.database.models import Expense, User
-# from src.response_manager import ResponseManager
 
 router = APIRouter()
 
