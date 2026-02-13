@@ -1,9 +1,8 @@
 from fastapi import APIRouter
-from src.response_manager import ResponseManager
 
 router = APIRouter()
 
-@router.get('/health', name="Health check of the API", tags=['Main'], responses=ResponseManager.responses)
+@router.get('/health', name="Health check of the API")
 async def get_health():
     """_summary_
     \n
@@ -11,5 +10,10 @@ async def get_health():
     \n
     Returns:
         JSON : Current state of the API
+    \n
+    Example Response:
+        {
+            "state": "API is currently running. Please proceed"
+        }
     """
     return {'state': 'API is currently running. Please proceed'}
