@@ -1,10 +1,18 @@
+"""Database models for the FastAPI application.
+
+This module defines SQLAlchemy ORM models for users and expenses.
+"""
+
+from datetime import date
+
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship
+
 from src.database.database import Base
-from datetime import date
 
 # User model
 class User(Base):
+    """User model for storing user information and credentials."""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -17,6 +25,7 @@ class User(Base):
 
 # Expense model
 class Expense(Base):
+    """Expense model for storing user expense records."""
     __tablename__ = "expenses"
 
     id = Column(Integer, primary_key=True, index=True)
