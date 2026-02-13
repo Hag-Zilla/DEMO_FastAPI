@@ -167,40 +167,60 @@ The database schema consists of two primary tables: `users` and `expenses`.
 
 To set up the environment for this application, you need to run the `setup.sh` script. This script will handle the creation of the necessary environment using either Conda or venv.
 
-1. Run the setup script in your command prompt (CLI):
+#### Setup Steps:
+
+1. **Run the setup script** in your command prompt (CLI):
    ```bash
    bash setup.sh
    ```
 
-2. Choose the Environment Manager: The script will prompt you to choose between `conda` and `venv`. You can select either
+2. **Choose the Environment Manager**: The script will prompt you to choose between `conda` and `venv`:
+   - **Conda**: Recommended for managing complex dependencies across multiple packages. The script will install dependencies from `environment.yml`.
+   - **venv**: Lightweight option for Python virtual environments. The script will install dependencies from `requirements.txt`.
 
-3. Follow the Instructions: The script will guide you through the process of setting up the environment, including installing dependencies.  
+3. **Follow the Instructions**: The script will automatically:
+   - Detect your shell type (bash or zsh) and configure it appropriately
+   - Verify required files exist before proceeding
+   - Check if a venv directory already exists (for venv option) and ask for confirmation before overwriting
+   - Install and configure the chosen environment
+   - Upgrade pip
+   - Install all dependencies
+
+#### Important Notes:
+
+- **Conda users**: Dependencies are installed directly from `environment.yml`, which is the single source of truth for this environment.
+- **venv users**: Dependencies are installed from `requirements.txt`. If you don't have pyenv installed, the script will alert you.
+- The script includes robust error handling and will stop if any critical step fails.  
 
 ### Start the API
-Start the API in your CLI, navigate to the project directory and enter the following command to start the API: 
-  ```bash
-  bash uvicorn main:api --reload
-  ```
 
-Here, we specify the main file and the name of the API to launch inside this file: api. The `--reload` argument allows the API to automatically update when making changes to the source file.
+After setting up the environment, start the API:
 
-Go to http://localhost:8000/ or http://127.0.0.1:8000/ to access the server.
+1. **Activate your environment**:
+   - For Conda: `conda activate <environment_name>` (shown at the end of setup.sh)
+   - For venv: `source ./venv/bin/activate`
+
+2. **Start the API server**:
+   ```bash
+   uvicorn main:api --reload
+   ```
+   Here, we specify the main file and the name of the API to launch: `main:api`. The `--reload` flag enables auto-reload when you modify source files.
+
+3. **Access the API**:
+   - Main API: http://localhost:8000/ or http://127.0.0.1:8000/
+   - Interactive API documentation (Swagger): http://localhost:8000/docs
+   - Alternative API documentation (ReDoc): http://localhost:8000/redoc
 
 ### API Structure
 
-You will find three main points:
+The API is organized around expense tracking and reporting functionality:
 
-- **Main**: Where you can find the health checker request and a request to build your MCQ after logging in as a user.
-- **Administration**: Where you can find a request that allows you to add questions to the database after logging in as an administrator.
-- **Testing Area**: Extra requests for debugging and tests after logging in as an administrator.
-
-### Requests Documentation
-
-For the documentation, we use the OpenAPI (formerly Swagger) interface. This interface makes it easy to see the endpoints and accepted methods. It also provides curl requests associated with the try.
-
-Go to http://localhost:8000/docs or http://127.0.0.1:8000/docs Or Go to http://localhost:8000/redoc or http://127.0.0.1:8000/redoc
-
-Here you can access the requests and their documentations.
+- **Health Check**: Verify the API is running
+- **User Management**: Create and manage user accounts (Admin only)
+- **Expense Management**: Add, update, delete expenses
+- **Budget Management**: Set and track monthly budgets
+- **Alerts**: Monitor budget overruns
+- **Reports**: Generate expense reports (monthly, period, and administrative views)
 
 ### Other information
 
