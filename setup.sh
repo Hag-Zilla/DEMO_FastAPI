@@ -115,6 +115,7 @@ create_venv_env() {
     run_command "python -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
+    # shellcheck source=/dev/null
     source ./venv/bin/activate || { echo "Error: Failed to activate venv."; exit 1; }
 
     # Upgrade pip
@@ -132,7 +133,7 @@ create_venv_env() {
 
 # Ask the user which environment manager to use
 echo "Which environment manager would you like to use? (conda/venv)"
-read ENV_MANAGER
+read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
 ENV_MANAGER_LOWER=$(echo "$ENV_MANAGER" | tr '[:upper:]' '[:lower:]')
