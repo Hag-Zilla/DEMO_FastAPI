@@ -96,7 +96,7 @@ create_venv_env() {
     # Check if venv directory already exists
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
-        read -p "Do you want to remove it and create a new one? (y/n): " confirm
+        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
         if [ "${confirm,,}" = "y" ]; then
             rm -rf venv
         else
