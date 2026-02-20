@@ -1,243 +1,188 @@
 <div align="center">
 
-# Lite Demo About FastAPI
+# Personal Expense Tracking API
+
+A lightweight FastAPI demo showcasing a complete REST API for expense management with authentication, budgeting, and reporting.
 
 </div>
 
 ---
 
-## Context
+## About
+
+This is a personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, and database modeling.
 
 ---
 
-Welcome to this lite demo about FastAPI. We will treat a short, simple, and fictitious use case of a personal expense tracking API. The purpose of this repo is to show how to build a simple API with FastAPI.
+## Features
+
+- **User Management**: Create accounts, authentication via OAuth2, role-based access (admin/user)
+- **Expense Tracking**: Add, update, delete expenses with categorization and date tracking
+- **Budget Management**: Set global monthly budgets with automatic tracking
+- **Alerts**: Get notified when expenses exceed budgeted amounts
+- **Reports**: Generate monthly and custom-period expense reports by category
+- **Admin Dashboard**: View all users and access system-wide reports
 
 ---
 
-## Overview
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Conda or venv
+
+### Setup Environment
+
+```bash
+bash setup.sh
+```
+
+The script will guide you through environment setup (Conda or venv) and install all dependencies.
+
+### Run the API
+
+```bash
+# Activate environment
+conda activate demo_fastapi  # or: source ./venv/bin/activate
+
+# Start the server
+uvicorn main:app --reload
+```
+
+**API is running at**: http://localhost:8000
 
 ---
 
-The Personal Expense Tracking API allows users to manage their expenses efficiently by categorizing them and tracking against a monthly budget. This API provides functionalities for adding, updating, and deleting expenses, setting a global monthly budget, generating alerts for budget overruns, and producing detailed reports.
+## Access the API
+
+- **Interactive Docs (Swagger)**: http://localhost:8000/docs
+- **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
 
 ---
 
-## Key Features
+## Project Structure
 
----
-
-### Expense Management
-
-- **Add, Update, and Delete Expenses**: Authenticated users can add new expenses, update existing ones, and delete expenses as needed. Each expense is recorded with details such as description, amount, date, and category. Each expense is linked to the user who created it using the `user_id` foreign key, allowing for personalized expense tracking.
-
-- **Expense Categories**: The API supports the following 15 categories:
-  1. **Food**: Grocery shopping expenses.
-  2. **Transportation**: Public transport costs, fuel, vehicle maintenance.
-  3. **Housing**: Rent, mortgage, utilities.
-  4. **Utilities**: Electricity, water, gas, internet.
-  5. **Health**: Medical fees, medications, health insurance.
-  6. **Leisure**: Recreational activities, outings, cinema.
-  7. **Dining Out**: Meals at restaurants, fast food.
-  8. **Clothing**: Purchase of clothes and accessories.
-  9. **Education**: Tuition fees, books, school supplies.
-  10. **Travel**: Airfare, accommodation, tourist activities.
-  11. **Savings and Investments**: Contributions to savings or investment accounts.
-  12. **Insurance**: Auto, home, life insurance.
-  13. **Entertainment**: Streaming subscriptions, video games.
-  14. **Gifts and Donations**: Gifts, donations to charitable causes.
-  15. **Miscellaneous**: Various expenses not classified elsewhere.
-
-### Monthly Budget Management
-
-- **Set a Global Monthly Budget**: Users can set a global monthly budget that applies to all expense categories. This budget is stored in the `users` table.
-- **Updating the Budget**: With each expense addition, the user's remaining budget is automatically updated to reflect the remaining amount for the month.
-- **Expense Tracking**: Calculate total expenses and compare them with the set budget.
-
-### User Management
-
-- **Creating Users**: Users can be created via the `/users/` endpoint, which accepts a username, password, and budget. The user data is stored in the `users` table.
-- **Authentication**: User authentication is handled using OAuth2 with password hashing for security. The authenticated user can perform actions like adding expenses.
-
-### User Alerts
-
-- **Alert Endpoint**: Checks each user's expenses and identifies those who have exceeded their monthly budget.
-- **Cron Job Script**: An external script calls this endpoint to retrieve alerts to be sent.
-- **Notification**: Alerts can be sent via email or SMS. (Not treated in this project, but the endpoint is ready)
-
-### Reports
-
-- **Monthly Reports**: Generate a report of expenses for each past month, by category.
-- **Period Reports**: Allow users to generate reports for custom periods.
-- **User Reports**: Administrators can generate reports for all users.
-
-### Administrative Features
-
-- **User Management**: Administrators can create, update, and delete user accounts.
-- **Report Access**: Administrators can access expense reports for all users.
-
----
-
-## Endpoints
-
----
-
-### Expense Endpoints
-
-- Add, update, and delete expenses.
-- Update the monthly budget with each expense addition.
-
-### Budget Endpoints
-
-- Set and update the global monthly budget.
-
-### Alert Endpoint
-
-- Check expenses and generate alerts for users who have exceeded their budget.
-
-### Report Endpoints
-
-- Generate monthly and period reports for users.
-- Administrators can generate reports for all users.
-
-### Administrative Endpoints
-
-- Manage users (create, update, delete).
-- Access reports for all users.
-
-### Main Endpoints
-
-- **Health Check**: A simple endpoint to verify the API's health.
-  - **Endpoint**: `/health`
-  - **Method**: `GET`
-  - **Description**: Returns the current state of the API.
-  - **Response**: `{ "state": "API is currently running. Please proceed" }`
-
-With this structure, you can create a robust API for personal expense tracking.
+```
+DEMO_FastAPI/
+├── main.py                 # FastAPI app entry point
+├── requirements.txt        # Python dependencies
+├── environment.yml         # Conda environment config
+├── setup.sh               # Setup script
+│
+├── src/
+│   ├── config.py          # Configuration
+│   ├── schemas.py         # Pydantic models (request/response)
+│   ├── auth_manager.py    # Authentication & hashing
+│   │
+│   ├── database/
+│   │   ├── database.py    # SQLAlchemy setup
+│   │   └── models.py      # ORM models (User, Expense)
+│   │
+│   └── routes/
+│       ├── user.py        # User endpoints
+│       ├── expense.py     # Expense endpoints
+│       ├── alert.py       # Alert endpoints
+│       ├── report.py      # Report endpoints
+│       ├── token.py       # Authentication endpoints
+│       └── health.py      # Health check endpoints
+```
 
 ---
 
 ## Database
 
----
+### Technology
 
-The Personal Expense Tracking API utilizes **SQLite** as its database solution, providing a lightweight and efficient way to manage user data and expenses. Below is an overview of how SQLite is integrated and operated within the project:
+- **Engine**: SQLite (file-based, no server setup required)
+- **ORM**: SQLAlchemy
+- **Auto-migration**: Tables created automatically on app startup
 
-### Integration with FastAPI
+### Schema
 
-1. **Setup and Configuration**:
-   - SQLite is used as the database engine, and SQLAlchemy is employed as the Object-Relational Mapping (ORM) tool to interact with the database.
-   - The database file (`expense_tracker.db`) is created in the project directory, making it easy to manage and deploy.
+**Users Table**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | INTEGER | Primary key |
+| username | STRING | Unique identifier |
+| hashed_password | STRING | Bcrypt hashed |
+| budget | FLOAT | Monthly budget |
+| role | STRING | "user" or "admin" |
+| disabled | BOOLEAN | Account status |
 
-2. **Database Models**:
-   - **User Model**: Represents a user with fields for `id` (primary key), `username`, `hashed_password`, and `budget`. This model stores user credentials and their monthly budget.
-   - **Expense Model**: Represents an expense entry with fields for `id` (primary key), `description`, `amount`, `date`, `category`, and `user_id` (foreign key linking to the `User` model). This model stores individual expense records.
+**Expenses Table**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | INTEGER | Primary key |
+| description | STRING | Expense description |
+| amount | FLOAT | Amount spent |
+| date | STRING | Date incurred |
+| category | STRING | Expense category |
+| user_id | INTEGER | Foreign key → users.id |
 
-3. **Database Initialization**:
-   - The database and its tables are automatically created when the application starts. SQLAlchemy handles the creation of tables based on the defined models.
-   - The `Base.metadata.create_all(bind=engine)` command ensures that the necessary schema is in place.
+### Managing the Database
 
-### Database Schema
+Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQLite database graphically.
 
-The database schema consists of two primary tables: `users` and `expenses`.
-
-- **Users Table**:
-  - `id` (INTEGER, PRIMARY KEY): A unique identifier for each user.
-  - `username` (STRING, UNIQUE): The username of the user, which must be unique.
-  - `hashed_password` (STRING): The hashed password for the user, ensuring security.
-  - `budget` (FLOAT): The global monthly budget set by the user, applicable to all expense categories.
-
-- **Expenses Table**:
-  - `id` (INTEGER, PRIMARY KEY): A unique identifier for each expense entry.
-  - `description` (STRING): A brief description of the expense.
-  - `amount` (FLOAT): The amount spent for the expense.
-  - `date` (STRING): The date when the expense was incurred.
-  - `category` (STRING): The category of the expense (e.g., Food, Transportation).
-  - `user_id` (INTEGER, FOREIGN KEY): A reference to the `id` field in the `users` table, indicating the user who created the expense.
-
-### Benefits of Using SQLite
-
-- **Simplicity**: SQLite requires no server setup or complex configuration, making it easy to integrate and use.
-- **Efficiency**: SQLite is designed to be efficient for most read and write operations, making it suitable for small to medium-sized applications.
-- **Portability**: The entire database is contained in a single file, making it easy to move, backup, and deploy.
-
-### Scalability Considerations
-
-- While SQLite is ideal for prototyping and small applications, it can be easily swapped out for more robust database solutions like PostgreSQL or MySQL as your application grows.
-- The modular design of the API allows for seamless transition to other database systems with minimal changes to the codebase.
+⚠️ **Important**: Stop the API server before making manual database changes to avoid locks.
 
 ---
 
-## Setup
+## API Endpoints
+
+### Authentication
+- `POST /token` – Login and get JWT token
+
+### User Management
+- `POST /users/create` – Create new user
+- `GET /users/me` – Get current user profile
+- `PUT /users/update/` – Update own profile
+- `PUT /users/update/{user_id}/` – Admin: update any user
+- `DELETE /users/delete/{user_id}/` – Admin: delete user
+
+### Expenses
+- `GET /expenses/` – List user's expenses
+- `POST /expenses/` – Add new expense
+- `PUT /expenses/{expense_id}` – Update expense
+- `DELETE /expenses/{expense_id}` – Delete expense
+
+### Reports
+- `GET /reports/monthly/{year}/{month}` – Monthly report
+- `GET /reports/period` – Custom period report
+- `GET /reports/all` – Admin: all users' reports
+
+### Alerts
+- `GET /alerts/` – Check for budget overruns
+
+### Health
+- `GET /health` – API status check
 
 ---
 
-### Environment
+## Deployment Notes
 
-To set up the environment for this application, you need to run the `setup.sh` script. This script will handle the creation of the necessary environment using either Conda or venv.
+### For Production
 
-#### Setup Steps:
+SQLite works fine for small deployments, but consider migrating to PostgreSQL or MySQL for:
+- Concurrent write operations
+- Multi-instance deployments
+- Larger datasets
 
-1. **Run the setup script** in your command prompt (CLI):
-   ```bash
-   bash setup.sh
-   ```
+The modular design allows easy database swaps with minimal code changes.
 
-2. **Choose the Environment Manager**: The script will prompt you to choose between `conda` and `venv`:
-   - **Conda**: Recommended for managing complex dependencies across multiple packages. The script will install dependencies from `environment.yml`.
-   - **venv**: Lightweight option for Python virtual environments. The script will install dependencies from `requirements.txt`.
+---
 
-3. **Follow the Instructions**: The script will automatically:
-   - Detect your shell type (bash or zsh) and configure it appropriately
-   - Verify required files exist before proceeding
-   - Check if a venv directory already exists (for venv option) and ask for confirmation before overwriting
-   - Install and configure the chosen environment
-   - Upgrade pip
-   - Install all dependencies
+## Resources
 
-#### Important Notes:
+- [FastAPI Documentation](https://fastapi.tiangolo.com/tutorial/first-steps/)
+- [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/http-basic-auth/)
+- [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
+- [DBeaver Database Tool](https://dbeaver.io/)
+- [FastAPI on Conda](https://anaconda.org/conda-forge/fastapi)
 
-- **Conda users**: Dependencies are installed directly from `environment.yml`, which is the single source of truth for this environment.
-- **venv users**: Dependencies are installed from `requirements.txt`. If you don't have pyenv installed, the script will alert you.
-- The script includes robust error handling and will stop if any critical step fails.  
+---
 
-### Start the API
+## License
 
-After setting up the environment, start the API:
-
-1. **Activate your environment**:
-   - For Conda: `conda activate <environment_name>` (shown at the end of setup.sh)
-   - For venv: `source ./venv/bin/activate`
-
-2. **Start the API server**:
-   ```bash
-   uvicorn main:api --reload
-   ```
-   Here, we specify the main file and the name of the API to launch: `main:api`. The `--reload` flag enables auto-reload when you modify source files.
-
-3. **Access the API**:
-   - Main API: http://localhost:8000/ or http://127.0.0.1:8000/
-   - Interactive API documentation (Swagger): http://localhost:8000/docs
-   - Alternative API documentation (ReDoc): http://localhost:8000/redoc
-
-### API Structure
-
-The API is organized around expense tracking and reporting functionality:
-
-- **Health Check**: Verify the API is running
-- **User Management**: Create and manage user accounts (Admin only)
-- **Expense Management**: Add, update, delete expenses
-- **Budget Management**: Set and track monthly budgets
-- **Alerts**: Monitor budget overruns
-- **Reports**: Generate expense reports (monthly, period, and administrative views)
-
-### Other information
-
-### FastAPI on Conda
-To install FastAPI on conda
-https://anaconda.org/conda-forge/fastapi
-
-### FastAPI documentation
-https://fastapi.tiangolo.com/tutorial/first-steps/
-
-### FastAPI basic authentification
-https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
+See [LICENSE](LICENSE) file for details.
