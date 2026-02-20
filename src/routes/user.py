@@ -1,3 +1,5 @@
+"""User management route handlers."""
+
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -28,7 +30,12 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return {"username": db_user.username, "budget": db_user.budget, "role": db_user.role, "disabled": db_user.disabled}
+    return {
+        "username": db_user.username,
+        "budget": db_user.budget,
+        "role": db_user.role,
+        "disabled": db_user.disabled,
+    }
 
 @router.get("/me", name="Read Current User")
 async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
@@ -75,8 +82,9 @@ async def admin_update_user(
     user_id: int,
     user_update: UserUpdateSchema,  # <-- use the new schema
     db: Annotated[Session, Depends(get_db)],
-    admin: Annotated[UserModel, Depends(is_admin)]
+    _admin: Annotated[UserModel, Depends(is_admin)]
 ):
+    del _admin
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -106,8 +114,9 @@ async def admin_update_user(
 
 @router.delete("/delete/{user_id}/", name="Delete User")
 async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
-                      admin: Annotated[UserModel, Depends(is_admin)]
+                      _admin: Annotated[UserModel, Depends(is_admin)]
 ):
+    del _admin
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
