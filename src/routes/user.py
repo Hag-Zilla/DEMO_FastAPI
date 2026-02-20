@@ -19,6 +19,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @router.post("/create", name="Create User")
 async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)]):
+    """Create a new standard user account."""
     hashed_password = get_password_hash(user.password)
     db_user = UserModel(
         username=user.username,
@@ -39,6 +40,7 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
 
 @router.get("/me", name="Read Current User")
 async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
+    """Return the authenticated user's profile data."""
     # Return a sanitized user response (do not expose hashed_password)
     return {
         "id": current_user.id,
@@ -54,12 +56,17 @@ async def self_update_user(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ):
+    """Update the authenticated user's own profile fields."""
     user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     # Check if the new username is already taken by another user
     if user_update.username and user_update.username != user.username:
-        existing_user = db.query(UserModel).filter(UserModel.username == user_update.username).first()
+        existing_user = (
+            db.query(UserModel)
+            .filter(UserModel.username == user_update.username)
+            .first()
+        )
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already taken")
     user.username = user_update.username
@@ -84,13 +91,21 @@ async def admin_update_user(
     db: Annotated[Session, Depends(get_db)],
     _admin: Annotated[UserModel, Depends(is_admin)]
 ):
+    """Update any user fields by ID (admin only)."""
     del _admin
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user_update.username is not None:
         # Check for unique username
-        existing_user = db.query(UserModel).filter(UserModel.username == user_update.username, UserModel.id != user_id).first()
+        existing_user = (
+            db.query(UserModel)
+            .filter(
+                UserModel.username == user_update.username,
+                UserModel.id != user_id,
+            )
+            .first()
+        )
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already taken")
         user.username = user_update.username
@@ -116,6 +131,7 @@ async def admin_update_user(
 async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
                       _admin: Annotated[UserModel, Depends(is_admin)]
 ):
+    """Delete a user by ID (admin only)."""
     del _admin
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
