@@ -1,8 +1,8 @@
 ####################################################################################################
-#             __  __   ___   _   _  _  __ _____ __   __  _____  ___   ____    ____  _____ 
+#             __  __   ___   _   _  _  __ _____ __   __  _____  ___   ____    ____  _____
 #            |  \/  | / _ \ | \ | || |/ /| ____|\ \ / / |  ___|/ _ \ |  _ \  / ___|| ____|
-#            | |\/| || | | ||  \| || ' / |  _|   \ V /  | |_  | | | || |_) || |  _ |  _|  
-#            | |  | || |_| || |\  || . \ | |___   | |   |  _| | |_| ||  _ < | |_| || |___ 
+#            | |\/| || | | ||  \| || ' / |  _|   \ V /  | |_  | | | || |_) || |  _ |  _|
+#            | |  | || |_| || |\  || . \ | |___   | |   |  _| | |_| ||  _ < | |_| || |___
 #            |_|  |_| \___/ |_| \_||_|\_\|_____|  |_|   |_|    \___/ |_| \_\ \____||_____|
 #
 ####################################################################################################
@@ -67,7 +67,10 @@ tags_metadata = [
 # FastAPI app
 app = FastAPI(
     title="Personal Expense Tracking API",
-    description="An API to manage personal expenses, set budgets, generate alerts, and create detailed reports.",
+    description=(
+        "An API to manage personal expenses, set budgets, generate alerts, "
+        "and create detailed reports."
+    ),
     version="1.0.0",
     openapi_tags=[{"name": tag["name"], "description": tag["description"]} for tag in tags_metadata]
 )
@@ -77,13 +80,16 @@ Base.metadata.create_all(bind=engine)
 
 # Dynamically include routers
 for tag in tags_metadata:
-    prefix = tag["prefix"] or ""  # Replace None with an empty string
-    app.include_router(tag["router"], prefix=prefix, tags=[tag["name"]])
+    app.include_router(
+        tag["router"],
+        prefix=tag["prefix"] or "",  # Replace None with an empty string
+        tags=[tag["name"]],
+    )
 
 
-# ===========================================================================================================================
-# =                                                Standalone way                                                        =
-# ===========================================================================================================================
+# ========================================================================
+# =                          Standalone way                              =
+# ========================================================================
 
 if __name__ == '__main__':
 
