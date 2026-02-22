@@ -1,16 +1,17 @@
-"""User management route handlers."""
+"""User management router."""
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user, get_password_hash, is_admin
-from app.db.session import get_db
-from app.models.user import User as UserModel
-from app.schemas.user import UserSchema, UserUpdateSchema
+from ..core.security import get_current_user, get_password_hash
+from ..db.session import get_db
+from ..dependencies import get_admin_user
+from ..models.user import User as UserModel
+from ..schemas.user import UserSchema, UserUpdateSchema
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["User Management"])
 
 
 @router.post("/create", name="Create User")
@@ -38,7 +39,6 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
 @router.get("/me", name="Read Current User")
 async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
     """Return the authenticated user's profile data."""
-    # Return a sanitized user response (do not expose hashed_password)
     return {
         "id": current_user.id,
         "username": current_user.username,
@@ -58,7 +58,6 @@ async def self_update_user(
     user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Check if the new username is already taken by another user
     if user_update.username and user_update.username != user.username:
         existing_user = (
             db.query(UserModel)
@@ -71,7 +70,6 @@ async def self_update_user(
     user.budget = user_update.budget
     if user_update.password:
         user.hashed_password = get_password_hash(user_update.password)
-    # Do not allow self-update of role or disabled
     db.commit()
     db.refresh(user)
     return {
@@ -86,9 +84,9 @@ async def self_update_user(
 @router.put("/update/{user_id}/", name="Admin Update User")
 async def admin_update_user(
     user_id: int,
-    user_update: UserUpdateSchema,  # <-- use the new schema
+    user_update: UserUpdateSchema,
     db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(is_admin)]
+    _admin: Annotated[UserModel, Depends(get_admin_user)]
 ):
     """Update any user fields by ID (admin only)."""
     del _admin
@@ -96,7 +94,6 @@ async def admin_update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user_update.username is not None:
-        # Check for unique username
         existing_user = (
             db.query(UserModel)
             .filter(
@@ -131,7 +128,7 @@ async def admin_update_user(
 async def delete_user(
     user_id: int,
     db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(is_admin)]
+    _admin: Annotated[UserModel, Depends(get_admin_user)]
 ):
     """Delete a user by ID (admin only)."""
     del _admin

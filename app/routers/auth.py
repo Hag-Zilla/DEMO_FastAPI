@@ -1,4 +1,4 @@
-"""Authentication and token endpoints."""
+"""Authentication and token router."""
 
 from datetime import timedelta
 from typing import Annotated
@@ -7,15 +7,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestFormStrict
 from sqlalchemy.orm import Session
 
-from app.core.config import JWT_EXPIRATION_MINUTES
-from app.core.security import authenticate_user, create_access_token
-from app.db.session import get_db
-from app.schemas.common import Token
+from ..core.config import JWT_EXPIRATION_MINUTES
+from ..core.security import authenticate_user, create_access_token
+from ..db.session import get_db
+from ..schemas.common import Token
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
 
-@router.post("/", name="Login", response_model=Token)
+@router.post("/token", name="Login", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
     db: Annotated[Session, Depends(get_db)]
