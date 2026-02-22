@@ -14,23 +14,29 @@
 """
 # ==================================    Modules import     =========================================
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
-from .core.config import JWT_EXPIRATION_MINUTES
+from .core.config import settings
+from .core.exceptions import AppException
+from .core.logging import get_logger
 from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
+
+# Initialize logger
+logger = get_logger(__name__)
 
 # Initialize the database (create tables)
 Base.metadata.create_all(bind=engine)
 
 # Create FastAPI application instance
 app = FastAPI(
-    title="Personal Expense Tracking API",
+    title=settings.APP_NAME,
     description=(
         "An API to manage personal expenses, set budgets, generate alerts, "
         "and create detailed reports."
     ),
-    version="1.0.0",
+    version=settings.APP_VERSION,
     openapi_tags=[
         {"name": "Main", "description": "Health check and main operations."},
         {"name": "Authentication", "description": "Endpoints for user authentication."},
@@ -40,6 +46,28 @@ app = FastAPI(
         {"name": "Alerts", "description": "Endpoints to generate alerts for budget overruns."},
     ]
 )
+
+
+# Exception handlers
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    """Handle custom AppException."""
+    logger.warning(f"AppException: {exc.detail} (status: {exc.status_code})")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle general exceptions."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 # Include all routers
 app.include_router(health.router)

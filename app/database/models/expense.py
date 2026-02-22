@@ -1,11 +1,12 @@
 """Expense database model."""
 
-from datetime import date
+from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 
 from ..session import Base
+from app.core.enums import ExpenseCategory
 
 
 class Expense(Base):
@@ -16,7 +17,7 @@ class Expense(Base):
     id = Column(Integer, primary_key=True, index=True)
     description = Column(String)
     amount = Column(Float)
-    date = Column(Date, default=date.today)
-    category = Column(String)
+    date = Column(DateTime, default=datetime.utcnow)
+    category = Column(Enum(ExpenseCategory))
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="expenses")

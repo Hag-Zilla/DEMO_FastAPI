@@ -1,12 +1,31 @@
-"""Application configuration management."""
+"""Application configuration management using Pydantic Settings."""
 
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
-# Load environment variables from .env file
-load_dotenv()
 
-# Centralized configuration variables
-SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret_key")  # Default
-ALGORITHM = os.getenv("ALGORITHM")
-JWT_EXPIRATION_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", "30"))  # Default to 30 minutes
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    # JWT Configuration
+    SECRET_KEY: str = "your_default_secret_key_change_in_production"
+    ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_MINUTES: int = 30
+
+    # Database Configuration
+    DATABASE_URL: str = "sqlite:///./expense_tracker.db"
+
+    # Application Configuration
+    APP_NAME: str = "Expense Tracker API"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
+
+    class Config:
+        """Pydantic config."""
+
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
+
+
+# Single instance of settings
+settings = Settings()
