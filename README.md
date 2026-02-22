@@ -47,7 +47,7 @@ The script will guide you through environment setup (Conda or venv) and install 
 conda activate demo_fastapi  # or: source ./venv/bin/activate
 
 # Start the server
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 **API is running at**: http://localhost:8000
