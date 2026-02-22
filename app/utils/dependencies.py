@@ -1,11 +1,11 @@
-"""Shared dependencies for the application."""
+"""Shared dependencies and utility functions."""
 
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 
-from .core.security import get_current_user
-from .models.user import User as UserModel
+from ..core.security import get_current_user
+from ..database.models.user import User as UserModel
 
 
 async def get_admin_user(

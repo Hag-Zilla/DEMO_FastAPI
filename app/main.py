@@ -1,9 +1,23 @@
-"""FastAPI application factory and initialization."""
+####################################################################################################
+#             __  __   ___   _   _  _  __ _____ __   __  _____  ___   ____    ____  _____
+#            |  \/  | / _ \ | \ | || |/ /| ____|\ \ / / |  ___|/ _ \ |  _ \  / ___|| ____|
+#            | |\/| || | | ||  \| || ' / |  _|   \ V /  | |_  | | | || |_) || |  _ |  _|
+#            | |  | || |_| || |\  || . \ | |___   | |   |  _| | |_| ||  _ < | |_| || |___
+#            |_|  |_| \___/ |_| \_||_|\_\|_____|  |_|   |_|    \___/ |_| \_\ \____||_____|
+#
+####################################################################################################
+
+"""
+    Fast API demo : Expanse tracker API
+    Handcraft with love and sweat by : Damien Mascheix @Hagzilla
+
+"""
+# ==================================    Modules import     =========================================
 
 from fastapi import FastAPI
 
 from .core.config import JWT_EXPIRATION_MINUTES
-from .db.session import Base, engine
+from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
 
 # Initialize the database (create tables)
@@ -40,3 +54,12 @@ app.include_router(reports.router)
 async def root():
     """Root endpoint."""
     return {"message": "Personal Expense Tracking API"}
+
+# ========================================================================
+# =                          Standalone way                              =
+# ========================================================================
+
+if __name__ == '__main__':
+
+    print("Try to do something smart...")
+    print("... but I don't know what yet.")

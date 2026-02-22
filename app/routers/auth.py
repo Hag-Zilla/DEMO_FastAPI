@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import JWT_EXPIRATION_MINUTES
 from ..core.security import authenticate_user, create_access_token
-from ..db.session import get_db
+from ..database.session import get_db
 from ..schemas.common import Token
 
 router = APIRouter(tags=["Authentication"])

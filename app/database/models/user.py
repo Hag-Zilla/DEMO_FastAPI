@@ -3,7 +3,7 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean
 from sqlalchemy.orm import relationship
 
-from app.db.session import Base
+from ..session import Base
 
 
 class User(Base):

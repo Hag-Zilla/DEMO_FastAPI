@@ -10,8 +10,8 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.core.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
-from app.db.session import get_db
-from app.models.user import User as UserModel
+from app.database.session import get_db
+from app.database.models.user import User as UserModel
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
