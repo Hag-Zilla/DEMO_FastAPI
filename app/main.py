@@ -1,6 +1,6 @@
 """FastAPI application factory and initialization."""
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 
 from .core.config import JWT_EXPIRATION_MINUTES
 from .db.session import Base, engine
