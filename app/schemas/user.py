@@ -1,8 +1,12 @@
+"""User-related Pydantic schemas."""
+
 from typing import Optional
 from pydantic import BaseModel, Field
 
-# User-related schemas
+
 class UserSchema(BaseModel):
+    """Schema for user creation."""
+
     username: str = Field(
         ...,
         min_length=3,
@@ -22,9 +26,11 @@ class UserSchema(BaseModel):
         description="The user's budget",
         example=1000.0
     )
-    # role and disabled removed from creation schema
+
 
 class UserUpdateSchema(BaseModel):
+    """Schema for user updates."""
+
     username: Optional[str] = Field(
         default=None,
         min_length=3,
@@ -54,9 +60,3 @@ class UserUpdateSchema(BaseModel):
         description="Whether the user is disabled",
         example=False
     )
-
-# Token-related schemas
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    model_config = {"from_attributes": True}

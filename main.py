@@ -8,20 +8,16 @@
 ####################################################################################################
 
 """
-    Fast API demo : Expanse tracker API
+    Fast API demo : Expense tracker API
     Handcraft with love and sweat by : Damien Mascheix @Hagzilla
 
 """
 # ==================================    Modules import     =========================================
 
 from fastapi import FastAPI
-from src.routes.user import router as user_router
-from src.routes.expense import router as expense_router
-from src.routes.report import router as report_router
-from src.routes.alert import router as alert_router
-from src.routes.health import router as health_router
-from src.routes.token import router as auth_router
-from src.database.database import Base, engine
+
+from app.api.v1.endpoints import users, auth, health, expenses, reports, alerts
+from app.db.session import Base, engine
 
 
 # Enriched tags metadata definition with names, descriptions, routers and prefixes
@@ -29,37 +25,37 @@ tags_metadata = [
     {
         "name": "Main",
         "description": "Health check and main operations.",
-        "router": health_router,
+        "router": health.router,
         "prefix": None
     },
     {
         "name": "Authentication",
         "description": "Endpoints for user authentication.",
-        "router": auth_router,
+        "router": auth.router,
         "prefix": "/token"
     },
     {
         "name": "User Management",
         "description": "Operations related to user creation and management.",
-        "router": user_router,
+        "router": users.router,
         "prefix": "/users"
     },
     {
         "name": "Expenses",
         "description": "Operations to add, update, and delete expenses.",
-        "router": expense_router,
+        "router": expenses.router,
         "prefix": "/expenses"
     },
     {
         "name": "Reports",
         "description": "Endpoints to generate monthly and custom period reports.",
-        "router": report_router,
+        "router": reports.router,
         "prefix": "/reports"
     },
     {
         "name": "Alerts",
         "description": "Endpoints to generate alerts for budget overruns.",
-        "router": alert_router,
+        "router": alerts.router,
         "prefix": "/alerts"
     }
 ]
@@ -72,7 +68,10 @@ app = FastAPI(
         "and create detailed reports."
     ),
     version="1.0.0",
-    openapi_tags=[{"name": tag["name"], "description": tag["description"]} for tag in tags_metadata]
+    openapi_tags=[
+        {"name": tag["name"], "description": tag["description"]}
+        for tag in tags_metadata
+    ]
 )
 
 # Initialize the database
@@ -80,9 +79,10 @@ Base.metadata.create_all(bind=engine)
 
 # Dynamically include routers
 for tag in tags_metadata:
+    prefix = tag["prefix"] if tag["prefix"] is not None else ""
     app.include_router(
         tag["router"],
-        prefix=tag["prefix"] or "",  # Replace None with an empty string
+        prefix=prefix,
         tags=[tag["name"]],
     )
 
@@ -95,3 +95,7 @@ if __name__ == '__main__':
 
     print("Try to do something smart...")
     print("... but I don't know what yet.")
+
+
+# Alias for uvicorn compatibility
+api = app
