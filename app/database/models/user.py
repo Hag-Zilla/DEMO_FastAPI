@@ -1,9 +1,10 @@
 """User database model."""
 
-from sqlalchemy import Column, Integer, String, Float, Boolean
+from sqlalchemy import Column, Integer, String, Float, Boolean, Enum
 from sqlalchemy.orm import relationship
 
 from ..session import Base
+from app.core.enums import UserRole
 
 
 class User(Base):
@@ -15,6 +16,6 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     budget = Column(Float)
-    role = Column(String, default="user")  # Default role is "user"
+    role = Column(Enum(UserRole), default=UserRole.USER)
     disabled = Column(Boolean, default=False)  # Indicates if the user account is disabled
     expenses = relationship("Expense", back_populates="owner")

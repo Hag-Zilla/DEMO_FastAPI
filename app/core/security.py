@@ -9,9 +9,14 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.core.config import ALGORITHM, JWT_EXPIRATION_MINUTES, SECRET_KEY
+from app.core.config import settings
+from app.core.exceptions import AuthenticationException, AuthorizationException
+from app.core.enums import UserRole
+from app.core.logging import get_logger
 from app.database.session import get_db
 from app.database.models.user import User as UserModel
+
+logger = get_logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -32,15 +37,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except JWTError as e:
-        raise Exception("Invalid authentication credentials") from e
+        raise AuthenticationException("Invalid authentication credentials") from e
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
 ) -> UserModel:
     """
     Dependency to retrieve the current authenticated user from the JWT token.
@@ -50,32 +55,26 @@ async def get_current_user(
     - Raises HTTP 403 if the user account is disabled.
     - Returns the User SQLAlchemy model instance if authentication is successful.
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = decode_jwt_token(token)
         username: str = payload.get("sub")
         if username is None:
-            raise credentials_exception
+            logger.warning("JWT token missing 'sub' claim")
+            raise AuthenticationException()
         user = db.query(UserModel).filter(UserModel.username == username).first()
         if user is None:
-            raise credentials_exception
+            logger.warning(f"User not found for token: {username}")
+            raise AuthenticationException()
         if user.disabled:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is disabled",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            logger.warning(f"Login attempt with disabled account: {username}")
+            raise AuthorizationException("User account is disabled")
         return user  # Return the SQLAlchemy model instance directly
 
+    except (AuthenticationException, AuthorizationException):
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
-        ) from e
+        logger.error(f"Unexpected error in get_current_user: {e}", exc_info=True)
+        raise AuthenticationException() from e
 
 
 def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
@@ -84,11 +83,9 @@ def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
     Raises HTTP 403 if the user is not an admin.
     Returns the current user if authorized.
     """
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action."
-        )
+    if current_user.role != UserRole.ADMIN:
+        logger.warning(f"Unauthorized access attempt by user {current_user.id}")
+        raise AuthorizationException("You do not have permission to perform this action.")
     return current_user
 
 
@@ -120,9 +117,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRATION_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
