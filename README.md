@@ -2,35 +2,40 @@
 
 # Personal Expense Tracking API
 
-A lightweight FastAPI demo showcasing a complete REST API for expense management with authentication, budgeting, and reporting.
+A production-ready FastAPI demo showcasing a complete REST API for expense management with authentication, budgeting, and reporting.
+
+**Built with:** FastAPI • SQLAlchemy • Pydantic • SQLite
 
 </div>
 
 ---
 
-## About
+## 📋 About
 
-This is a personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, and database modeling.
+A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
 
 ---
 
-## Features
+## ✨ Features
 
-- **User Management**: Create accounts, authentication via OAuth2, role-based access (admin/user)
-- **Expense Tracking**: Add, update, delete expenses with categorization and date tracking
-- **Budget Management**: Set global monthly budgets with automatic tracking
-- **Alerts**: Get notified when expenses exceed budgeted amounts
+- **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/user)
+- **Expense Tracking**: Add, update, delete expenses with typed categories and datetime tracking
+- **Budget Management**: Set personal budgets with automatic tracking
+- **Alerts**: Real-time detection of budget overruns
 - **Reports**: Generate monthly and custom-period expense reports by category
-- **Admin Dashboard**: View all users and access system-wide reports
+- **Admin Interface**: System-wide user and expense management
+- **Error Handling**: Custom exception classes with proper HTTP status codes
+- **Logging**: Console and file-based logging for monitoring
+- **Type Validation**: Pydantic v2 with enums for categories and roles
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- Conda or venv
+- Conda (recommended) or venv
 
 ### Setup Environment
 
@@ -38,7 +43,15 @@ This is a personal expense tracking API built with **FastAPI** and **SQLite**. U
 bash setup.sh
 ```
 
-The script will guide you through environment setup (Conda or venv) and install all dependencies.
+The script guides you through environment setup (Conda or venv) and installs all dependencies.
+
+### Create `.env` File
+
+Copy the example and adjust settings:
+
+```bash
+cp .env.example .env
+```
 
 ### Run the API
 
@@ -47,14 +60,14 @@ The script will guide you through environment setup (Conda or venv) and install 
 conda activate demo_fastapi  # or: source ./venv/bin/activate
 
 # Start the server
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 **API is running at**: http://localhost:8000
 
 ---
 
-## Access the API
+## 🌐 Access the API
 
 - **Interactive Docs (Swagger)**: http://localhost:8000/docs
 - **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
@@ -62,97 +75,146 @@ uvicorn main:app --reload
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-DEMO_FastAPI/
-├── main.py                 # FastAPI app entry point
-├── requirements.txt        # Python dependencies
-├── environment.yml         # Conda environment config
-├── setup.sh               # Setup script
+app/
+├── main.py                      # FastAPI application factory + exception handlers
 │
-├── src/
-│   ├── config.py          # Configuration
-│   ├── schemas.py         # Pydantic models (request/response)
-│   ├── auth_manager.py    # Authentication & hashing
-│   │
-│   ├── database/
-│   │   ├── database.py    # SQLAlchemy setup
-│   │   └── models.py      # ORM models (User, Expense)
-│   │
-│   └── routes/
-│       ├── user.py        # User endpoints
-│       ├── expense.py     # Expense endpoints
-│       ├── alert.py       # Alert endpoints
-│       ├── report.py      # Report endpoints
-│       ├── token.py       # Authentication endpoints
-│       └── health.py      # Health check endpoints
+├── core/                        # Infrastructure & configuration
+│   ├── config.py               # Pydantic Settings (environment config)
+│   ├── security.py             # JWT, authentication, password hashing
+│   ├── exceptions.py           # Custom exception classes
+│   ├── enums.py                # UserRole, ExpenseCategory enums
+│   └── logging.py              # Logging configuration (file + console)
+│
+├── database/                    # Data layer (Recettes vs Ustensiles)
+│   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
+│   └── models/
+│       ├── user.py             # User ORM model (id, username, budget, role)
+│       └── expense.py          # Expense ORM model (id, amount, category, date)
+│
+├── routers/                     # API endpoints (APIRouter pattern)
+│   ├── auth.py                 # POST /token (login)
+│   ├── users.py                # User CRUD endpoints
+│   ├── expenses.py             # Expense endpoints (stub)
+│   ├── alerts.py               # Budget alert endpoints (stub)
+│   ├── reports.py              # Report generation (stub)
+│   └── health.py               # Health check
+│
+├── schemas/                     # Pydantic request/response models
+│   ├── user.py                 # UserCreate, UserUpdate, UserResponse
+│   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
+│   └── common.py               # Token schema
+│
+└── utils/                       # Generic utilities (Ustensiles)
+    └── dependencies.py         # get_admin_user() dependency
+
+Configuration Files:
+├── .env.example                # Environment variables template
+├── requirements.txt            # Python dependencies
+├── environment.yml             # Conda environment config
+└── setup.sh                    # Setup script
 ```
 
 ---
 
-## Database
+## ⚙️ Configuration
 
-### Technology
+### Environment Variables (`.env`)
 
-- **Engine**: SQLite (file-based, no server setup required)
-- **ORM**: SQLAlchemy
-- **Auto-migration**: Tables created automatically on app startup
+```env
+# JWT Configuration
+SECRET_KEY=your_super_secret_key_here_change_in_production
+ALGORITHM=HS256
+JWT_EXPIRATION_MINUTES=30
 
-### Schema
+# Database Configuration
+DATABASE_URL=sqlite:///./expense_tracker.db
+
+# Application Configuration
+APP_NAME=Expense Tracker API
+APP_VERSION=1.0.0
+DEBUG=False
+```
+
+Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
+
+### Logging
+
+Logs are written to:
+- **Console**: For development feedback
+- **File**: `logs/app.log` for production monitoring
+
+Configured in `app/core/logging.py`.
+
+---
+
+## 🗄️ Database
+
+### Technology Stack
+
+- **Engine**: SQLite (file-based, no server required)
+- **ORM**: SQLAlchemy 2.0.46
+- **Auto-creation**: Tables created automatically on app startup
+- **Type Validation**: Pydantic models with SQLAlchemy mapped classes
+
+### Database Schema
 
 **Users Table**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | INTEGER | Primary key |
-| username | STRING | Unique identifier |
-| hashed_password | STRING | Bcrypt hashed |
-| budget | FLOAT | Monthly budget |
-| role | STRING | "user" or "admin" |
-| disabled | BOOLEAN | Account status |
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | Primary Key | Auto-increment |
+| username | STRING | UNIQUE, NOT NULL | Login identifier |
+| hashed_password | STRING | NOT NULL | Argon2 hashed |
+| budget | FLOAT | NOT NULL | Monthly budget limit |
+| role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, user |
+| disabled | BOOLEAN | default=False | Account status |
 
 **Expenses Table**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | INTEGER | Primary key |
-| description | STRING | Expense description |
-| amount | FLOAT | Amount spent |
-| date | STRING | Date incurred |
-| category | STRING | Expense category |
-| user_id | INTEGER | Foreign key → users.id |
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | Primary Key | Auto-increment |
+| description | STRING | NOT NULL | Expense description |
+| amount | FLOAT | NOT NULL | Amount > 0 |
+| date | DATETIME | NOT NULL | When incurred (default=now) |
+| category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
+| user_id | INTEGER | Foreign Key → users.id | Expense owner |
 
 ### Managing the Database
 
 Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQLite database graphically.
 
-⚠️ **Important**: Stop the API server before making manual database changes to avoid locks.
+⚠️ **Important**: Stop the API server before making manual database changes to avoid file locks.
 
 ---
 
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Authentication
-- `POST /token` – Login and get JWT token
+- `POST /token` – Login with username/password, returns JWT token
 
 ### User Management
-- `POST /users/create` – Create new user
-- `GET /users/me` – Get current user profile
-- `PUT /users/update/` – Update own profile
+- `POST /users/create` – Create new standard user account (status: 201)
+- `GET /users/me` – Get authenticated user's profile
+- `PUT /users/update/` – Update authenticated user's profile
 - `PUT /users/update/{user_id}/` – Admin: update any user
-- `DELETE /users/delete/{user_id}/` – Admin: delete user
+- `DELETE /users/delete/{user_id}/` – Admin: delete user (status: 204)
 
-### Expenses
-- `GET /expenses/` – List user's expenses
+### Expenses (Stub)
+- `GET /expenses/` – List authenticated user's expenses
 - `POST /expenses/` – Add new expense
 - `PUT /expenses/{expense_id}` – Update expense
 - `DELETE /expenses/{expense_id}` – Delete expense
 
-### Reports
-- `GET /reports/monthly/{year}/{month}` – Monthly report
+### Reports (Stub)
+- `GET /reports/monthly/{year}/{month}` – Monthly expense summary
 - `GET /reports/period` – Custom period report
 - `GET /reports/all` – Admin: all users' reports
 
-### Alerts
+### Alerts (Stub)
 - `GET /alerts/` – Check for budget overruns
 
 ### Health
@@ -160,29 +222,151 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 
 ---
 
-## Deployment Notes
+## 🔐 Authentication & Authorization
 
-### For Production
+- **Method**: OAuth2 with JWT (Bearer tokens)
+- **Token Expiration**: Configurable (`JWT_EXPIRATION_MINUTES`)
+- **Password Hashing**: Argon2 via passlib
+- **Role-based Access**: `@dependency` get_admin_user() for protected endpoints
 
-SQLite works fine for small deployments, but consider migrating to PostgreSQL or MySQL for:
-- Concurrent write operations
-- Multi-instance deployments
-- Larger datasets
+### Example Authentication Flow
+
+```bash
+# 1. Login
+curl -X POST "http://localhost:8000/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=john_doe&password=secure_password123"
+
+# Response:
+# {"access_token": "eyJhbGc...", "token_type": "bearer"}
+
+# 2. Use token in requests
+curl -X GET "http://localhost:8000/users/me" \
+  -H "Authorization: Bearer eyJhbGc..."
+```
+
+---
+
+## 🛡️ Exception Handling
+
+Custom exceptions with proper HTTP status codes:
+
+| Exception | Status | Use Case |
+|-----------|--------|----------|
+| `AppException` | 400 | Generic application errors |
+| `ValidationException` | 422 | Request validation failures |
+| `AuthenticationException` | 401 | Invalid credentials |
+| `AuthorizationException` | 403 | Insufficient permissions |
+| `ResourceNotFoundException` | 404 | Resource doesn't exist |
+| `ConflictException` | 409 | Resource conflict (duplicate) |
+| `InternalServerException` | 500 | Server errors |
+
+All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
+
+---
+
+## 📊 Data Structures
+
+### Enums
+
+**UserRole**
+```python
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+```
+
+**ExpenseCategory**
+```python
+class ExpenseCategory(str, Enum):
+    FOOD = "food"
+    TRANSPORTATION = "transportation"
+    ENTERTAINMENT = "entertainment"
+    UTILITIES = "utilities"
+    HEALTHCARE = "healthcare"
+    EDUCATION = "education"
+    SHOPPING = "shopping"
+    OTHER = "other"
+```
+
+### Request/Response Models
+
+**User Operations**
+- `UserCreate`: username, password (min 6 chars), budget (≥ 0)
+- `UserUpdate`: all fields optional
+- `UserResponse`: includes id, role, disabled status
+
+**Expense Operations**
+- `ExpenseCreate`: description, amount (> 0), category enum
+- `ExpenseUpdate`: all fields optional
+- `ExpenseResponse`: includes id, datetime, user_id
+
+---
+
+## 🧪 Testing
+
+Run the interactive API documentation to test endpoints:
+
+```bash
+# After starting the server, visit:
+http://localhost:8000/docs
+```
+
+Or use curl:
+
+```bash
+# Create user
+curl -X POST "http://localhost:8000/users/create" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
+
+# Get current user
+curl -X GET "http://localhost:8000/users/me" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+---
+
+## 🚢 Deployment Notes
+
+### Development
+
+```bash
+uvicorn app.main:app --reload
+```
+
+### Production
+
+```bash
+# Use Gunicorn with Uvicorn workers
+gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+```
+
+### Database Migration
+
+SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
+
+```python
+# app/core/config.py
+# DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"
+```
 
 The modular design allows easy database swaps with minimal code changes.
 
 ---
 
-## Resources
+## 📚 Resources
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/tutorial/first-steps/)
-- [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/http-basic-auth/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
 - [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
+- [Python-Jose JWT](https://python-jose.readthedocs.io/)
+- [Passlib Hashing](https://passlib.readthedocs.io/)
 - [DBeaver Database Tool](https://dbeaver.io/)
-- [FastAPI on Conda](https://anaconda.org/conda-forge/fastapi)
 
 ---
 
-## License
+## 📝 License
 
 See [LICENSE](LICENSE) file for details.
