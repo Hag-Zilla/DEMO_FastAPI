@@ -1,21 +1,17 @@
 """User management route handlers."""
 
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from src.database.database import get_db
-from src.database.models import User as UserModel
-from src.auth_manager import get_password_hash
-from src.schemas import UserSchema, UserUpdateSchema
-from src.auth_manager import get_current_user, is_admin
+
+from app.core.security import get_current_user, get_password_hash, is_admin
+from app.db.session import get_db
+from app.models.user import User as UserModel
+from app.schemas.user import UserSchema, UserUpdateSchema
 
 router = APIRouter()
 
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-################### ROUTES ###################
 
 @router.post("/create", name="Create User")
 async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)]):
@@ -38,6 +34,7 @@ async def create_user(user: UserSchema, db: Annotated[Session, Depends(get_db)])
         "disabled": db_user.disabled,
     }
 
+
 @router.get("/me", name="Read Current User")
 async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
     """Return the authenticated user's profile data."""
@@ -49,6 +46,7 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
         "role": current_user.role,
         "disabled": current_user.disabled
     }
+
 
 @router.put("/update/", name="Self Update User")
 async def self_update_user(
@@ -83,6 +81,7 @@ async def self_update_user(
         "role": user.role,
         "disabled": user.disabled
     }
+
 
 @router.put("/update/{user_id}/", name="Admin Update User")
 async def admin_update_user(
@@ -127,9 +126,12 @@ async def admin_update_user(
         "disabled": user.disabled
     }
 
+
 @router.delete("/delete/{user_id}/", name="Delete User")
-async def delete_user(user_id: int,db: Annotated[Session, Depends(get_db)],
-                      _admin: Annotated[UserModel, Depends(is_admin)]
+async def delete_user(
+    user_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    _admin: Annotated[UserModel, Depends(is_admin)]
 ):
     """Delete a user by ID (admin only)."""
     del _admin
