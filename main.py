@@ -8,94 +8,19 @@
 ####################################################################################################
 
 """
-    Fast API demo : Expense tracker API
+    Fast API demo : Expense Tracker API
     Handcraft with love and sweat by : Damien Mascheix @Hagzilla
 
+    This entry point exports the FastAPI application instance.
+    Use with: uvicorn main:app --reload
 """
-# ==================================    Modules import     =========================================
 
-from fastapi import FastAPI
+from app.main import app
 
-from app.api.v1.endpoints import users, auth, health, expenses, reports, alerts
-from app.db.session import Base, engine
-
-
-# Enriched tags metadata definition with names, descriptions, routers and prefixes
-tags_metadata = [
-    {
-        "name": "Main",
-        "description": "Health check and main operations.",
-        "router": health.router,
-        "prefix": None
-    },
-    {
-        "name": "Authentication",
-        "description": "Endpoints for user authentication.",
-        "router": auth.router,
-        "prefix": "/token"
-    },
-    {
-        "name": "User Management",
-        "description": "Operations related to user creation and management.",
-        "router": users.router,
-        "prefix": "/users"
-    },
-    {
-        "name": "Expenses",
-        "description": "Operations to add, update, and delete expenses.",
-        "router": expenses.router,
-        "prefix": "/expenses"
-    },
-    {
-        "name": "Reports",
-        "description": "Endpoints to generate monthly and custom period reports.",
-        "router": reports.router,
-        "prefix": "/reports"
-    },
-    {
-        "name": "Alerts",
-        "description": "Endpoints to generate alerts for budget overruns.",
-        "router": alerts.router,
-        "prefix": "/alerts"
-    }
-]
-
-# FastAPI app
-app = FastAPI(
-    title="Personal Expense Tracking API",
-    description=(
-        "An API to manage personal expenses, set budgets, generate alerts, "
-        "and create detailed reports."
-    ),
-    version="1.0.0",
-    openapi_tags=[
-        {"name": tag["name"], "description": tag["description"]}
-        for tag in tags_metadata
-    ]
-)
-
-# Initialize the database
-Base.metadata.create_all(bind=engine)
-
-# Dynamically include routers
-for tag in tags_metadata:
-    prefix = tag["prefix"] if tag["prefix"] is not None else ""
-    app.include_router(
-        tag["router"],
-        prefix=prefix,
-        tags=[tag["name"]],
-    )
-
-
-# ========================================================================
-# =                          Standalone way                              =
-# ========================================================================
-
-if __name__ == '__main__':
-
-    print("Try to do something smart...")
-    print("... but I don't know what yet.")
-
-
-# Alias for uvicorn compatibility
+# Alias for alternative uvicorn import
 api = app
+
+if __name__ == "__main__":
+    """For development. Use uvicorn main:app --reload in production."""
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
