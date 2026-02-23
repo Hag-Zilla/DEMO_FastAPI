@@ -62,6 +62,20 @@ app = FastAPI(
     ]
 )
 
+app.state.startup_complete = False
+
+
+@app.on_event("startup")
+async def on_startup():
+    """Mark application startup as completed."""
+    app.state.startup_complete = True
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    """Mark application as not started when shutting down."""
+    app.state.startup_complete = False
+
 
 # Exception handlers
 @app.exception_handler(AppException)
@@ -93,8 +107,8 @@ app.include_router(alerts.router)
 app.include_router(reports.router)
 
 
-@app.get("/")
-async def root():
+@app.get("/", name="API Root", tags=["Main"])
+async def read_root():
     """Root endpoint."""
     return {"message": "Personal Expense Tracking API"}
 

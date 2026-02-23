@@ -88,7 +88,10 @@ uvicorn app.main:app --reload
 
 - **Interactive Docs (Swagger)**: http://localhost:8000/docs
 - **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
+- **Liveness Check**: http://localhost:8000/health/live
+- **Readiness Check**: http://localhost:8000/health/ready
+- **Startup Check**: http://localhost:8000/health/startup
+- **Legacy Health Check**: http://localhost:8000/health
 
 ---
 
@@ -117,7 +120,7 @@ app/
 │   ├── expenses.py             # Expense endpoints (stub)
 │   ├── alerts.py               # Budget alert endpoints (stub)
 │   ├── reports.py              # Report generation (stub)
-│   └── health.py               # Health check
+│   └── health.py               # Liveness and readiness checks
 │
 ├── schemas/                     # Pydantic request/response models
 │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
@@ -240,7 +243,10 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 - `GET /alerts/` – Check for budget overruns
 
 ### Health
-- `GET /health` – API status check
+- `GET /health/live` – Process liveness check
+- `GET /health/ready` – Readiness check (includes database ping)
+- `GET /health/startup` – Startup phase completion check
+- `GET /health` – Legacy alias for liveness
 
 ---
 
