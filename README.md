@@ -8,15 +8,13 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
----
-
 ## 📋 About
+---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
 
----
-
 ## ✨ Features
+---
 
 - **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/user)
 - **Expense Tracking**: Add, update, delete expenses with typed categories and datetime tracking
@@ -28,9 +26,8 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 - **Logging**: Console and file-based logging for monitoring
 - **Type Validation**: Pydantic v2 with enums for categories and roles
 
----
-
 ## 🚀 Quick Start
+---
 
 ### Prerequisites
 
@@ -82,9 +79,8 @@ uvicorn app.main:app --reload
 
 **API is running at**: http://localhost:8000
 
----
-
 ## 🌐 Access the API
+---
 
 - **Interactive Docs (Swagger)**: http://localhost:8000/docs
 - **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
@@ -93,9 +89,8 @@ uvicorn app.main:app --reload
 - **Startup Check**: http://localhost:8000/health/startup
 - **Legacy Health Check**: http://localhost:8000/health
 
----
-
 ## 📁 Project Structure
+---
 
 ```
 app/
@@ -137,9 +132,8 @@ Configuration Files:
 └── setup.sh                    # Setup script
 ```
 
----
-
 ## ⚙️ Configuration
+---
 
 ### Environment Variables (`.env`)
 
@@ -172,9 +166,8 @@ Logs are written to:
 
 Configured via YAML in `config/logging.yaml`, loaded by `app/core/logging.py`.
 
----
-
 ## 🗄️ Database
+---
 
 ### Technology Stack
 
@@ -213,9 +206,8 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 
 ⚠️ **Important**: Stop the API server before making manual database changes to avoid file locks.
 
----
-
 ## 🔌 API Endpoints
+---
 
 ### Authentication
 - `POST /token` – Login with username/password, returns JWT token
@@ -248,9 +240,8 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 - `GET /health/startup` – Startup phase completion check
 - `GET /health` – Legacy alias for liveness
 
----
-
 ## 🔐 Authentication & Authorization
+---
 
 - **Method**: OAuth2 with JWT (Bearer tokens)
 - **Token Expiration**: Configurable (`JWT_EXPIRATION_MINUTES`)
@@ -273,9 +264,8 @@ curl -X GET "http://localhost:8000/users/me" \
   -H "Authorization: Bearer eyJhbGc..."
 ```
 
----
-
 ## 🛡️ Exception Handling
+---
 
 Custom exceptions with proper HTTP status codes:
 
@@ -291,9 +281,8 @@ Custom exceptions with proper HTTP status codes:
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
 
----
-
 ## 📊 Data Structures
+---
 
 ### Enums
 
@@ -329,9 +318,9 @@ class ExpenseCategory(str, Enum):
 - `ExpenseUpdate`: all fields optional
 - `ExpenseResponse`: includes id, datetime, user_id
 
----
 
 ## 🧪 Testing
+---
 
 Run the interactive API documentation to test endpoints:
 
@@ -356,6 +345,7 @@ curl -X GET "http://localhost:8000/users/me" \
 ---
 
 ## 🚢 Deployment Notes
+---
 
 ### Development
 
@@ -381,9 +371,8 @@ SQLite works fine for small deployments. For production at scale, consider Postg
 
 The modular design allows easy database swaps with minimal code changes.
 
----
-
 ## 📚 Resources
+---
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)
@@ -393,8 +382,30 @@ The modular design allows easy database swaps with minimal code changes.
 - [Passlib Hashing](https://passlib.readthedocs.io/)
 - [DBeaver Database Tool](https://dbeaver.io/)
 
+## 🤝 Contributing
 ---
 
+Contributions are welcome! If you have scripts, tools, or improvements to share:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-tool`)
+3. Commit your changes (`git commit -m 'Add some amazing tool'`)
+4. Push to the branch (`git push origin feature/amazing-tool`)
+5. Open a Pull Request
+
+Please ensure your scripts include:
+- Clear documentation
+- Error handling
+- Usage instructions
+- Comments in English
+
+
+## 💬 Support
+---
+
+> Maintained by [Hag-Zilla](https://github.com/Hag-Zilla)
+
 ## 📝 License
+---
 
 See [LICENSE](LICENSE) file for details.
