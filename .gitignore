@@ -140,3 +140,6 @@ dmypy.json
 
 # Database backups
 *.bak
+
+# Project-specific files
+.admin_bootstrap_done
