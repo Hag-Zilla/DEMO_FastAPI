@@ -20,11 +20,14 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
 
         # Extract client IP (support X-Forwarded-For for proxies)
-        client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
+        client_ip = (
+            request.headers.get("X-Forwarded-For")
+            or (request.client.host if request.client else "unknown")
+        )
 
         try:
             response = await call_next(request)
-        except Exception as exc:
+        except Exception:
             duration = time.time() - start_time
             logger.error(
                 "%s %s 500 %.3fs %s",
@@ -32,6 +35,7 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
                 request.url.path,
                 duration,
                 client_ip,
+                exc_info=True,
             )
             raise
 
