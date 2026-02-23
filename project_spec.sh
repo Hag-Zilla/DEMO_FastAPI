@@ -40,6 +40,13 @@ fi
 
 read -r -s -p "Enter your ADM_SECRET_KEY for the admin account: " ADM_SECRET_KEY
 echo
+read -r -s -p "Confirm your ADM_SECRET_KEY: " ADM_SECRET_KEY_CONFIRM
+echo
+
+if [ "${ADM_SECRET_KEY}" != "${ADM_SECRET_KEY_CONFIRM}" ]; then
+        echo "Error: password confirmation does not match."
+        exit 1
+fi
 
 if [ -z "${ADM_SECRET_KEY}" ]; then
   echo "Error: ADM_SECRET_KEY cannot be empty."
