@@ -48,7 +48,7 @@ def configure_logging() -> None:
     """Configure application logging once on the root logger."""
     root_logger = logging.getLogger()
 
-    if getattr(root_logger, "_expense_tracker_configured", False):
+    if root_logger.handlers:
         return
 
     logs_dir = Path("logs")
@@ -70,7 +70,6 @@ def configure_logging() -> None:
         logging_config["handlers"]["file"]["level"] = log_level
 
     dictConfig(logging_config)
-    root_logger._expense_tracker_configured = True
 
 
 configure_logging()
