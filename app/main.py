@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 from .core.config import settings
 from .core.exceptions import AppException
 from .core.logging import get_logger
+from .core.middleware import HTTPLoggingMiddleware
 from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
 
@@ -61,6 +62,9 @@ app = FastAPI(
         },
     ]
 )
+
+# Add HTTP logging middleware
+app.add_middleware(HTTPLoggingMiddleware)
 
 app.state.startup_complete = False
 
