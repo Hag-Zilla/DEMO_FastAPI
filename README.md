@@ -170,7 +170,7 @@ Logs are written to:
 - **Console**: For development feedback
 - **File**: `logs/app.log` for production monitoring
 
-Configured in `app/core/logging.py`.
+Configured via YAML in `config/logging.yaml`, loaded by `app/core/logging.py`.
 
 ---
 
