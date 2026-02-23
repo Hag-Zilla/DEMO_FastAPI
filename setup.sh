@@ -66,6 +66,18 @@ create_conda_env() {
         echo "Conda is not installed. Please install Conda before proceeding."
         exit 1
     fi
+
+    # Check if Conda environment already exists
+    if conda env list | awk '{print $1}' | grep -Fxq "$ENV_NAME"; then
+        echo "Warning: Conda environment '$ENV_NAME' already exists."
+        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
+        if [ "${confirm,,}" = "y" ]; then
+            run_command "conda env remove -n $ENV_NAME -y"
+        else
+            echo "Aborting setup."
+            exit 0
+        fi
+    fi
     
     # Create the Conda environment
     run_command "conda env create --file=$ENV_FILE"
