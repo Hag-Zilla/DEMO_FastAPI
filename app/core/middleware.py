@@ -36,6 +36,13 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
                 duration,
                 client_ip,
                 exc_info=True,
+                extra={
+                    "http_method": request.method,
+                    "http_path": request.url.path,
+                    "http_status": 500,
+                    "duration_ms": round(duration * 1000, 3),
+                    "client_ip": client_ip,
+                },
             )
             raise
 
@@ -50,6 +57,13 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
                 response.status_code,
                 duration,
                 client_ip,
+                extra={
+                    "http_method": request.method,
+                    "http_path": request.url.path,
+                    "http_status": response.status_code,
+                    "duration_ms": round(duration * 1000, 3),
+                    "client_ip": client_ip,
+                },
             )
 
         return response
