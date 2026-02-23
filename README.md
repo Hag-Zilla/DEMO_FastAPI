@@ -147,7 +147,7 @@ ALGORITHM=HS256
 JWT_EXPIRATION_MINUTES=30
 
 # Database Configuration
-DATABASE_URL=sqlite:///./expense_tracker.db
+DATABASE_URL=sqlite:///./data/expense_tracker.db
 
 # Application Configuration
 APP_NAME=Expense Tracker API
@@ -156,6 +156,10 @@ DEBUG=False
 ```
 
 Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
+
+- `DATABASE_URL` is the single source of truth for database connection.
+- For SQLite, the app auto-creates the parent folder (default: `data/`).
+- `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
 
 ### Logging
 
