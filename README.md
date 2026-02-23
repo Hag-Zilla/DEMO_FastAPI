@@ -43,7 +43,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 bash setup.sh
 ```
 
-The script guides you through environment setup (Conda or venv) and installs all dependencies.
+The script guides you through environment setup (Conda or venv), installs dependencies, and runs one-time admin bootstrap.
 
 ### Create `.env` File
 
@@ -52,6 +52,23 @@ Copy the example and adjust settings:
 ```bash
 cp .env.example .env
 ```
+
+### Admin Bootstrap (One-Shot)
+
+During `setup.sh`, `project_spec.sh` is executed to create the initial `admin` user.
+
+- The bootstrap runs only once and writes a lock file: `.admin_bootstrap_done`
+- If you re-run setup later, admin bootstrap is skipped automatically
+- If `admin` already exists and you force rerun, explicit confirmation is required
+- Admin secret policy: min 12 chars, uppercase, lowercase, digit, special char
+- To force a manual rerun:
+
+```bash
+ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh
+```
+
+⚠️ Security note: the admin secret is not persisted in `.env`.
+⚠️ Dependency note: Argon2 backend is installed via `requirements.txt` (`argon2-cffi`), not at bootstrap runtime.
 
 ### Run the API
 
@@ -130,7 +147,7 @@ ALGORITHM=HS256
 JWT_EXPIRATION_MINUTES=30
 
 # Database Configuration
-DATABASE_URL=sqlite:///./expense_tracker.db
+DATABASE_URL=sqlite:///./data/expense_tracker.db
 
 # Application Configuration
 APP_NAME=Expense Tracker API
@@ -139,6 +156,10 @@ DEBUG=False
 ```
 
 Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
+
+- `DATABASE_URL` is the single source of truth for database connection.
+- For SQLite, the app auto-creates the parent folder (default: `data/`).
+- `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
 
 ### Logging
 
@@ -203,18 +224,19 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 - `PUT /users/update/{user_id}/` – Admin: update any user
 - `DELETE /users/delete/{user_id}/` – Admin: delete user (status: 204)
 
-### Expenses (Stub)
+### Expenses
 - `GET /expenses/` – List authenticated user's expenses
 - `POST /expenses/` – Add new expense
+- `GET /expenses/{expense_id}` – Get one expense by ID
 - `PUT /expenses/{expense_id}` – Update expense
 - `DELETE /expenses/{expense_id}` – Delete expense
 
-### Reports (Stub)
+### Reports
 - `GET /reports/monthly/{year}/{month}` – Monthly expense summary
 - `GET /reports/period` – Custom period report
 - `GET /reports/all` – Admin: all users' reports
 
-### Alerts (Stub)
+### Alerts
 - `GET /alerts/` – Check for budget overruns
 
 ### Health
