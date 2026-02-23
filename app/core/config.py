@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = 30
 
     # Database Configuration
-    DATABASE_URL: str = "sqlite:///./expense_tracker.db"
+    DATABASE_URL: str = "sqlite:///./data/expense_tracker.db"
 
     # Application Configuration
     APP_NAME: str = "Expense Tracker API"
