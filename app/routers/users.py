@@ -19,13 +19,18 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/users", tags=["User Management"])
 
 
-@router.post("/create", name="Create User", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/create",
+    name="Create User",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
     """Create a new standard user account."""
     # Check if username already exists
     existing_user = db.query(UserModel).filter(UserModel.username == user.username).first()
     if existing_user:
-        logger.warning(f"Attempt to create user with existing username: {user.username}")
+        logger.warning("Attempt to create user with existing username: %s", user.username)
         raise ConflictException(f"Username '{user.username}' already taken")
 
     hashed_password = get_password_hash(user.password)
@@ -39,7 +44,7 @@ async def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)])
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    logger.info(f"User created: {user.username}")
+    logger.info("User created: %s", user.username)
     return db_user
 
 
@@ -69,7 +74,9 @@ async def self_update_user(
         )
         if existing_user:
             logger.warning(
-                f"User {current_user.id} tried to change username to existing one: {user_update.username}"
+                "User %s tried to change username to existing one: %s",
+                current_user.id,
+                user_update.username,
             )
             raise ConflictException(f"Username '{user_update.username}' already taken")
 
@@ -83,7 +90,7 @@ async def self_update_user(
 
     db.commit()
     db.refresh(user)
-    logger.info(f"User {current_user.id} updated their profile")
+    logger.info("User %s updated their profile", current_user.id)
     return user
 
 
@@ -111,7 +118,11 @@ async def admin_update_user(
             .first()
         )
         if existing_user:
-            logger.warning(f"Admin tried to change user {user_id} username to existing one: {user_update.username}")
+            logger.warning(
+                "Admin tried to change user %s username to existing one: %s",
+                user_id,
+                user_update.username,
+            )
             raise ConflictException(f"Username '{user_update.username}' already taken")
         user.username = user_update.username
 
@@ -127,7 +138,7 @@ async def admin_update_user(
 
     db.commit()
     db.refresh(user)
-    logger.info(f"Admin updated user {user_id}")
+    logger.info("Admin updated user %s", user_id)
     return user
 
 
@@ -144,5 +155,4 @@ async def delete_user(
         raise ResourceNotFoundException(f"User with id {user_id} not found")
     db.delete(user)
     db.commit()
-    logger.info(f"Admin deleted user {user_id}")
-
+    logger.info("Admin deleted user %s", user_id)
