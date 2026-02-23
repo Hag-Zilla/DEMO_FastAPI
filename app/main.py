@@ -39,20 +39,35 @@ app = FastAPI(
     version=settings.APP_VERSION,
     openapi_tags=[
         {"name": "Main", "description": "Health check and main operations."},
-        {"name": "Authentication", "description": "Endpoints for user authentication."},
-        {"name": "User Management", "description": "Operations related to user creation and management."},
-        {"name": "Expenses", "description": "Operations to add, update, and delete expenses."},
-        {"name": "Reports", "description": "Endpoints to generate monthly and custom period reports."},
-        {"name": "Alerts", "description": "Endpoints to generate alerts for budget overruns."},
+        {
+            "name": "Authentication",
+            "description": "Endpoints for user authentication.",
+        },
+        {
+            "name": "User Management",
+            "description": "Operations related to user creation and management.",
+        },
+        {
+            "name": "Expenses",
+            "description": "Operations to add, update, and delete expenses.",
+        },
+        {
+            "name": "Reports",
+            "description": "Endpoints to generate monthly and custom period reports.",
+        },
+        {
+            "name": "Alerts",
+            "description": "Endpoints to generate alerts for budget overruns.",
+        },
     ]
 )
 
 
 # Exception handlers
 @app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException):
+async def app_exception_handler(request: Request, exc: AppException):  # pylint: disable=unused-argument
     """Handle custom AppException."""
-    logger.warning(f"AppException: {exc.detail} (status: {exc.status_code})")
+    logger.warning("AppException: %s (status: %s)", exc.detail, exc.status_code)
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
@@ -60,9 +75,9 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception):  # pylint: disable=unused-argument
     """Handle general exceptions."""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    logger.error("Unhandled exception: %s", exc, exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"},

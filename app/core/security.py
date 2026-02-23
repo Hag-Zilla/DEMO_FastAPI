@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -63,17 +63,17 @@ async def get_current_user(
             raise AuthenticationException()
         user = db.query(UserModel).filter(UserModel.username == username).first()
         if user is None:
-            logger.warning(f"User not found for token: {username}")
+            logger.warning("User not found for token: %s", username)
             raise AuthenticationException()
         if user.disabled:
-            logger.warning(f"Login attempt with disabled account: {username}")
+            logger.warning("Login attempt with disabled account: %s", username)
             raise AuthorizationException("User account is disabled")
         return user  # Return the SQLAlchemy model instance directly
 
     except (AuthenticationException, AuthorizationException):
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in get_current_user: {e}", exc_info=True)
+        logger.error("Unexpected error in get_current_user: %s", e, exc_info=True)
         raise AuthenticationException() from e
 
 
@@ -84,7 +84,7 @@ def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
     Returns the current user if authorized.
     """
     if current_user.role != UserRole.ADMIN:
-        logger.warning(f"Unauthorized access attempt by user {current_user.id}")
+        logger.warning("Unauthorized access attempt by user %s", current_user.id)
         raise AuthorizationException("You do not have permission to perform this action.")
     return current_user
 
