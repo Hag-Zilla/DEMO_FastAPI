@@ -26,21 +26,21 @@ async def login_for_access_token(
     """Authenticate user and return access token."""
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        logger.warning(f"Failed login attempt for username: {form_data.username}")
+        logger.warning("Failed login attempt for username: %s", form_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if user.disabled:
-        logger.warning(f"Login attempt with disabled account: {form_data.username}")
+        logger.warning("Login attempt with disabled account: %s", form_data.username)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is disabled",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    logger.info(f"User logged in: {user.username}")
+    logger.info("User logged in: %s", user.username)
     access_token_expires = timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username},
