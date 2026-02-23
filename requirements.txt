@@ -4,5 +4,7 @@ uvicorn
 pandas
 sqlalchemy
 passlib
+argon2-cffi
 python-jose
 python-multipart
+python-dotenv

@@ -48,6 +48,16 @@ FULL_PYTHON_VERSION=$(grep -A 1 "^dependencies:" "$ENV_FILE" | grep "python=" | 
 # Extract major.minor version (e.g., 3.9, 3.10, 3.11, 3.12.1 -> 3.12)
 PYTHON_VERSION=$(echo "$FULL_PYTHON_VERSION" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
 
+# Run admin bootstrap script as part of installation
+run_admin_bootstrap() {
+    if [ -f "project_spec.sh" ]; then
+        echo "Launching admin bootstrap (project_spec.sh)..."
+        bash project_spec.sh
+    else
+        echo "Warning: project_spec.sh not found. Skipping admin bootstrap."
+    fi
+}
+
 # Function to create a Conda environment
 create_conda_env() {
     # Check if Conda is installed
@@ -55,6 +65,18 @@ create_conda_env() {
     then
         echo "Conda is not installed. Please install Conda before proceeding."
         exit 1
+    fi
+
+    # Check if Conda environment already exists
+    if conda env list | awk '{print $1}' | grep -Fxq "$ENV_NAME"; then
+        echo "Warning: Conda environment '$ENV_NAME' already exists."
+        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
+        if [ "${confirm,,}" = "y" ]; then
+            run_command "conda env remove -n $ENV_NAME -y"
+        else
+            echo "Aborting setup."
+            exit 0
+        fi
     fi
     
     # Create the Conda environment
@@ -80,6 +102,8 @@ create_conda_env() {
     # Upgrade pip (optional, but recommended)
     run_command "pip install --upgrade pip"
 
+    run_admin_bootstrap
+
     echo "The Conda environment '$ENV_NAME' has been created successfully."
     echo "All dependencies have been installed from environment.yml"
 }
@@ -96,7 +120,7 @@ create_venv_env() {
     # Check if venv directory already exists
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
-        read -p "Do you want to remove it and create a new one? (y/n): " confirm
+        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
         if [ "${confirm,,}" = "y" ]; then
             rm -rf venv
         else
@@ -115,6 +139,7 @@ create_venv_env() {
     run_command "python -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
+    # shellcheck source=/dev/null
     source ./venv/bin/activate || { echo "Error: Failed to activate venv."; exit 1; }
 
     # Upgrade pip
@@ -127,12 +152,14 @@ create_venv_env() {
         echo "Warning: requirements.txt not found. Skipping pip install."
     fi
 
+    run_admin_bootstrap
+
     echo "The venv environment 'venv' has been created successfully."
 }
 
 # Ask the user which environment manager to use
 echo "Which environment manager would you like to use? (conda/venv)"
-read ENV_MANAGER
+read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
 ENV_MANAGER_LOWER=$(echo "$ENV_MANAGER" | tr '[:upper:]' '[:lower:]')
