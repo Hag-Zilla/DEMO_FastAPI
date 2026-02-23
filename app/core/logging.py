@@ -1,12 +1,47 @@
 """Logging configuration for the application."""
 
+import json
 import logging
+from datetime import datetime, timezone
 from logging.config import dictConfig
 from pathlib import Path
 
 import yaml
 
 from app.core.config import settings
+
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for structured logging."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Convert log record to JSON line."""
+        log_data = {
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
+            "logger": record.name,
+            "level": record.levelname,
+            "message": record.getMessage(),
+        }
+
+        # Add extra fields if present
+        if hasattr(record, "http_method"):
+            log_data["http_method"] = record.http_method
+        if hasattr(record, "http_path"):
+            log_data["http_path"] = record.http_path
+        if hasattr(record, "http_status"):
+            log_data["http_status"] = record.http_status
+        if hasattr(record, "duration_ms"):
+            log_data["duration_ms"] = record.duration_ms
+        if hasattr(record, "client_ip"):
+            log_data["client_ip"] = record.client_ip
+
+        # Add exception info if present
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_data, ensure_ascii=False)
 
 
 def _default_logging_config(log_level: str) -> dict:
@@ -68,6 +103,10 @@ def configure_logging() -> None:
         logging_config["handlers"]["console"]["level"] = log_level
     if "file" in logging_config.get("handlers", {}):
         logging_config["handlers"]["file"]["level"] = log_level
+
+    # Inject JSONFormatter class to avoid circular import issues
+    if "json" in logging_config.get("formatters", {}):
+        logging_config["formatters"]["json"]["()"] = JSONFormatter
 
     dictConfig(logging_config)
 
