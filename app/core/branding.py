@@ -18,7 +18,7 @@ def _read_banner(filename: str) -> str:
     try:
         with open(path, "r", encoding="utf-8") as fh:
             return fh.read()
-    except Exception:
+    except (FileNotFoundError, OSError, UnicodeDecodeError):
         return ""
 
 
