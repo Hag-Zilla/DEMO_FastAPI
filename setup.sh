@@ -206,4 +206,3 @@ else
     echo "Setup completed successfully — $PROJECT_NAME is ready."
     echo ""
 fi
-fi

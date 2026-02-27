@@ -16,14 +16,14 @@ from pathlib import Path
 
 try:
     from importlib import resources
-except Exception:  # pragma: no cover - importlib is available on py3
+except ImportError:  # pragma: no cover - importlib is available on py3
     resources = None
 
 
 def _read_with_importlib(package: str, filename: str) -> str:
     try:
         return resources.read_text(package, filename, encoding="utf-8")
-    except Exception:
+    except (FileNotFoundError, OSError, UnicodeDecodeError):
         return ""
 
 
@@ -31,11 +31,24 @@ def _read_with_path(project_root: Path, filename: str) -> str:
     p = project_root / "app" / "utils" / "branding" / filename
     try:
         return p.read_text(encoding="utf-8")
-    except Exception:
+    except (FileNotFoundError, OSError, UnicodeDecodeError):
         return ""
 
 
 def read_banner(name: str) -> str:
+    """Return banner text for the given banner `name`.
+
+    The function first attempts to read the resource using
+    `importlib.resources` (works when the package is installed). If that
+    fails, it falls back to reading the file from the repository path
+    `app/utils/branding/<name>.txt`.
+
+    Args:
+        name: Banner name or filename (with or without `.txt`).
+
+    Returns:
+        The banner content as a string, or an empty string if not found.
+    """
     filename = name if name.endswith(".txt") else f"{name}.txt"
 
     # 1) Try importlib.resources (works in installed packages)
@@ -51,6 +64,19 @@ def read_banner(name: str) -> str:
 
 
 def replace_placeholders(content: str) -> str:
+    """Replace supported placeholders in banner content.
+
+    Currently supported placeholders:
+    - `{{PROJECT_NAME}}`: replaced with the value of the `PROJECT_NAME`
+      environment variable if it is set.
+
+    Args:
+        content: The banner content containing zero or more placeholders.
+
+    Returns:
+        The banner content with placeholders substituted (or the original
+        content if no applicable environment variables are set).
+    """
     project_name = os.environ.get("PROJECT_NAME")
     if project_name:
         return content.replace("{{PROJECT_NAME}}", project_name)
@@ -58,6 +84,17 @@ def replace_placeholders(content: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entrypoint to print a banner file.
+
+    Args:
+        argv: Optional list of command-line arguments. If omitted, the
+            function will use `sys.argv[1:]`. The first argument is the
+            banner name (without `.txt`) to print; defaults to
+            `'completion'`.
+
+    Returns:
+        Exit code (0 on success, 2 if the banner was not found).
+    """
     argv = argv or sys.argv[1:]
     name = argv[0] if argv else "completion"
 
