@@ -2,14 +2,14 @@
 
 #!/bin/bash
 
-# Print banners from app/branding so they live outside scripts
-if [ -f "app/branding/mammoth.txt" ]; then
-    cat app/branding/mammoth.txt
+# Print banners from app/utils/branding so they live outside scripts
+if [ -f "app/utils/branding/mammoth.txt" ]; then
+    cat app/utils/branding/mammoth.txt
     echo ""
 fi
 
-if [ -f "app/branding/setup.txt" ]; then
-    cat app/branding/setup.txt
+if [ -f "app/utils/branding/setup.txt" ]; then
+    cat app/utils/branding/setup.txt
     echo ""
 else
     echo "Initializing environment..."
@@ -192,10 +192,10 @@ fi
 # Extract project name from environment.yml if not already done
 PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
 
-if [ -f "app/branding/completion.txt" ]; then
+if [ -f "app/utils/branding/completion.txt" ]; then
     # Render template to a temporary file so we `cat` a real .txt file
     tmpfile=$(mktemp)
-    if sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/branding/completion.txt > "$tmpfile"; then
+    if sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/utils/branding/completion.txt > "$tmpfile"; then
         cat "$tmpfile"
     else
         echo "Setup completed successfully — $PROJECT_NAME is ready."
