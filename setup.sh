@@ -193,11 +193,17 @@ fi
 PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
 
 if [ -f "app/branding/completion.txt" ]; then
-    # replace placeholder {{PROJECT_NAME}} if present
-    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/branding/completion.txt
+    # Render template to a temporary file so we `cat` a real .txt file
+    tmpfile=$(mktemp)
+    if sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/branding/completion.txt > "$tmpfile"; then
+        cat "$tmpfile"
+    else
+        echo "Setup completed successfully — $PROJECT_NAME is ready."
+    fi
+    rm -f "$tmpfile"
     echo ""
 else
-    echo "Setup completed successfully — $PROJECT_NAME is ready." 
+    echo "Setup completed successfully — $PROJECT_NAME is ready."
     echo ""
 fi
 fi
