@@ -90,7 +90,8 @@ def configure_logging() -> None:
     logs_dir.mkdir(exist_ok=True)
 
     log_level = "DEBUG" if settings.DEBUG else "INFO"
-    config_path = Path("config/logging.yaml")
+    # prefer project-level logs/config/logging.yaml
+    config_path = Path("logs/config/logging.yaml")
 
     if config_path.exists():
         with config_path.open("r", encoding="utf-8") as config_file:
