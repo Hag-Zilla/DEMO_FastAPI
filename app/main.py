@@ -23,6 +23,7 @@ from .core.logging import get_logger
 from .core.middleware import HTTPLoggingMiddleware
 from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
+from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -72,6 +73,11 @@ app.state.startup_complete = False
 @app.on_event("startup")
 async def on_startup():
     """Mark application startup as completed."""
+    print(STARTUP_BANNER)
+    logger.info(LOG_SIGNATURE)
+    logger.info("="*70)
+    logger.info("🚀 Expense Tracker API is running and ready to accept requests")
+    logger.info("="*70)
     app.state.startup_complete = True
 
 

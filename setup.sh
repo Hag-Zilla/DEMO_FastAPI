@@ -1,5 +1,21 @@
 #!/bin/bash
 
+#!/bin/bash
+
+# Print banners from app/branding so they live outside scripts
+if [ -f "app/branding/mammoth.txt" ]; then
+    cat app/branding/mammoth.txt
+    echo ""
+fi
+
+if [ -f "app/branding/setup.txt" ]; then
+    cat app/branding/setup.txt
+    echo ""
+else
+    echo "Initializing environment..."
+    echo ""
+fi
+
 set -euo pipefail
 
 # Function to run commands and handle errors
@@ -171,4 +187,17 @@ elif [ "$ENV_MANAGER_LOWER" = "venv" ]; then
 else
     echo "Invalid choice. Please choose either 'conda' or 'venv'."
     exit 1
+fi
+
+# Extract project name from environment.yml if not already done
+PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
+
+if [ -f "app/branding/completion.txt" ]; then
+    # replace placeholder {{PROJECT_NAME}} if present
+    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/branding/completion.txt
+    echo ""
+else
+    echo "Setup completed successfully — $PROJECT_NAME is ready." 
+    echo ""
+fi
 fi
