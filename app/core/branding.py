@@ -1,7 +1,7 @@
 """
 Branding and ASCII art loader for the Expense Tracker API.
 
-This module reads plain-text banner files from `app/branding/` so
+This module reads plain-text banner files from `app/utils/branding/` so
 that banners live outside scripts and can be `cat`-ed by shell
 or imported by Python.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 
-BASE_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "branding"))
+BASE_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "utils", "branding"))
 
 
 def _read_banner(filename: str) -> str:

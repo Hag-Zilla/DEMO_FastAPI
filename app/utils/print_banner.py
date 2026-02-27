@@ -4,7 +4,7 @@ Usage:
   python3 -m app.utils.print_banner completion
 
 It prefers importlib.resources (works when packaged) and falls back
-to reading `app/branding/*.txt` by path. It also replaces a
+to reading `app/utils/branding/*.txt` by path. It also replaces a
 `{{PROJECT_NAME}}` placeholder from the `PROJECT_NAME` environment
 variable if present.
 """
@@ -28,7 +28,7 @@ def _read_with_importlib(package: str, filename: str) -> str:
 
 
 def _read_with_path(project_root: Path, filename: str) -> str:
-    p = project_root / "app" / "branding" / filename
+    p = project_root / "app" / "utils" / "branding" / filename
     try:
         return p.read_text(encoding="utf-8")
     except Exception:
@@ -40,7 +40,7 @@ def read_banner(name: str) -> str:
 
     # 1) Try importlib.resources (works in installed packages)
     if resources is not None:
-        content = _read_with_importlib("app.branding", filename)
+        content = _read_with_importlib("app.utils.branding", filename)
         if content:
             return content
 
