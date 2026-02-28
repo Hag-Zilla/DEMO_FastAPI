@@ -125,6 +125,39 @@ create_conda_env() {
 }
 
 # Function to create a venv environment using pyenv
+#
+create_uv_env() {
+    # Check if uv is installed
+    if ! command -v uv &> /dev/null
+    then
+        echo "uv is not installed. Install it with: pip install uv"
+        exit 1
+    fi
+
+    # Create uv virtual environment (default .venv). Request python version if available.
+    if [ -n "${PYTHON_VERSION:-}" ]; then
+        run_command "uv venv --python $PYTHON_VERSION"
+    else
+        run_command "uv venv"
+    fi
+
+    # Install dependencies into the uv environment
+    if [ -f "requirements.txt" ]; then
+        run_command "uv pip install -r requirements.txt"
+    else
+        echo "Warning: requirements.txt not found. Skipping pip install."
+    fi
+
+    # Activate the created venv for subsequent interactive steps (project_spec.sh expects python)
+    if [ -f ".venv/bin/activate" ]; then
+        # shellcheck source=/dev/null
+        source .venv/bin/activate || { echo "Error: failed to activate .venv"; exit 1; }
+    fi
+
+    run_admin_bootstrap
+
+    echo "The uv environment (.venv) has been created successfully."
+}
 create_venv_env() {
     # Check if pyenv is installed
     if ! command -v pyenv &> /dev/null
@@ -132,8 +165,6 @@ create_venv_env() {
         echo "pyenv is not installed. Please install pyenv before proceeding."
         exit 1
     fi
-
-    # Check if venv directory already exists
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
         read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
@@ -174,7 +205,7 @@ create_venv_env() {
 }
 
 # Ask the user which environment manager to use
-echo "Which environment manager would you like to use? (conda/venv)"
+echo "Which environment manager would you like to use? (conda/venv/uv)"
 read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
@@ -184,8 +215,10 @@ if [ "$ENV_MANAGER_LOWER" = "conda" ]; then
     create_conda_env
 elif [ "$ENV_MANAGER_LOWER" = "venv" ]; then
     create_venv_env
+elif [ "$ENV_MANAGER_LOWER" = "uv" ]; then
+    create_uv_env
 else
-    echo "Invalid choice. Please choose either 'conda' or 'venv'."
+    echo "Invalid choice. Please choose 'conda', 'venv' or 'uv'."
     exit 1
 fi
 
