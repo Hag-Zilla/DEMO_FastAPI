@@ -14,10 +14,11 @@
 """
 # ==================================    Modules import     =========================================
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
 from .core.config import settings
 from .core.exceptions import AppException
