@@ -14,8 +14,10 @@
 """
 # ==================================    Modules import     =========================================
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from .core.config import settings
 from .core.exceptions import AppException
@@ -116,11 +118,34 @@ app.include_router(expenses.router)
 app.include_router(alerts.router)
 app.include_router(reports.router)
 
+# Mount static files for assets (must be after all routes!)
+static_dir = Path(__file__).parent / "utils" / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 
 @app.get("/", name="API Root", tags=["Main"])
 async def read_root():
     """Root endpoint."""
     return {"message": "Personal Expense Tracking API"}
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon_svg():
+    """Serve the favicon."""
+    favicon_path = Path(__file__).parent / "utils" / "static" / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    return Response(status_code=204)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_ico():
+    """Serve favicon in ICO format (redirect to SVG)."""
+    return Response(
+        status_code=204,
+        headers={"Cache-Control": "public, max-age=31536000"},
+    )
 
 # ========================================================================
 # =                          Standalone way                              =
