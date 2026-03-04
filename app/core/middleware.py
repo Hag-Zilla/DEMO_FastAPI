@@ -48,22 +48,23 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
 
         duration = time.time() - start_time
 
-        # Skip logging for health checks to reduce noise
-        if not request.url.path.startswith("/health"):
-            logger.info(
-                "%s %s %s %.3fs %s",
-                request.method,
-                request.url.path,
-                response.status_code,
-                duration,
-                client_ip,
-                extra={
-                    "http_method": request.method,
-                    "http_path": request.url.path,
-                    "http_status": response.status_code,
-                    "duration_ms": round(duration * 1000, 3),
-                    "client_ip": client_ip,
-                },
-            )
+        log_message = "%s %s %s %.3fs %s"
+        log_extra = {
+            "http_method": request.method,
+            "http_path": request.url.path,
+            "http_status": response.status_code,
+            "duration_ms": round(duration * 1000, 3),
+            "client_ip": client_ip,
+        }
+
+        logger.info(
+            log_message,
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration,
+            client_ip,
+            extra=log_extra,
+        )
 
         return response
