@@ -99,12 +99,6 @@ def configure_logging() -> None:
     else:
         logging_config = _default_logging_config(log_level)
 
-    logging_config["root"]["level"] = log_level
-    if "console" in logging_config.get("handlers", {}):
-        logging_config["handlers"]["console"]["level"] = log_level
-    if "file" in logging_config.get("handlers", {}):
-        logging_config["handlers"]["file"]["level"] = log_level
-
     # Inject JSONFormatter class to avoid circular import issues
     if "json" in logging_config.get("formatters", {}):
         logging_config["formatters"]["json"]["()"] = JSONFormatter
