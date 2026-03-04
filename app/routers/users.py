@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from ..core.exceptions import ConflictException, ResourceNotFoundException
+from ..core.exceptions import AuthorizationException, ConflictException, ResourceNotFoundException
 from ..core.logging import get_logger
 from ..core.security import get_current_user, get_password_hash
 from ..core.enums import UserRole
@@ -146,10 +146,13 @@ async def admin_update_user(
 async def delete_user(
     user_id: int,
     db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    admin: Annotated[UserModel, Depends(get_admin_user)],
 ):
     """Delete a user by ID (admin only)."""
-    del _admin
+    if admin.id == user_id:
+        logger.warning("Admin %s attempted to delete own account", admin.id)
+        raise AuthorizationException("Admin users cannot delete their own account")
+
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")
