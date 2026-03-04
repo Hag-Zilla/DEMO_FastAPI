@@ -1,7 +1,4 @@
----
-# Application Logging Configuration
-# Schema: logging.config.dictConfig
-# Reference: https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
+# Logging configuration (dictConfig)
 #
 # Log Levels (in order of severity):
 #   NOTSET   (0)  - No filtering; inherit from parent logger
@@ -26,13 +23,11 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: DEBUG
     formatter: standard
     stream: ext://sys.stdout
 
   file:
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
     formatter: standard
     filename: logs/app.log
     maxBytes: 5242880
@@ -41,7 +36,6 @@ handlers:
 
   jsonl:
     class: logging.handlers.RotatingFileHandler
-    level: DEBUG
     formatter: json
     filename: logs/app.jsonl
     maxBytes: 5242880
@@ -50,5 +44,5 @@ handlers:
 
 # Root logger that captures all application logs
 root:
-  level: DEBUG
+  level: INFO
   handlers: [console, file, jsonl]
