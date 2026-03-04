@@ -12,7 +12,7 @@ from ..core.enums import UserRole
 from ..database.session import get_db
 from ..utils.dependencies import get_admin_user
 from ..database.models.user import User as UserModel
-from ..schemas.user import UserCreate, UserUpdate, UserResponse
+from ..schemas.user import UserCreate, UserSelfUpdate, UserUpdate, UserResponse
 
 logger = get_logger(__name__)
 
@@ -56,7 +56,7 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
 
 @router.put("/update/", name="Self Update User", response_model=UserResponse)
 async def self_update_user(
-    user_update: UserUpdate,
+    user_update: UserSelfUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ):

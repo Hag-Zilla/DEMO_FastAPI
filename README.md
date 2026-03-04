@@ -215,8 +215,8 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 ### User Management
 - `POST /users/create` – Create new standard user account (status: 201)
 - `GET /users/me` – Get authenticated user's profile
-- `PUT /users/update/` – Update authenticated user's profile
-- `PUT /users/update/{user_id}/` – Admin: update any user
+- `PUT /users/update/` – Update authenticated user's profile (allowed fields: username, password, budget)
+- `PUT /users/update/{user_id}/` – Admin: update any user (including role, disabled)
 - `DELETE /users/delete/{user_id}/` – Admin: delete user (status: 204)
 
 ### Expenses
@@ -309,8 +309,9 @@ class ExpenseCategory(str, Enum):
 ### Request/Response Models
 
 **User Operations**
-- `UserCreate`: username, password (min 6 chars), budget (≥ 0)
-- `UserUpdate`: all fields optional
+- `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
+- `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
+- `UserUpdate`: admin update schema (username, password, budget, role, disabled)
 - `UserResponse`: includes id, role, disabled status
 
 **Expense Operations**
