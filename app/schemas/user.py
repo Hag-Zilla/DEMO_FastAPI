@@ -18,7 +18,10 @@ class UserBase(BaseModel):
         example="john_doe",
     )
     budget: float = Field(
-        ..., ge=0, description="The user's budget", example=1000.0
+        default=0.0,
+        ge=0,
+        description="The user's budget",
+        example=1000.0,
     )
 
 
