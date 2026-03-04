@@ -26,13 +26,13 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: INFO
+    level: DEBUG
     formatter: standard
     stream: ext://sys.stdout
 
   file:
     class: logging.handlers.RotatingFileHandler
-    level: INFO
+    level: DEBUG
     formatter: standard
     filename: logs/app.log
     maxBytes: 5242880
@@ -41,7 +41,7 @@ handlers:
 
   jsonl:
     class: logging.handlers.RotatingFileHandler
-    level: INFO
+    level: DEBUG
     formatter: json
     filename: logs/app.jsonl
     maxBytes: 5242880
@@ -50,5 +50,5 @@ handlers:
 
 # Root logger that captures all application logs
 root:
-  level: INFO
+  level: DEBUG
   handlers: [console, file, jsonl]
