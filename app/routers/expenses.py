@@ -35,7 +35,11 @@ async def list_expenses(
     - start_date: Filter expenses on or after this date
     - end_date: Filter expenses on or before this date
     """
-    query = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id)
+    # Admins may list all expenses; regular users only their own
+    if current_user.role.value == "admin":
+        query = db.query(ExpenseModel)
+    else:
+        query = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id)
 
     if category:
         query = query.filter(ExpenseModel.category == category)
