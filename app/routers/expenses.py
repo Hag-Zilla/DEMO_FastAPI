@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Body
 from sqlalchemy.orm import Session
 
 from ..core.enums import ExpenseCategory
@@ -22,8 +22,8 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 @router.get("/", name="List Expenses", response_model=list[ExpenseResponse])
 async def list_expenses(
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
     category: Optional[ExpenseCategory] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -56,11 +56,24 @@ async def list_expenses(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_expense(
-    expense: ExpenseCreate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    expense: ExpenseCreate = Body(
+        ...,
+        example={
+            "description": "Mort au rat",
+            "amount": 150.99,
+            "category": "entertainment",
+        },
+    ),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
-    """Create a new expense for the authenticated user."""
+    """Create a new expense for the authenticated user.
+
+    Valid categories: food, transportation, entertainment, utilities,
+    healthcare, education, shopping, other
+
+    Example request body is shown in the OpenAPI docs (Swagger UI).
+    """
     db_expense = ExpenseModel(
         description=expense.description,
         amount=expense.amount,
