@@ -100,8 +100,8 @@ async def create_expense(
 @router.get("/{expense_id}", name="Get Expense", response_model=ExpenseResponse)
 async def get_expense(
     expense_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Get a specific expense by ID (must be owner)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
@@ -126,8 +126,8 @@ async def get_expense(
 async def update_expense(
     expense_id: int,
     expense_update: ExpenseUpdate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Update an expense (must be owner or admin)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
@@ -162,8 +162,8 @@ async def update_expense(
 @router.delete("/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_expense(
     expense_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Delete an expense (must be owner or admin)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
