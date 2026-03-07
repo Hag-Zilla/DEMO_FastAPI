@@ -63,9 +63,9 @@ async def create_expense(
     expense: ExpenseCreate = Body(
         ...,
         example={
-            "description": "Mort au rat",
-            "amount": 150.99,
-            "category": "entertainment",
+            "description": "Lunch at restaurant",
+            "amount": 25.5,
+            "category": "food",
         },
     ),
     db: Session = Depends(get_db),
