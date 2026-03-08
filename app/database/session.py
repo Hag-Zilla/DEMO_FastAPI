@@ -18,9 +18,9 @@ if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["poolclass"] = StaticPool
 
     if DATABASE_URL.startswith("sqlite:///"):
-        db_path = DATABASE_URL.replace("sqlite:///", "", 1)
-        if db_path and db_path != ":memory:" and not db_path.startswith("file:"):
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        DB_PATH = DATABASE_URL.replace("sqlite:///", "", 1)
+        if DB_PATH and DB_PATH != ":memory:" and not DB_PATH.startswith("file:"):
+            Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 # Create the database engine
 engine = create_engine(DATABASE_URL, **engine_kwargs)
