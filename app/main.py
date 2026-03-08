@@ -14,14 +14,20 @@
 """
 # ==================================    Modules import     =========================================
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from pathlib import Path
+
+from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
 from .core.exceptions import AppException
 from .core.logging import get_logger
+from .core.middleware import HTTPLoggingMiddleware
 from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
+from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -62,6 +68,28 @@ app = FastAPI(
     ]
 )
 
+# Add HTTP logging middleware
+app.add_middleware(HTTPLoggingMiddleware)
+
+app.state.startup_complete = False
+
+
+@app.on_event("startup")
+async def on_startup():
+    """Mark application startup as completed."""
+    print(STARTUP_BANNER)
+    logger.info(LOG_SIGNATURE)
+    logger.info("="*70)
+    logger.info("🚀 Expense Tracker API is running and ready to accept requests")
+    logger.info("="*70)
+    app.state.startup_complete = True
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    """Mark application as not started when shutting down."""
+    app.state.startup_complete = False
+
 
 # Exception handlers
 @app.exception_handler(AppException)
@@ -71,6 +99,21 @@ async def app_exception_handler(request: Request, exc: AppException):  # pylint:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log and return request validation errors (HTTP 422)."""
+    logger.warning(
+        "Validation error on %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.errors(),
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
     )
 
 
@@ -92,11 +135,34 @@ app.include_router(expenses.router)
 app.include_router(alerts.router)
 app.include_router(reports.router)
 
+# Mount static files for assets (must be after all routes!)
+static_dir = Path(__file__).parent / "utils" / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-@app.get("/")
-async def root():
+
+@app.get("/", name="API Root", tags=["Main"])
+async def read_root():
     """Root endpoint."""
     return {"message": "Personal Expense Tracking API"}
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon_svg():
+    """Serve the favicon."""
+    favicon_path = Path(__file__).parent / "utils" / "static" / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(favicon_path, media_type="image/svg+xml")
+    return Response(status_code=204)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_ico():
+    """Serve favicon in ICO format (redirect to SVG)."""
+    return Response(
+        status_code=204,
+        headers={"Cache-Control": "public, max-age=31536000"},
+    )
 
 # ========================================================================
 # =                          Standalone way                              =

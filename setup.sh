@@ -1,31 +1,59 @@
 #!/bin/bash
 
+#!/bin/bash
+
+# Print banners from app/utils/branding so they live outside scripts
+if [ -f "app/utils/branding/mammoth.txt" ]; then
+    cat app/utils/branding/mammoth.txt
+    echo ""
+fi
+
+if [ -f "app/utils/branding/setup.txt" ]; then
+    cat app/utils/branding/setup.txt
+    echo ""
+else
+    echo "Initializing environment..."
+    echo ""
+fi
+
 set -euo pipefail
+
+# Arrays to track warnings
+declare -a SETUP_WARNINGS
 
 # Function to run commands and handle errors
 run_command() {
     local cmd="$1"
     echo "Executing : $cmd"
-    # Execute the command and capture stderr
-    output=$(eval "$cmd" 2>&1)
-    exit_code=$?
-    # Check the exit code
-    if [ "$exit_code" -ne 0 ]; then
-        if echo "$output" | grep -q "warning"; then
-            echo "Warning : the command '$cmd' generated a warning with exit code : $exit_code"
-            echo "Warning message : $output"
-        else
-            echo "Error : the command '$cmd' failed with exit code : $exit_code"
-            echo "Error message : $output"
-            exit $exit_code
-        fi
+    # Execute the command and capture output
+    if output=$(eval "$cmd" 2>&1); then
+        echo "$output"
+    else
+        exit_code=$?
+        echo ""
+        echo "====================================================="
+        echo "ERROR: Command failed with exit code: $exit_code"
+        echo "Command: $cmd"
+        echo "Output:"
+        echo "====================================================="
+        echo "$output"
+        echo "====================================================="
+        exit $exit_code
     fi
-    # Display the standard output if necessary
-    echo "$output"
 }
 
-# Update system packages
-run_command "sudo apt-get update"
+# Function to run optional commands (non-fatal, logs warnings)
+run_optional_command() {
+    local cmd="$1"
+    echo "Executing (optional) : $cmd"
+    # Try to run the command, capturing output and handling failures gracefully
+    if output=$(eval "$cmd" 2>&1); then
+        echo "$output"
+    else
+        SETUP_WARNINGS+=("Command '$cmd' was skipped (non-critical)")
+        echo "⚠️  Warning: $cmd was skipped (non-fatal)"
+    fi
+}
 
 # Path to the environment.yml file
 ENV_FILE="environment.yml"
@@ -83,13 +111,13 @@ create_conda_env() {
     run_command "conda env create --file=$ENV_FILE"
 
     # Initialize Conda for the current shell
-    if [ -n "$ZSH_VERSION" ]; then
+    if [ -n "${ZSH_VERSION:-}" ]; then
         eval "$(conda shell.zsh hook)"
-    elif [ -n "$BASH_VERSION" ]; then
+    elif [ -n "${BASH_VERSION:-}" ]; then
         eval "$(conda shell.bash hook)"
     else
         # Fallback: try to detect from SHELL variable
-        if [[ "$SHELL" == *"zsh"* ]]; then
+        if [[ "${SHELL:-}" == *"zsh"* ]]; then
             eval "$(conda shell.zsh hook)"
         else
             eval "$(conda shell.bash hook)"
@@ -109,6 +137,39 @@ create_conda_env() {
 }
 
 # Function to create a venv environment using pyenv
+#
+create_uv_env() {
+    # Check if uv is installed
+    if ! command -v uv &> /dev/null
+    then
+        echo "uv is not installed. Install it with: pip install uv"
+        exit 1
+    fi
+
+    # Create uv virtual environment (default .venv). Request python version if available.
+    if [ -n "${PYTHON_VERSION:-}" ]; then
+        run_command "uv venv --python $PYTHON_VERSION"
+    else
+        run_command "uv venv"
+    fi
+
+    # Install dependencies into the uv environment
+    if [ -f "requirements.txt" ]; then
+        run_command "uv pip install -r requirements.txt"
+    else
+        echo "Warning: requirements.txt not found. Skipping pip install."
+    fi
+
+    # Activate the created venv for subsequent interactive steps (project_spec.sh expects python)
+    if [ -f ".venv/bin/activate" ]; then
+        # shellcheck source=/dev/null
+        source .venv/bin/activate || { echo "Error: failed to activate .venv"; exit 1; }
+    fi
+
+    run_admin_bootstrap
+
+    echo "The uv environment (.venv) has been created successfully."
+}
 create_venv_env() {
     # Check if pyenv is installed
     if ! command -v pyenv &> /dev/null
@@ -116,8 +177,6 @@ create_venv_env() {
         echo "pyenv is not installed. Please install pyenv before proceeding."
         exit 1
     fi
-
-    # Check if venv directory already exists
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
         read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
@@ -158,7 +217,7 @@ create_venv_env() {
 }
 
 # Ask the user which environment manager to use
-echo "Which environment manager would you like to use? (conda/venv)"
+echo "Which environment manager would you like to use? (conda/venv/uv)"
 read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
@@ -168,7 +227,47 @@ if [ "$ENV_MANAGER_LOWER" = "conda" ]; then
     create_conda_env
 elif [ "$ENV_MANAGER_LOWER" = "venv" ]; then
     create_venv_env
+elif [ "$ENV_MANAGER_LOWER" = "uv" ]; then
+    create_uv_env
 else
-    echo "Invalid choice. Please choose either 'conda' or 'venv'."
+    echo "Invalid choice. Please choose 'conda', 'venv' or 'uv'."
     exit 1
+fi
+
+# Extract project name from environment.yml if not already done
+PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
+
+# Print setup report
+echo ""
+echo "████████████████████████████████████████████████████████████████"
+echo "█                    ✅  SETUP REPORT  ✅                        █"
+echo "████████████████████████████████████████████████████████████████"
+echo ""
+echo "Setup Status: COMPLETED"
+echo ""
+
+if [ ${#SETUP_WARNINGS[@]} -gt 0 ]; then
+    echo "⚠️  Warnings during setup:"
+    for warning in "${SETUP_WARNINGS[@]}"; do
+        echo "  • $warning"
+    done
+    echo ""
+else
+    echo "✓ No warnings"
+    echo ""
+fi
+
+if [ -f "app/utils/branding/completion.txt" ]; then
+    # Render template to a temporary file so we `cat` a real .txt file
+    tmpfile=$(mktemp)
+    if sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" app/utils/branding/completion.txt > "$tmpfile"; then
+        cat "$tmpfile"
+    else
+        echo "Setup completed successfully — $PROJECT_NAME is ready."
+    fi
+    rm -f "$tmpfile"
+    echo ""
+else
+    echo "✓ $PROJECT_NAME is ready to use"
+    echo ""
 fi

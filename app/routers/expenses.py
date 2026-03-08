@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Body
 from sqlalchemy.orm import Session
 
 from ..core.enums import ExpenseCategory
@@ -22,8 +22,8 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 @router.get("/", name="List Expenses", response_model=list[ExpenseResponse])
 async def list_expenses(
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
     category: Optional[ExpenseCategory] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -35,7 +35,11 @@ async def list_expenses(
     - start_date: Filter expenses on or after this date
     - end_date: Filter expenses on or before this date
     """
-    query = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id)
+    # Admins may list all expenses; regular users only their own
+    if current_user.role.value == "admin":
+        query = db.query(ExpenseModel)
+    else:
+        query = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id)
 
     if category:
         query = query.filter(ExpenseModel.category == category)
@@ -56,11 +60,24 @@ async def list_expenses(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_expense(
-    expense: ExpenseCreate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    expense: ExpenseCreate = Body(
+        ...,
+        example={
+            "description": "Lunch at restaurant",
+            "amount": 25.5,
+            "category": "food",
+        },
+    ),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
-    """Create a new expense for the authenticated user."""
+    """Create a new expense for the authenticated user.
+
+    Valid categories: food, transportation, entertainment, utilities,
+    healthcare, education, shopping, other
+
+    Example request body is shown in the OpenAPI docs (Swagger UI).
+    """
     db_expense = ExpenseModel(
         description=expense.description,
         amount=expense.amount,
@@ -83,8 +100,8 @@ async def create_expense(
 @router.get("/{expense_id}", name="Get Expense", response_model=ExpenseResponse)
 async def get_expense(
     expense_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Get a specific expense by ID (must be owner)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
@@ -109,8 +126,8 @@ async def get_expense(
 async def update_expense(
     expense_id: int,
     expense_update: ExpenseUpdate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Update an expense (must be owner or admin)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
@@ -145,8 +162,8 @@ async def update_expense(
 @router.delete("/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_expense(
     expense_id: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """Delete an expense (must be owner or admin)."""
     expense = db.query(ExpenseModel).filter(ExpenseModel.id == expense_id).first()
