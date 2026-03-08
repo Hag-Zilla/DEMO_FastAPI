@@ -5,14 +5,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from ..core.exceptions import ConflictException, ResourceNotFoundException
+from ..core.exceptions import AuthorizationException, ConflictException, ResourceNotFoundException
 from ..core.logging import get_logger
 from ..core.security import get_current_user, get_password_hash
 from ..core.enums import UserRole
 from ..database.session import get_db
 from ..utils.dependencies import get_admin_user
 from ..database.models.user import User as UserModel
-from ..schemas.user import UserCreate, UserUpdate, UserResponse
+from ..schemas.user import UserCreate, UserSelfUpdate, UserUpdate, UserResponse
 
 logger = get_logger(__name__)
 
@@ -56,7 +56,7 @@ async def read_users_me(current_user: Annotated[UserModel, Depends(get_current_u
 
 @router.put("/update/", name="Self Update User", response_model=UserResponse)
 async def self_update_user(
-    user_update: UserUpdate,
+    user_update: UserSelfUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ):
@@ -146,10 +146,13 @@ async def admin_update_user(
 async def delete_user(
     user_id: int,
     db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    admin: Annotated[UserModel, Depends(get_admin_user)],
 ):
     """Delete a user by ID (admin only)."""
-    del _admin
+    if admin.id == user_id:
+        logger.warning("Admin %s attempted to delete own account", admin.id)
+        raise AuthorizationException("Admin users cannot delete their own account")
+
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")

@@ -1,10 +1,10 @@
-requests
 fastapi
+pydantic
+pydantic-settings
 uvicorn
-pandas
 sqlalchemy
 passlib
 argon2-cffi
 python-jose
+PyYAML
 python-multipart
-python-dotenv

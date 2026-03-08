@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.enums import UserRole
 
@@ -18,7 +18,10 @@ class UserBase(BaseModel):
         example="john_doe",
     )
     budget: float = Field(
-        ..., ge=0, description="The user's budget", example=1000.0
+        default=0.0,
+        ge=0,
+        description="The user's budget",
+        example=1000.0,
     )
 
 
@@ -64,6 +67,32 @@ class UserUpdate(BaseModel):
         default=None,
         description="Whether the user is disabled",
         example=False,
+    )
+
+
+class UserSelfUpdate(BaseModel):
+    """Schema for self user updates (non-admin fields only)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    username: Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=50,
+        description="The user's unique username",
+        example="john_doe_updated",
+    )
+    password: Optional[str] = Field(
+        default=None,
+        min_length=6,
+        description="The user's password",
+        example="new_secure_password123",
+    )
+    budget: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="The user's budget",
+        example=1200.0,
     )
 
 
