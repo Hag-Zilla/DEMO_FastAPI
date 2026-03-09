@@ -86,58 +86,7 @@ run_admin_bootstrap() {
     fi
 }
 
-# Function to create a Conda environment
-create_conda_env() {
-    # Check if Conda is installed
-    if ! command -v conda &> /dev/null
-    then
-        echo "Conda is not installed. Please install Conda before proceeding."
-        exit 1
-    fi
-
-    # Check if Conda environment already exists
-    if conda env list | awk '{print $1}' | grep -Fxq "$ENV_NAME"; then
-        echo "Warning: Conda environment '$ENV_NAME' already exists."
-        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
-        if [ "${confirm,,}" = "y" ]; then
-            run_command "conda env remove -n $ENV_NAME -y"
-        else
-            echo "Aborting setup."
-            exit 0
-        fi
-    fi
-    
-    # Create the Conda environment
-    run_command "conda env create --file=$ENV_FILE"
-
-    # Initialize Conda for the current shell
-    if [ -n "${ZSH_VERSION:-}" ]; then
-        eval "$(conda shell.zsh hook)"
-    elif [ -n "${BASH_VERSION:-}" ]; then
-        eval "$(conda shell.bash hook)"
-    else
-        # Fallback: try to detect from SHELL variable
-        if [[ "${SHELL:-}" == *"zsh"* ]]; then
-            eval "$(conda shell.zsh hook)"
-        else
-            eval "$(conda shell.bash hook)"
-        fi
-    fi
-
-    # Activate the environment
-    conda activate "$ENV_NAME" || { echo "Error: Failed to activate conda environment."; exit 1; }
-
-    # Upgrade pip (optional, but recommended)
-    run_command "pip install --upgrade pip"
-
-    run_admin_bootstrap
-
-    echo "The Conda environment '$ENV_NAME' has been created successfully."
-    echo "All dependencies have been installed from environment.yml"
-}
-
-# Function to create a venv environment using pyenv
-#
+# Function to create a uv environment
 create_uv_env() {
     # Check if uv is installed
     if ! command -v uv &> /dev/null
@@ -217,20 +166,18 @@ create_venv_env() {
 }
 
 # Ask the user which environment manager to use
-echo "Which environment manager would you like to use? (conda/venv/uv)"
+echo "Which environment manager would you like to use? (venv/uv)"
 read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
 ENV_MANAGER_LOWER=$(echo "$ENV_MANAGER" | tr '[:upper:]' '[:lower:]')
 
-if [ "$ENV_MANAGER_LOWER" = "conda" ]; then
-    create_conda_env
-elif [ "$ENV_MANAGER_LOWER" = "venv" ]; then
+if [ "$ENV_MANAGER_LOWER" = "venv" ]; then
     create_venv_env
 elif [ "$ENV_MANAGER_LOWER" = "uv" ]; then
     create_uv_env
 else
-    echo "Invalid choice. Please choose 'conda', 'venv' or 'uv'."
+    echo "Invalid choice. Please choose 'venv' or 'uv'."
     exit 1
 fi
 
