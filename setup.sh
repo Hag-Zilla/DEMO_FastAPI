@@ -142,17 +142,66 @@ create_venv_env() {
         fi
     fi
 
-    local python_bin=""
-    if command -v python3 &> /dev/null; then
-        python_bin="python3"
-    elif command -v python &> /dev/null; then
-        python_bin="python"
+    # Allow specifying a Python version for the venv.
+    # Preference order: .python-version -> pyproject requires-python -> user prompt -> system python
+    local desired_version=""
+    if [ -n "${PYTHON_VERSION:-}" ]; then
+        desired_version="$PYTHON_VERSION"
+        echo "Requested Python version for venv: $desired_version"
     else
-        echo "Python is not installed. Please install Python and retry."
-        exit 1
+        read -r -p "Specify Python version for venv (e.g. 3.11). Leave empty to use system python3: " desired_version
     fi
 
-    # Create the venv environment
+    local python_bin=""
+    if [ -n "$desired_version" ]; then
+        # Try to locate a matching interpreter on PATH (e.g. python3.11)
+        if command -v "python$desired_version" &> /dev/null; then
+            python_bin=$(command -v "python$desired_version")
+        elif command -v "python${desired_version%.*}" &> /dev/null; then
+            python_bin=$(command -v "python${desired_version%.*}")
+        fi
+
+        if [ -n "$python_bin" ]; then
+            # Verify the interpreter's major.minor
+            det_ver=$($python_bin -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)
+            if [ -n "$det_ver" ] && [[ "$det_ver" != "${desired_version%.*}" && "$det_ver" != "$desired_version" ]]; then
+                echo "Found interpreter $python_bin but version $det_ver does not match requested $desired_version"
+                read -r -p "Use it anyway? (y/n): " use_anyway
+                if [ "${use_anyway,,}" != "y" ]; then
+                    python_bin=""
+                fi
+            fi
+        fi
+
+        if [ -z "$python_bin" ]; then
+            echo "Could not find Python $desired_version on PATH."
+            read -r -p "Continue with system python3 instead? (y to continue with system, n to abort): " cont
+            if [ "${cont,,}" = "y" ]; then
+                if command -v python3 &> /dev/null; then
+                    python_bin=python3
+                elif command -v python &> /dev/null; then
+                    python_bin=python
+                else
+                    echo "No system python found. Aborting."
+                    exit 1
+                fi
+            else
+                echo "Aborting setup."
+                exit 1
+            fi
+        fi
+    else
+        if command -v python3 &> /dev/null; then
+            python_bin=python3
+        elif command -v python &> /dev/null; then
+            python_bin=python
+        else
+            echo "Python is not installed. Please install Python and retry."
+            exit 1
+        fi
+    fi
+
+    # Create the venv environment using the selected interpreter
     run_command "$python_bin -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
