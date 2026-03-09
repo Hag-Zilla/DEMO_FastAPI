@@ -1,12 +1,26 @@
-.PHONY: help init run test lint format bootstrap-admin clean
+.PHONY: help init init-uv init-venv sync lock run test lint format bootstrap-admin clean
 
 help:
 	@echo "Usage: make <target>"
-	@echo "Targets: init, run, test, lint, format, bootstrap-admin, clean"
+	@echo "Targets: init, init-uv, init-venv, sync, lock, run, test, lint, format, bootstrap-admin, clean"
 
-# Wrapper (interactive) for setup.sh which handles venv/uv flows
+# Wrapper (interactive) for setup.sh (default: uv)
 init:
 	bash setup.sh
+
+init-uv:
+	printf "uv\n" | bash setup.sh
+
+init-venv:
+	printf "venv\n" | bash setup.sh
+
+# Sync dependencies from pyproject.toml/uv.lock
+sync:
+	uv sync
+
+# Refresh uv lockfile
+lock:
+	uv lock
 
 # Run in development mode (auto-reload)
 run:
