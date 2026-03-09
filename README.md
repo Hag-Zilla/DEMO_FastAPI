@@ -31,7 +31,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.14+
 - `uv` (recommended)
 - `venv` (fallback)
 
