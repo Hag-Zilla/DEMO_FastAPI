@@ -29,48 +29,56 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ## 🚀 Quick Start
 ---
 
-### Prerequisites
+Two simple flows are supported: one for typical contributors (who consume the repo), and one for maintainers (who change dependencies).
 
-- Python 3.14+
-- `uv` (recommended)
-- `venv` (fallback)
+Contributor (quick start — use committed lock)
 
-### Create `.env` File
-
-Copy the example and adjust settings:
+1) Clone and prepare env
 
 ```bash
+git clone <repo-url>
+cd DEMO_FastAPI
 cp .env.example .env
+# edit .env as needed
 ```
 
-### Setup Environment
+2) Initialize environment (uses committed `uv.lock` / `requirements.txt` if present)
 
 ```bash
+# Interactive (defaults to uv)
 make init
-# or directly:
-bash setup.sh
+# or force paths:
+make init-uv    # use uv
+make init-venv  # use venv (uses requirements.txt if present)
 ```
 
-The script guides you through environment setup (`venv` or `uv`), installs dependencies, and runs one-time admin bootstrap.
-
-Default path is `uv` (press Enter at the prompt).
-
-### Admin Bootstrap (One-Shot)
-
-During `setup.sh`, `project_spec.sh` is executed to create the initial `admin` user.
-
-- The bootstrap runs only once and writes a lock file: `.admin_bootstrap_done`
-- If you re-run setup later, admin bootstrap is skipped automatically
-- If `admin` already exists and you force rerun, explicit confirmation is required
-- Admin secret policy: min 12 chars, uppercase, lowercase, digit, special char
-- To force a manual rerun:
+3) Run tests and start
 
 ```bash
-ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh
+make test
+source .venv/bin/activate  # or ./venv/bin/activate
+make run
 ```
 
-⚠️ Security note: the admin secret is not persisted in `.env`.
-⚠️ Dependency note: dependencies are managed from `pyproject.toml` in the `uv` workflow (`uv sync`), while `requirements.txt` remains available for the `venv` fallback path.
+Maintainer (update dependencies — produce canonical lock)
+
+If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
+
+```bash
+# update pyproject.toml as needed
+make lock                 # generates/refreshes uv.lock
+make export-reqs          # export pinned requirements.txt from uv.lock
+git add pyproject.toml uv.lock requirements.txt
+git commit -m "Update deps: refresh uv.lock and exported requirements.txt"
+git push
+```
+
+Notes
+- If `uv.lock` is committed, contributors do NOT need to run `make lock` — `uv sync` (used by `make init`) will install the exact versions from the lock.
+- If `requirements.txt` is present, `venv` users can install from it directly without `uv`.
+- To ensure the lock matches production, generate `uv.lock` on the CI or the platform matching production (use `uv lock --python 3.14` to target a specific Python minor).
+
+This split keeps onboarding minimal for contributors, while allowing maintainers to control the canonical dependency graph for CI/production.
 
 ### Run the API
 
@@ -105,6 +113,7 @@ make init-uv         # non-interactive uv setup
 make init-venv       # non-interactive venv setup
 make sync            # uv sync from pyproject.toml / uv.lock
 make lock            # refresh uv lockfile
+make export-reqs     # generate a pinned requirements.txt from uv.lock (for venv/pip users)
 make run             # run FastAPI in reload mode
 make test            # run tests
 make lint            # run flake8 on app/
