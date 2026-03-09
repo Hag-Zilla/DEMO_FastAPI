@@ -32,7 +32,8 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ### Prerequisites
 
 - Python 3.11+
-- `venv` or `uv`
+- `uv` (recommended)
+- `venv` (fallback)
 
 ### Setup Environment
 
@@ -41,6 +42,8 @@ bash setup.sh
 ```
 
 The script guides you through environment setup (`venv` or `uv`), installs dependencies, and runs one-time admin bootstrap.
+
+Default path is `uv` (press Enter at the prompt).
 
 ### Create `.env` File
 
@@ -78,6 +81,16 @@ uvicorn app.main:app --reload
 ```
 
 **API is running at**: http://localhost:8000
+
+### uv-first Workflow (Recommended)
+
+```bash
+# Install/update dependencies from pyproject.toml and uv.lock
+uv sync
+
+# Refresh lockfile when dependencies change
+uv lock
+```
 
 ## 🌐 Access the API
 ---
@@ -127,8 +140,8 @@ app/
 
 Configuration Files:
 ├── .env.example                # Environment variables template
+├── pyproject.toml              # Project metadata and dependency constraints (uv-first)
 ├── requirements.txt            # Python dependencies
-├── environment.yml             # Project setup hints (name + Python version)
 └── setup.sh                    # Setup script
 ```
 

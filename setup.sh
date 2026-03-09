@@ -55,26 +55,29 @@ run_optional_command() {
     fi
 }
 
-# Path to the environment.yml file
-ENV_FILE="environment.yml"
+# Project metadata source (uv/venv compatible)
+PYPROJECT_FILE="pyproject.toml"
 
-# Check if environment.yml exists
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: $ENV_FILE not found."
-    exit 1
-fi
-
-# Function to extract values from environment.yml
-extract_value() {
+# Function to extract simple quoted values from pyproject.toml
+extract_pyproject_value() {
     local key="$1"
-    grep "^$key:" "$ENV_FILE" | sed "s/^$key: //"
+    if [ -f "$PYPROJECT_FILE" ]; then
+        grep -E "^$key\s*=\s*\".*\"" "$PYPROJECT_FILE" | head -n 1 | sed -E 's/^[^=]+=\s*"(.*)"/\1/'
+    fi
 }
 
-# Extract the environment name and Python version from environment.yml
-ENV_NAME=$(extract_value "name")
-FULL_PYTHON_VERSION=$(grep -A 1 "^dependencies:" "$ENV_FILE" | grep "python=" | sed "s/.*python=//")
-# Extract major.minor version (e.g., 3.9, 3.10, 3.11, 3.12.1 -> 3.12)
-PYTHON_VERSION=$(echo "$FULL_PYTHON_VERSION" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+# Derive environment/project name and Python version hints.
+PROJECT_RAW_NAME=$(extract_pyproject_value "name")
+ENV_NAME=$(echo "${PROJECT_RAW_NAME:-demo-fastapi}" | tr '-' '_')
+
+PYTHON_VERSION=""
+if [ -f ".python-version" ]; then
+    PYTHON_VERSION=$(head -n 1 .python-version | tr -d '[:space:]')
+elif [ -f "$PYPROJECT_FILE" ]; then
+    REQUIRES_PYTHON=$(extract_pyproject_value "requires-python")
+    # Pick the first major.minor found (e.g. >=3.11,<3.14 -> 3.11)
+    PYTHON_VERSION=$(echo "$REQUIRES_PYTHON" | sed -nE 's/.*([0-9]+\.[0-9]+).*/\1/p' | head -n 1)
+fi
 
 # Run admin bootstrap script as part of installation
 run_admin_bootstrap() {
@@ -91,8 +94,14 @@ create_uv_env() {
     # Check if uv is installed
     if ! command -v uv &> /dev/null
     then
-        echo "uv is not installed. Install it with: pip install uv"
-        exit 1
+        echo "uv is not installed. Attempting auto-install..."
+        run_optional_command "curl -LsSf https://astral.sh/uv/install.sh | sh"
+        export PATH="$HOME/.local/bin:$PATH"
+        if ! command -v uv &> /dev/null; then
+            echo "uv install failed. Please install it manually and retry."
+            echo "Install command: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            exit 1
+        fi
     fi
 
     # Create uv virtual environment (default .venv). Request python version if available.
@@ -103,10 +112,12 @@ create_uv_env() {
     fi
 
     # Install dependencies into the uv environment
-    if [ -f "requirements.txt" ]; then
+    if [ -f "pyproject.toml" ]; then
+        run_command "uv sync"
+    elif [ -f "requirements.txt" ]; then
         run_command "uv pip install -r requirements.txt"
     else
-        echo "Warning: requirements.txt not found. Skipping pip install."
+        echo "Warning: no pyproject.toml or requirements.txt found. Skipping dependency install."
     fi
 
     # Activate the created venv for subsequent interactive steps (project_spec.sh expects python)
@@ -120,12 +131,6 @@ create_uv_env() {
     echo "The uv environment (.venv) has been created successfully."
 }
 create_venv_env() {
-    # Check if pyenv is installed
-    if ! command -v pyenv &> /dev/null
-    then
-        echo "pyenv is not installed. Please install pyenv before proceeding."
-        exit 1
-    fi
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
         read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
@@ -137,14 +142,18 @@ create_venv_env() {
         fi
     fi
 
-    # Install the specified Python version using pyenv
-    run_command "pyenv install -s $PYTHON_VERSION"
-
-    # Set the local Python version for the project
-    run_command "pyenv local $PYTHON_VERSION"
+    local python_bin=""
+    if command -v python3 &> /dev/null; then
+        python_bin="python3"
+    elif command -v python &> /dev/null; then
+        python_bin="python"
+    else
+        echo "Python is not installed. Please install Python and retry."
+        exit 1
+    fi
 
     # Create the venv environment
-    run_command "python -m venv --prompt $ENV_NAME venv"
+    run_command "$python_bin -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
     # shellcheck source=/dev/null
@@ -156,8 +165,10 @@ create_venv_env() {
     # Install dependencies from requirements.txt
     if [ -f "requirements.txt" ]; then
         run_command "pip install -r requirements.txt"
+    elif [ -f "pyproject.toml" ]; then
+        run_command "pip install -e ."
     else
-        echo "Warning: requirements.txt not found. Skipping pip install."
+        echo "Warning: no requirements.txt or pyproject.toml found. Skipping dependency install."
     fi
 
     run_admin_bootstrap
@@ -166,11 +177,14 @@ create_venv_env() {
 }
 
 # Ask the user which environment manager to use
-echo "Which environment manager would you like to use? (venv/uv)"
+echo "Which environment manager would you like to use? [uv/venv] (default: uv)"
 read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
 ENV_MANAGER_LOWER=$(echo "$ENV_MANAGER" | tr '[:upper:]' '[:lower:]')
+if [ -z "$ENV_MANAGER_LOWER" ]; then
+    ENV_MANAGER_LOWER="uv"
+fi
 
 if [ "$ENV_MANAGER_LOWER" = "venv" ]; then
     create_venv_env
@@ -181,8 +195,11 @@ else
     exit 1
 fi
 
-# Extract project name from environment.yml if not already done
-PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
+# Extract project name from pyproject.toml when present
+PROJECT_NAME=$(echo "${PROJECT_RAW_NAME:-demo-fastapi}" | tr '-_' '  ' | sed 's/.*/\U&/')
+if [ -z "${PROJECT_NAME:-}" ]; then
+    PROJECT_NAME="DEMO FASTAPI"
+fi
 
 # Print setup report
 echo ""
