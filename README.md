@@ -35,16 +35,6 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 - `uv` (recommended)
 - `venv` (fallback)
 
-### Setup Environment
-
-```bash
-bash setup.sh
-```
-
-The script guides you through environment setup (`venv` or `uv`), installs dependencies, and runs one-time admin bootstrap.
-
-Default path is `uv` (press Enter at the prompt).
-
 ### Create `.env` File
 
 Copy the example and adjust settings:
@@ -52,6 +42,18 @@ Copy the example and adjust settings:
 ```bash
 cp .env.example .env
 ```
+
+### Setup Environment
+
+```bash
+make init
+# or directly:
+bash setup.sh
+```
+
+The script guides you through environment setup (`venv` or `uv`), installs dependencies, and runs one-time admin bootstrap.
+
+Default path is `uv` (press Enter at the prompt).
 
 ### Admin Bootstrap (One-Shot)
 
@@ -68,7 +70,7 @@ ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh
 ```
 
 ⚠️ Security note: the admin secret is not persisted in `.env`.
-⚠️ Dependency note: Argon2 backend is installed via `requirements.txt` (`argon2-cffi`), not at bootstrap runtime.
+⚠️ Dependency note: dependencies are managed from `pyproject.toml` in the `uv` workflow (`uv sync`), while `requirements.txt` remains available for the `venv` fallback path.
 
 ### Run the API
 
@@ -85,11 +87,30 @@ uvicorn app.main:app --reload
 ### uv-first Workflow (Recommended)
 
 ```bash
-# Install/update dependencies from pyproject.toml and uv.lock
+# Install/update dependencies from pyproject.toml (and uv.lock once generated)
 uv sync
 
 # Refresh lockfile when dependencies change
 uv lock
+```
+
+### Make Commands
+
+The project provides a `Makefile` to simplify the most common workflows:
+
+```bash
+make help            # list available targets
+make init            # interactive setup (default path: uv)
+make init-uv         # non-interactive uv setup
+make init-venv       # non-interactive venv setup
+make sync            # uv sync from pyproject.toml / uv.lock
+make lock            # refresh uv lockfile
+make run             # run FastAPI in reload mode
+make test            # run tests
+make lint            # run flake8 on app/
+make format          # run black on app/
+make bootstrap-admin # run admin bootstrap script
+make clean           # remove common cache/build artifacts
 ```
 
 ## 🌐 Access the API
