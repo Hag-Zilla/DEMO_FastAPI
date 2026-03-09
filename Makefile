@@ -4,7 +4,7 @@ help:
 	@echo "Usage: make <target>"
 	@echo "Targets: init, run, test, lint, format, bootstrap-admin, clean"
 
-# Wrapper (interactive) for setup.sh which handles conda/venv flows
+# Wrapper (interactive) for setup.sh which handles venv/uv flows
 init:
 	bash setup.sh
 

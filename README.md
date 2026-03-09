@@ -32,7 +32,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ### Prerequisites
 
 - Python 3.11+
-- Conda (recommended) or venv
+- `venv` or `uv`
 
 ### Setup Environment
 
@@ -40,7 +40,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 bash setup.sh
 ```
 
-The script guides you through environment setup (Conda or venv), installs dependencies, and runs one-time admin bootstrap.
+The script guides you through environment setup (`venv` or `uv`), installs dependencies, and runs one-time admin bootstrap.
 
 ### Create `.env` File
 
@@ -71,7 +71,7 @@ ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh
 
 ```bash
 # Activate environment
-conda activate demo_fastapi  # or: source ./venv/bin/activate
+source ./venv/bin/activate  # or: source ./.venv/bin/activate (uv option)
 
 # Start the server
 uvicorn app.main:app --reload
@@ -128,7 +128,7 @@ app/
 Configuration Files:
 ├── .env.example                # Environment variables template
 ├── requirements.txt            # Python dependencies
-├── environment.yml             # Conda environment config
+├── environment.yml             # Project setup hints (name + Python version)
 └── setup.sh                    # Setup script
 ```
 
