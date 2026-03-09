@@ -31,7 +31,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 
 Two simple flows are supported: one for typical contributors (who consume the repo), and one for maintainers (who change dependencies).
 
-Contributor (quick start — use committed lock)
+**Contributor (quick start — use committed lock)**
 
 1) Clone and prepare env
 
@@ -57,12 +57,12 @@ make init-venv  # use venv (uses requirements.txt if present)
 ```bash
 make test
 source .venv/bin/activate  # or ./venv/bin/activate
-make run
+make run # It will start the API
 ```
 
-Maintainer (update dependencies — produce canonical lock)
+**Maintainer (update dependencies — produce canonical lock)**
 
-If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
+1) If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
 
 ```bash
 # update pyproject.toml as needed
@@ -80,6 +80,14 @@ Notes
 
 This split keeps onboarding minimal for contributors, while allowing maintainers to control the canonical dependency graph for CI/production.
 
+2) Run tests and start
+
+```bash
+make test
+source .venv/bin/activate  # or ./venv/bin/activate
+make run # It will start the API
+```
+
 ### Run the API
 
 ```bash
@@ -91,16 +99,6 @@ uvicorn app.main:app --reload
 ```
 
 **API is running at**: http://localhost:8000
-
-### uv-first Workflow (Recommended)
-
-```bash
-# Install/update dependencies from pyproject.toml (and uv.lock once generated)
-uv sync
-
-# Refresh lockfile when dependencies change
-uv lock
-```
 
 ### Make Commands
 
