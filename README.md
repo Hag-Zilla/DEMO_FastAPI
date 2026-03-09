@@ -88,18 +88,6 @@ source .venv/bin/activate  # or ./venv/bin/activate
 make run # It will start the API
 ```
 
-### Run the API
-
-```bash
-# Activate environment
-source ./venv/bin/activate  # or: source ./.venv/bin/activate (uv option)
-
-# Start the server
-uvicorn app.main:app --reload
-```
-
-**API is running at**: http://localhost:8000
-
 ### Make Commands
 
 The project provides a `Makefile` to simplify the most common workflows:
@@ -142,7 +130,9 @@ app/
 │   ├── security.py             # JWT, authentication, password hashing
 │   ├── exceptions.py           # Custom exception classes
 │   ├── enums.py                # UserRole, ExpenseCategory enums
-│   └── logging.py              # Logging configuration (file + console)
+│   ├── logging.py              # Logging configuration (file + console)
+│   ├── middleware.py           # HTTP logging middleware
+│   └── branding.py             # Startup banner and log signature
 │
 ├── database/                    # Data layer (Recettes vs Ustensiles)
 │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
@@ -153,9 +143,9 @@ app/
 ├── routers/                     # API endpoints (APIRouter pattern)
 │   ├── auth.py                 # POST /token (login)
 │   ├── users.py                # User CRUD endpoints
-│   ├── expenses.py             # Expense endpoints (stub)
-│   ├── alerts.py               # Budget alert endpoints (stub)
-│   ├── reports.py              # Report generation (stub)
+│   ├── expenses.py             # Expense endpoints
+│   ├── alerts.py               # Budget alert endpoints
+│   ├── reports.py              # Report generation
 │   └── health.py               # Liveness and readiness checks
 │
 ├── schemas/                     # Pydantic request/response models
@@ -164,13 +154,26 @@ app/
 │   └── common.py               # Token schema
 │
 └── utils/                       # Generic utilities (Ustensiles)
-    └── dependencies.py         # get_admin_user() dependency
+  ├── dependencies.py         # get_admin_user() dependency
+  ├── print_banner.py         # Banner rendering helper
+  ├── static/
+  │   └── favicon.svg
+  └── branding/
+    ├── startup.txt
+    ├── completion.txt
+    ├── setup.txt
+    └── mammoth.txt
 
 Configuration Files:
 ├── .env.example                # Environment variables template
 ├── pyproject.toml              # Project metadata and dependency constraints (uv-first)
 ├── requirements.txt            # Python dependencies
 └── setup.sh                    # Setup script
+
+Logs:
+├── logs/app.log                # Application log file
+├── logs/app.jsonl              # Structured JSONL logs
+└── logs/config/logging.yaml    # Logging configuration
 ```
 
 ## ⚙️ Configuration
