@@ -29,55 +29,84 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ## 🚀 Quick Start
 ---
 
-### Prerequisites
+Two simple flows are supported: one for typical contributors (who consume the repo), and one for maintainers (who change dependencies).
 
-- Python 3.11+
-- Conda (recommended) or venv
+**Contributor (quick start — use committed lock)**
 
-### Setup Environment
-
-```bash
-bash setup.sh
-```
-
-The script guides you through environment setup (Conda or venv), installs dependencies, and runs one-time admin bootstrap.
-
-### Create `.env` File
-
-Copy the example and adjust settings:
+1) Clone and prepare env
 
 ```bash
+git clone <repo-url>
+cd DEMO_FastAPI
 cp .env.example .env
+# edit .env as needed
 ```
 
-### Admin Bootstrap (One-Shot)
-
-During `setup.sh`, `project_spec.sh` is executed to create the initial `admin` user.
-
-- The bootstrap runs only once and writes a lock file: `.admin_bootstrap_done`
-- If you re-run setup later, admin bootstrap is skipped automatically
-- If `admin` already exists and you force rerun, explicit confirmation is required
-- Admin secret policy: min 12 chars, uppercase, lowercase, digit, special char
-- To force a manual rerun:
+2) Initialize environment (uses committed `uv.lock` / `requirements.txt` if present)
 
 ```bash
-ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh
+# Interactive (defaults to uv)
+make init
+# or force paths:
+make init-uv    # use uv
+make init-venv  # use venv (uses requirements.txt if present)
 ```
 
-⚠️ Security note: the admin secret is not persisted in `.env`.
-⚠️ Dependency note: Argon2 backend is installed via `requirements.txt` (`argon2-cffi`), not at bootstrap runtime.
-
-### Run the API
+3) Run tests and start
 
 ```bash
-# Activate environment
-conda activate demo_fastapi  # or: source ./venv/bin/activate
-
-# Start the server
-uvicorn app.main:app --reload
+make test
+source .venv/bin/activate  # or ./venv/bin/activate
+make run # It will start the API
 ```
 
-**API is running at**: http://localhost:8000
+**Maintainer (update dependencies — produce canonical lock)**
+
+1) If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
+
+```bash
+# update pyproject.toml as needed
+make lock                 # generates/refreshes uv.lock
+make export-reqs          # export pinned requirements.txt from uv.lock
+git add pyproject.toml uv.lock requirements.txt
+git commit -m "Update deps: refresh uv.lock and exported requirements.txt"
+git push
+```
+
+Notes
+- If `uv.lock` is committed, contributors do NOT need to run `make lock` — `uv sync` (used by `make init`) will install the exact versions from the lock.
+- If `requirements.txt` is present, `venv` users can install from it directly without `uv`.
+- To ensure the lock matches production, generate `uv.lock` on the CI or the platform matching production (use `uv lock --python 3.14` to target a specific Python minor).
+
+This split keeps onboarding minimal for contributors, while allowing maintainers to control the canonical dependency graph for CI/production.
+
+2) Run tests and start
+
+```bash
+make test
+source .venv/bin/activate  # or ./venv/bin/activate
+make run # It will start the API
+```
+
+### Make Commands
+
+The project provides a `Makefile` to simplify the most common workflows:
+
+```bash
+make help            # list available targets
+make init            # interactive setup (default path: uv)
+make init-uv         # non-interactive uv setup
+make init-venv       # non-interactive venv setup
+make sync            # uv sync from pyproject.toml / uv.lock
+make lock            # refresh uv lockfile
+make export-reqs     # generate a pinned requirements.txt from uv.lock (for venv/pip users)
+make run             # run FastAPI in reload mode
+make test            # run tests
+make lint            # run flake8 on app/
+make format          # run black on app/
+make bootstrap-admin # run admin bootstrap script
+make clean           # remove common cache/build artifacts
+```
 
 ## 🌐 Access the API
 ---
@@ -101,7 +130,9 @@ app/
 │   ├── security.py             # JWT, authentication, password hashing
 │   ├── exceptions.py           # Custom exception classes
 │   ├── enums.py                # UserRole, ExpenseCategory enums
-│   └── logging.py              # Logging configuration (file + console)
+│   ├── logging.py              # Logging configuration (file + console)
+│   ├── middleware.py           # HTTP logging middleware
+│   └── branding.py             # Startup banner and log signature
 │
 ├── database/                    # Data layer (Recettes vs Ustensiles)
 │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
@@ -112,9 +143,9 @@ app/
 ├── routers/                     # API endpoints (APIRouter pattern)
 │   ├── auth.py                 # POST /token (login)
 │   ├── users.py                # User CRUD endpoints
-│   ├── expenses.py             # Expense endpoints (stub)
-│   ├── alerts.py               # Budget alert endpoints (stub)
-│   ├── reports.py              # Report generation (stub)
+│   ├── expenses.py             # Expense endpoints
+│   ├── alerts.py               # Budget alert endpoints
+│   ├── reports.py              # Report generation
 │   └── health.py               # Liveness and readiness checks
 │
 ├── schemas/                     # Pydantic request/response models
@@ -123,13 +154,26 @@ app/
 │   └── common.py               # Token schema
 │
 └── utils/                       # Generic utilities (Ustensiles)
-    └── dependencies.py         # get_admin_user() dependency
+  ├── dependencies.py         # get_admin_user() dependency
+  ├── print_banner.py         # Banner rendering helper
+  ├── static/
+  │   └── favicon.svg
+  └── branding/
+    ├── startup.txt
+    ├── completion.txt
+    ├── setup.txt
+    └── mammoth.txt
 
 Configuration Files:
 ├── .env.example                # Environment variables template
+├── pyproject.toml              # Project metadata and dependency constraints (uv-first)
 ├── requirements.txt            # Python dependencies
-├── environment.yml             # Conda environment config
 └── setup.sh                    # Setup script
+
+Logs:
+├── logs/app.log                # Application log file
+├── logs/app.jsonl              # Structured JSONL logs
+└── logs/config/logging.yaml    # Logging configuration
 ```
 
 ## ⚙️ Configuration
