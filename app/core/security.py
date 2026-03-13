@@ -5,7 +5,8 @@ from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -37,7 +38,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
-        # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to jose
+        # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to PyJWT
         secret = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, "get_secret_value") else settings.SECRET_KEY
         payload = jwt.decode(
             token,
@@ -45,7 +46,7 @@ def decode_jwt_token(token: str) -> dict:
             algorithms=[settings.ALGORITHM],
         )
         return payload
-    except JWTError as e:
+    except InvalidTokenError as e:
         raise AuthenticationException("Invalid authentication credentials") from e
 
 
