@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from logging.config import dictConfig
 from pathlib import Path
@@ -9,6 +10,52 @@ from pathlib import Path
 import yaml
 
 from app.core.config import settings
+
+
+_URL_CREDENTIALS_RE = re.compile(r"([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\s]+):([^@/\s]+)@")
+_SECRET_PAIR_RE = re.compile(
+    r"(?i)\b(SECRET_KEY|PASSWORD|TOKEN|API_KEY|AUTHORIZATION)\b\s*([=:])\s*([^\s,;]+)"
+)
+
+
+def _redact_text(value: str) -> str:
+    """Mask common sensitive patterns in log text."""
+    redacted = _URL_CREDENTIALS_RE.sub(r"\1\2:***@", value)
+    redacted = _SECRET_PAIR_RE.sub(r"\1\2***", redacted)
+    return redacted
+
+
+def _redact_obj(value):
+    """Recursively redact strings nested inside logging arguments."""
+    if isinstance(value, str):
+        return _redact_text(value)
+    if isinstance(value, tuple):
+        return tuple(_redact_obj(item) for item in value)
+    if isinstance(value, list):
+        return [_redact_obj(item) for item in value]
+    if isinstance(value, dict):
+        return {k: _redact_obj(v) for k, v in value.items()}
+    return value
+
+
+class SafeFormatter(logging.Formatter):
+    """Formatter that redacts sensitive values from messages and tracebacks."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        original_msg = record.msg
+        original_args = record.args
+        try:
+            if isinstance(record.msg, str):
+                record.msg = _redact_text(record.msg)
+            if record.args:
+                record.args = _redact_obj(record.args)
+            return super().format(record)
+        finally:
+            record.msg = original_msg
+            record.args = original_args
+
+    def formatException(self, ei) -> str:  # noqa: N802 - stdlib API naming
+        return _redact_text(super().formatException(ei))
 
 
 class JSONFormatter(logging.Formatter):
@@ -22,7 +69,7 @@ class JSONFormatter(logging.Formatter):
             ).isoformat(),
             "logger": record.name,
             "level": record.levelname,
-            "message": record.getMessage(),
+            "message": _redact_text(record.getMessage()),
         }
 
         # Add extra fields if present
@@ -39,7 +86,7 @@ class JSONFormatter(logging.Formatter):
 
         # Add exception info if present
         if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
+            log_data["exception"] = _redact_text(self.formatException(record.exc_info))
 
         return json.dumps(log_data, ensure_ascii=False)
 
@@ -98,6 +145,10 @@ def configure_logging() -> None:
             logging_config = yaml.safe_load(config_file)
     else:
         logging_config = _default_logging_config(log_level)
+
+    # Inject JSONFormatter class to avoid circular import issues
+    if "standard" in logging_config.get("formatters", {}):
+        logging_config["formatters"]["standard"]["()"] = SafeFormatter
 
     # Inject JSONFormatter class to avoid circular import issues
     if "json" in logging_config.get("formatters", {}):
