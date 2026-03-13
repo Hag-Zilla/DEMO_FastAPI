@@ -37,7 +37,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to jose
+        secret = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, "get_secret_value") else settings.SECRET_KEY
+        payload = jwt.decode(
+            token,
+            secret,
+            algorithms=[settings.ALGORITHM],
+        )
         return payload
     except JWTError as e:
         raise AuthenticationException("Invalid authentication credentials") from e
@@ -119,7 +125,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    secret = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, "get_secret_value") else settings.SECRET_KEY
+    encoded_jwt = jwt.encode(
+        to_encode,
+        secret,
+        algorithm=settings.ALGORITHM,
+    )
     return encoded_jwt
 
 
