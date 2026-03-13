@@ -5,6 +5,6 @@ uvicorn
 sqlalchemy
 passlib
 argon2-cffi
-python-jose
+PyJWT
 PyYAML
 python-multipart
