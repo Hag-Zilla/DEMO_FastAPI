@@ -423,7 +423,7 @@ The modular design allows easy database swaps with minimal code changes.
 - [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)
 - [Pydantic Documentation](https://docs.pydantic.dev/)
 - [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
-- [Python-Jose JWT](https://python-jose.readthedocs.io/)
+- [PyJWT Documentation](https://pyjwt.readthedocs.io/)
 - [Passlib Hashing](https://passlib.readthedocs.io/)
 - [DBeaver Database Tool](https://dbeaver.io/)
 
