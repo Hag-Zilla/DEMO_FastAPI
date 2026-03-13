@@ -55,26 +55,29 @@ run_optional_command() {
     fi
 }
 
-# Path to the environment.yml file
-ENV_FILE="environment.yml"
+# Project metadata source (uv/venv compatible)
+PYPROJECT_FILE="pyproject.toml"
 
-# Check if environment.yml exists
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: $ENV_FILE not found."
-    exit 1
-fi
-
-# Function to extract values from environment.yml
-extract_value() {
+# Function to extract simple quoted values from pyproject.toml
+extract_pyproject_value() {
     local key="$1"
-    grep "^$key:" "$ENV_FILE" | sed "s/^$key: //"
+    if [ -f "$PYPROJECT_FILE" ]; then
+        grep -E "^$key\s*=\s*\".*\"" "$PYPROJECT_FILE" | head -n 1 | sed -E 's/^[^=]+=\s*"(.*)"/\1/'
+    fi
 }
 
-# Extract the environment name and Python version from environment.yml
-ENV_NAME=$(extract_value "name")
-FULL_PYTHON_VERSION=$(grep -A 1 "^dependencies:" "$ENV_FILE" | grep "python=" | sed "s/.*python=//")
-# Extract major.minor version (e.g., 3.9, 3.10, 3.11, 3.12.1 -> 3.12)
-PYTHON_VERSION=$(echo "$FULL_PYTHON_VERSION" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+# Derive environment/project name and Python version hints.
+PROJECT_RAW_NAME=$(extract_pyproject_value "name")
+ENV_NAME=$(echo "${PROJECT_RAW_NAME:-demo-fastapi}" | tr '-' '_')
+
+PYTHON_VERSION=""
+if [ -f ".python-version" ]; then
+    PYTHON_VERSION=$(head -n 1 .python-version | tr -d '[:space:]')
+elif [ -f "$PYPROJECT_FILE" ]; then
+    REQUIRES_PYTHON=$(extract_pyproject_value "requires-python")
+    # Pick the first major.minor found (e.g. >=3.11,<3.14 -> 3.11)
+    PYTHON_VERSION=$(echo "$REQUIRES_PYTHON" | sed -nE 's/.*([0-9]+\.[0-9]+).*/\1/p' | head -n 1)
+fi
 
 # Run admin bootstrap script as part of installation
 run_admin_bootstrap() {
@@ -86,67 +89,33 @@ run_admin_bootstrap() {
     fi
 }
 
-# Function to create a Conda environment
-create_conda_env() {
-    # Check if Conda is installed
-    if ! command -v conda &> /dev/null
-    then
-        echo "Conda is not installed. Please install Conda before proceeding."
-        exit 1
-    fi
-
-    # Check if Conda environment already exists
-    if conda env list | awk '{print $1}' | grep -Fxq "$ENV_NAME"; then
-        echo "Warning: Conda environment '$ENV_NAME' already exists."
-        read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
-        if [ "${confirm,,}" = "y" ]; then
-            run_command "conda env remove -n $ENV_NAME -y"
-        else
-            echo "Aborting setup."
-            exit 0
-        fi
-    fi
-    
-    # Create the Conda environment
-    run_command "conda env create --file=$ENV_FILE"
-
-    # Initialize Conda for the current shell
-    if [ -n "${ZSH_VERSION:-}" ]; then
-        eval "$(conda shell.zsh hook)"
-    elif [ -n "${BASH_VERSION:-}" ]; then
-        eval "$(conda shell.bash hook)"
-    else
-        # Fallback: try to detect from SHELL variable
-        if [[ "${SHELL:-}" == *"zsh"* ]]; then
-            eval "$(conda shell.zsh hook)"
-        else
-            eval "$(conda shell.bash hook)"
-        fi
-    fi
-
-    # Activate the environment
-    conda activate "$ENV_NAME" || { echo "Error: Failed to activate conda environment."; exit 1; }
-
-    # Upgrade pip (optional, but recommended)
-    run_command "pip install --upgrade pip"
-
-    run_admin_bootstrap
-
-    echo "The Conda environment '$ENV_NAME' has been created successfully."
-    echo "All dependencies have been installed from environment.yml"
-}
-
-# Function to create a venv environment using pyenv
-#
+# Function to create a uv environment
 create_uv_env() {
     # Check if uv is installed
     if ! command -v uv &> /dev/null
     then
-        echo "uv is not installed. Install it with: pip install uv"
-        exit 1
+        echo "uv is not installed. Attempting auto-install..."
+        run_optional_command "curl -LsSf https://astral.sh/uv/install.sh | sh"
+        export PATH="$HOME/.local/bin:$PATH"
+        if ! command -v uv &> /dev/null; then
+            echo "uv install failed. Please install it manually and retry."
+            echo "Install command: curl -LsSf https://astral.sh/uv/install.sh | sh"
+            exit 1
+        fi
     fi
 
     # Create uv virtual environment (default .venv). Request python version if available.
+    # If .venv exists, offer to remove and recreate to avoid uv failing with existing env
+    if [ -d ".venv" ]; then
+        echo ".venv already exists."
+        read -r -p "Remove and recreate .venv? (y/n): " recreate
+        if [ "${recreate,,}" = "y" ]; then
+            run_command "rm -rf .venv"
+        else
+            echo "Keeping existing .venv. If you want a fresh env, remove .venv and re-run setup."
+        fi
+    fi
+
     if [ -n "${PYTHON_VERSION:-}" ]; then
         run_command "uv venv --python $PYTHON_VERSION"
     else
@@ -154,10 +123,12 @@ create_uv_env() {
     fi
 
     # Install dependencies into the uv environment
-    if [ -f "requirements.txt" ]; then
+    if [ -f "pyproject.toml" ]; then
+        run_command "uv sync"
+    elif [ -f "requirements.txt" ]; then
         run_command "uv pip install -r requirements.txt"
     else
-        echo "Warning: requirements.txt not found. Skipping pip install."
+        echo "Warning: no pyproject.toml or requirements.txt found. Skipping dependency install."
     fi
 
     # Activate the created venv for subsequent interactive steps (project_spec.sh expects python)
@@ -171,12 +142,6 @@ create_uv_env() {
     echo "The uv environment (.venv) has been created successfully."
 }
 create_venv_env() {
-    # Check if pyenv is installed
-    if ! command -v pyenv &> /dev/null
-    then
-        echo "pyenv is not installed. Please install pyenv before proceeding."
-        exit 1
-    fi
     if [ -d "venv" ]; then
         echo "Warning: venv directory already exists."
         read -r -p "Do you want to remove it and create a new one? (y/n): " confirm
@@ -188,14 +153,67 @@ create_venv_env() {
         fi
     fi
 
-    # Install the specified Python version using pyenv
-    run_command "pyenv install -s $PYTHON_VERSION"
+    # Allow specifying a Python version for the venv.
+    # Preference order: .python-version -> pyproject requires-python -> user prompt -> system python
+    local desired_version=""
+    if [ -n "${PYTHON_VERSION:-}" ]; then
+        desired_version="$PYTHON_VERSION"
+        echo "Requested Python version for venv: $desired_version"
+    else
+        read -r -p "Specify Python version for venv (e.g. 3.11). Leave empty to use system python3: " desired_version
+    fi
 
-    # Set the local Python version for the project
-    run_command "pyenv local $PYTHON_VERSION"
+    local python_bin=""
+    if [ -n "$desired_version" ]; then
+        # Try to locate a matching interpreter on PATH (e.g. python3.11)
+        if command -v "python$desired_version" &> /dev/null; then
+            python_bin=$(command -v "python$desired_version")
+        elif command -v "python${desired_version%.*}" &> /dev/null; then
+            python_bin=$(command -v "python${desired_version%.*}")
+        fi
 
-    # Create the venv environment
-    run_command "python -m venv --prompt $ENV_NAME venv"
+        if [ -n "$python_bin" ]; then
+            # Verify the interpreter's major.minor
+            det_ver=$($python_bin -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)
+            if [ -n "$det_ver" ] && [[ "$det_ver" != "${desired_version%.*}" && "$det_ver" != "$desired_version" ]]; then
+                echo "Found interpreter $python_bin but version $det_ver does not match requested $desired_version"
+                read -r -p "Use it anyway? (y/n): " use_anyway
+                if [ "${use_anyway,,}" != "y" ]; then
+                    python_bin=""
+                fi
+            fi
+        fi
+
+        if [ -z "$python_bin" ]; then
+            echo "Could not find Python $desired_version on PATH."
+            read -r -p "Continue with system python3 instead? (y to continue with system, n to abort): " cont
+            if [ "${cont,,}" = "y" ]; then
+                if command -v python3 &> /dev/null; then
+                    python_bin=python3
+                elif command -v python &> /dev/null; then
+                    python_bin=python
+                else
+                    echo "No system python found. Aborting."
+                    exit 1
+                fi
+            else
+                echo "Aborting setup."
+                exit 1
+            fi
+        fi
+    else
+        if command -v python3 &> /dev/null; then
+            python_bin=python3
+        elif command -v python &> /dev/null; then
+            python_bin=python
+        else
+            echo "Python is not installed. Please install Python and retry."
+            exit 1
+        fi
+    fi
+
+    # Create the venv environment using the selected interpreter
+    run_command "$python_bin -m venv --prompt $ENV_NAME venv"
 
     # Activate the environment
     # shellcheck source=/dev/null
@@ -204,11 +222,31 @@ create_venv_env() {
     # Upgrade pip
     run_command "pip install --upgrade pip"
 
-    # Install dependencies from requirements.txt
+    # Install dependencies from requirements.txt (preferred) or generate it from uv.lock
     if [ -f "requirements.txt" ]; then
         run_command "pip install -r requirements.txt"
+    elif [ -f "uv.lock" ] && command -v uv &> /dev/null; then
+        echo "uv.lock found and uv available — attempting to export requirements.txt from lock"
+        # Try a couple of common uv export invocations
+        if uv export -f requirements.txt >/dev/null 2>&1; then
+            run_command "uv export -f requirements.txt"
+            run_command "pip install -r requirements.txt"
+        elif uv export --format=requirements.txt -o requirements.txt >/dev/null 2>&1; then
+            run_command "uv export --format=requirements.txt -o requirements.txt"
+            run_command "pip install -r requirements.txt"
+        else
+            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually." 
+            if [ -f "pyproject.toml" ]; then
+                echo "Falling back to editable install from pyproject.toml"
+                run_command "pip install -e ."
+            else
+                echo "Warning: no pyproject.toml found. Skipping dependency install."
+            fi
+        fi
+    elif [ -f "pyproject.toml" ]; then
+        run_command "pip install -e ."
     else
-        echo "Warning: requirements.txt not found. Skipping pip install."
+        echo "Warning: no requirements.txt, uv.lock, or pyproject.toml found. Skipping dependency install."
     fi
 
     run_admin_bootstrap
@@ -217,36 +255,40 @@ create_venv_env() {
 }
 
 # Ask the user which environment manager to use
-echo "Which environment manager would you like to use? (conda/venv/uv)"
+echo "Which environment manager would you like to use? [uv/venv] (default: uv)"
 read -r ENV_MANAGER
 
 # Convert to lowercase for case-insensitive comparison
 ENV_MANAGER_LOWER=$(echo "$ENV_MANAGER" | tr '[:upper:]' '[:lower:]')
+if [ -z "$ENV_MANAGER_LOWER" ]; then
+    ENV_MANAGER_LOWER="uv"
+fi
 
-if [ "$ENV_MANAGER_LOWER" = "conda" ]; then
-    create_conda_env
-elif [ "$ENV_MANAGER_LOWER" = "venv" ]; then
+if [ "$ENV_MANAGER_LOWER" = "venv" ]; then
     create_venv_env
 elif [ "$ENV_MANAGER_LOWER" = "uv" ]; then
     create_uv_env
 else
-    echo "Invalid choice. Please choose 'conda', 'venv' or 'uv'."
+    echo "Invalid choice. Please choose 'venv' or 'uv'."
     exit 1
 fi
 
-# Extract project name from environment.yml if not already done
-PROJECT_NAME=$(extract_value "name" | tr '_' ' ' | sed 's/.*/\U&/')
+# Extract project name from pyproject.toml when present
+PROJECT_NAME=$(echo "${PROJECT_RAW_NAME:-demo-fastapi}" | sed 's/[-_]/ /g' | tr '[:lower:]' '[:upper:]')
+if [ -z "${PROJECT_NAME:-}" ]; then
+    PROJECT_NAME="DEMO FASTAPI"
+fi
 
 # Print setup report
 echo ""
 echo "████████████████████████████████████████████████████████████████"
-echo "█                    ✅  SETUP REPORT  ✅                        █"
+echo "█                         SETUP REPORT                         █"
 echo "████████████████████████████████████████████████████████████████"
 echo ""
 echo "Setup Status: COMPLETED"
 echo ""
 
-if [ ${#SETUP_WARNINGS[@]} -gt 0 ]; then
+if [ "${SETUP_WARNINGS+set}" = "set" ] && [ "${#SETUP_WARNINGS[@]}" -gt 0 ]; then
     echo "⚠️  Warnings during setup:"
     for warning in "${SETUP_WARNINGS[@]}"; do
         echo "  • $warning"

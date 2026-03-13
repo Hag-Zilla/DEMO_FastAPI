@@ -1,7 +1,7 @@
 """Expense management router."""
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, status, Body
 from sqlalchemy.orm import Session
