@@ -18,3 +18,15 @@ async def get_admin_user(
             detail="You do not have permission to perform this action."
         )
     return current_user
+
+
+async def get_admin_or_moderator_user(
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+) -> UserModel:
+    """Dependency to ensure the current user is an admin or moderator."""
+    if current_user.role not in ("admin", "moderator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action."
+        )
+    return current_user
