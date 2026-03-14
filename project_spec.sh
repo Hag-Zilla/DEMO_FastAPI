@@ -85,7 +85,7 @@ import os
 
 from passlib.context import CryptContext
 
-from app.core.enums import UserRole
+from app.core.enums import UserRole, UserStatus
 from app.database.models.expense import Expense  # noqa: F401
 from app.database.models.user import User
 from app.database.session import Base, SessionLocal, engine
@@ -110,7 +110,7 @@ try:
             hashed_password=hashed_password,
             budget=0.0,
             role=UserRole.ADMIN,
-            disabled=False,
+            status=UserStatus.ACTIVE,
         )
         db.add(admin_user)
         db.commit()
@@ -118,9 +118,9 @@ try:
     else:
         admin_user.hashed_password = hashed_password
         admin_user.role = UserRole.ADMIN
-        admin_user.disabled = False
+        admin_user.status = UserStatus.ACTIVE
         db.commit()
-        print("Admin user updated (password/role/disabled).")
+        print("Admin user updated (password/role/status).")
 finally:
     db.close()
 EOF
