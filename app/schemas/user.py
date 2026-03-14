@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.enums import UserRole
+from app.core.enums import UserRole, UserStatus
 
 
 class UserBase(BaseModel):
@@ -63,10 +63,10 @@ class UserUpdate(BaseModel):
         description="The user's role (admin or user)",
         example=UserRole.USER,
     )
-    disabled: Optional[bool] = Field(
+    status: Optional[UserStatus] = Field(
         default=None,
-        description="Whether the user is disabled",
-        example=False,
+        description="The user's account status (pending, active, or disabled)",
+        example=UserStatus.ACTIVE,
     )
 
 
@@ -101,7 +101,7 @@ class UserResponse(UserBase):
 
     id: int
     role: UserRole
-    disabled: bool
+    status: UserStatus
 
     class Config:
         """Pydantic config."""
