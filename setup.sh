@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 # Print banners from app/utils/branding so they live outside scripts
 if [ -f "app/utils/branding/mammoth.txt" ]; then
     cat app/utils/branding/mammoth.txt
