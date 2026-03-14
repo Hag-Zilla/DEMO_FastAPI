@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationException, AuthorizationException
-from app.core.enums import UserRole
+from app.core.enums import UserRole, UserStatus
 from app.core.logging import get_logger
 from app.database.session import get_db
 from app.database.models.user import User as UserModel
@@ -59,7 +59,7 @@ async def get_current_user(
     - Decodes the JWT token and extracts the username (sub claim).
     - Fetches the user from the database.
     - Raises HTTP 401 if credentials are invalid or user not found.
-    - Raises HTTP 403 if the user account is disabled.
+    - Raises HTTP 403 if the user account is not active (pending or disabled).
     - Returns the User SQLAlchemy model instance if authentication is successful.
     """
     try:
@@ -72,9 +72,9 @@ async def get_current_user(
         if user is None:
             logger.warning("User not found for token: %s", username)
             raise AuthenticationException()
-        if user.disabled:
-            logger.warning("Login attempt with disabled account: %s", username)
-            raise AuthorizationException("User account is disabled")
+        if user.status != UserStatus.ACTIVE:
+            logger.warning("Login attempt with non-active account: %s (status: %s)", username, user.status)
+            raise AuthorizationException("User account is not active")
         return user  # Return the SQLAlchemy model instance directly
 
     except (AuthenticationException, AuthorizationException):
