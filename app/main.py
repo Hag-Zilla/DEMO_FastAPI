@@ -51,7 +51,7 @@ app = FastAPI(
         },
         {
             "name": "User Management",
-            "description": "Operations related to user creation and management.",
+            "description": "Operations related to user creation, management, and admin approvals.",
         },
         {
             "name": "Expenses",
