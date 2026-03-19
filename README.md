@@ -8,7 +8,29 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
-## 📋 About
+## � Table of Contents
+
+- [📋 About](#-about)
+- [✨ Features](#-features)
+- [🚀 Quick Start](#-quick-start)
+- [🌐 Access the API](#-access-the-api)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Configuration](#️-configuration)
+- [🗄️ Database](#-database)
+- [🔌 API Endpoints](#-api-endpoints)
+- [🔐 Authentication & Authorization](#-authentication--authorization)
+- [🛡️ Exception Handling](#️-exception-handling)
+- [📊 Data Structures](#-data-structures)
+- [🧪 Testing](#-testing)
+- [🚢 Deployment Notes](#-deployment-notes)
+- [📚 Resources](#-resources)
+- [🤝 Contributing](#-contributing)
+- [💬 Support](#-support)
+- [📝 License](#-license)
+
+---
+
+## �📋 About
 ---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
@@ -253,57 +275,132 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 ## 🔌 API Endpoints
 ---
 
+### Role-Based Access Control
+
+All endpoints have defined permission requirements:
+
+- **🟢 PUBLIC**: No authentication required
+- **🔵 USER**: Any authenticated user with `status=ACTIVE`
+- **🟣 MODERATOR**: MODERATOR or ADMIN role
+- **🔴 ADMIN**: ADMIN role only
+
 ### Authentication
-- `POST /token` – Login with username/password, returns JWT token
+- `POST /token` 🟢 – Login with username/password, returns JWT token
 
 ### User Management
-- `POST /users/create` – Create new standard user account (status: 201)
-- `GET /users/me` – Get authenticated user's profile
-- `PUT /users/update/` – Update authenticated user's profile (allowed fields: username, password, budget)
-- `PUT /users/update/{user_id}/` – Admin: update any user (including role, disabled)
-- `DELETE /users/delete/{user_id}/` – Admin: delete user (status: 204)
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/users/create` | POST | 🟢 PUBLIC | Create new user account (starts with status: PENDING) |
+| `/users/me` | GET | 🔵 USER | Get authenticated user's profile |
+| `/users/` | GET | 🔴 ADMIN | List all users (filterable by status: pending/active/disabled) |
+| `/users/update/` | PUT | 🔵 USER | Update own profile (username, password, budget only) |
+| `/users/update/{user_id}/` | PUT | 🔴 ADMIN | Update any user (role, status, all fields) |
+| `/users/{user_id}/approve` | POST | 🟣🔴 MODERATOR+ADMIN | Approve PENDING user → ACTIVE |
+| `/users/{user_id}/reject` | POST | 🟣🔴 MODERATOR+ADMIN | Reject PENDING user → DISABLED |
+| `/users/{user_id}/disable` | POST | 🟣🔴 MODERATOR+ADMIN | Suspend ACTIVE user → DISABLED |
+| `/users/{user_id}/reactivate` | POST | 🟣🔴 MODERATOR+ADMIN | Reactivate DISABLED user → ACTIVE |
+| `/users/delete/{user_id}/` | DELETE | 🔴 ADMIN | Delete user (admins cannot delete themselves) |
 
 ### Expenses
-- `GET /expenses/` – List authenticated user's expenses
-- `POST /expenses/` – Add new expense
-- `GET /expenses/{expense_id}` – Get one expense by ID
-- `PUT /expenses/{expense_id}` – Update expense
-- `DELETE /expenses/{expense_id}` – Delete expense
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/expenses/` | GET | 🔵 USER | List authenticated user's expenses |
+| `/expenses/` | POST | 🔵 USER | Add new expense |
+| `/expenses/{expense_id}` | GET | 🔵 USER | Get one expense by ID (must own it) |
+| `/expenses/{expense_id}` | PUT | 🔵 USER | Update expense (must own it) |
+| `/expenses/{expense_id}` | DELETE | 🔵 USER | Delete expense (must own it) |
 
 ### Reports
-- `GET /reports/monthly/{year}/{month}` – Monthly expense summary
-- `GET /reports/period` – Custom period report
-- `GET /reports/all` – Admin: all users' reports
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/reports/monthly/{year}/{month}` | GET | 🔵 USER | Monthly expense summary (authenticated user) |
+| `/reports/period` | GET | 🔵 USER | Custom period report (authenticated user) |
+| `/reports/all` | GET | 🔴 ADMIN | All users' reports (admin only) |
 
 ### Alerts
-- `GET /alerts/` – Check for budget overruns
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/alerts/` | GET | 🔵 USER | Check for budget overruns |
 
 ### Health
-- `GET /health/live` – Process liveness check
-- `GET /health/ready` – Readiness check (includes database ping)
-- `GET /health/startup` – Startup phase completion check
-- `GET /health` – Legacy alias for liveness
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/health/live` | GET | 🟢 PUBLIC | Process liveness check |
+| `/health/ready` | GET | 🟢 PUBLIC | Readiness check (includes database ping) |
+| `/health/startup` | GET | 🟢 PUBLIC | Startup phase completion check |
+| `/health` | GET | 🟢 PUBLIC | Legacy alias for liveness |
 
 ## 🔐 Authentication & Authorization
 ---
 
+### User Status Workflow
+
+New users follow an approval workflow before they can access the API:
+
+```
+1. User Registration (POST /users/create)
+   ↓
+   Status: PENDING ❌ (cannot login)
+   ↓
+2. Admin/Moderator Reviews
+   ↓
+  ├─→ POST /users/{id}/approve → Status: ACTIVE ✅ (can login) 
+   └─→ POST /users/{id}/reject  → Status: DISABLED ❌ (approved= false)
+   ↓
+3. Active User Lifecycle
+   ↓
+  ├─→ POST /users/{id}/disable    → Status: DISABLED ❌ (suspended from management)
+   └─→ POST /users/{id}/reactivate → Status: ACTIVE ✅ (restored)
+```
+
+### Role Hierarchy
+
+| Role | Permissions | Can... |
+|------|-------------|--------|
+| **USER** | Basic access | Manage own expenses, view own reports, set budget |
+| **MODERATOR** | User validation | Approve/reject/disable/reactivate users |
+| **ADMIN** | Full system | All MODERATOR actions + user CRUD + system reports |
+
+### Access Control Details
+
 - **Method**: OAuth2 with JWT (Bearer tokens)
-- **Token Expiration**: Configurable (`JWT_EXPIRATION_MINUTES`)
+- **Token Expiration**: Configurable via `JWT_EXPIRATION_MINUTES` (.env)
 - **Password Hashing**: Argon2 via passlib
-- **Role-based Access**: `@dependency` get_admin_user() for protected endpoints
+- **Required Status**: Only users with `status=ACTIVE` can authenticate
+- **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
 ### Example Authentication Flow
 
 ```bash
-# 1. Login
+# 1. Create new user (PUBLIC)
+curl -X POST "http://localhost:8000/users/create" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
+# Response: {..., "status": "pending"}
+
+# 2. Try login with PENDING status (FAILS - 403)
 curl -X POST "http://localhost:8000/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=john_doe&password=secure_password123"
+  -d "username=alice&password=secure123&grant_type=password"
+# Response: 403 "User account is not active"
 
-# Response:
-# {"access_token": "eyJhbGc...", "token_type": "bearer"}
+# 3. Admin/Moderator approves user (MODERATOR role)
+curl -X POST "http://localhost:8000/users/1/approve" \
+  -H "Authorization: Bearer ADMIN_TOKEN"
+# Response: {..., "status": "active"}
 
-# 2. Use token in requests
+# 4. Now user can login (ACTIVE status)
+curl -X POST "http://localhost:8000/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=alice&password=secure123&grant_type=password"
+# Response: {"access_token": "eyJhbGc...", "token_type": "bearer"}
+
+# 5. Use token in requests
 curl -X GET "http://localhost:8000/users/me" \
   -H "Authorization: Bearer eyJhbGc..."
 ```
@@ -334,7 +431,16 @@ All exceptions are caught by global exception handlers in `app/main.py` and retu
 ```python
 class UserRole(str, Enum):
     ADMIN = "admin"
+    MODERATOR = "moderator"
     USER = "user"
+```
+
+**UserStatus**
+```python
+class UserStatus(str, Enum):
+    PENDING = "pending"      # Awaiting approval
+    ACTIVE = "active"        # Can access API
+    DISABLED = "disabled"    # Rejected or suspended
 ```
 
 **ExpenseCategory**
@@ -355,8 +461,8 @@ class ExpenseCategory(str, Enum):
 **User Operations**
 - `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
 - `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
-- `UserUpdate`: admin update schema (username, password, budget, role, disabled)
-- `UserResponse`: includes id, role, disabled status
+- `UserUpdate`: admin update schema (username, password, budget, role, status)
+- `UserResponse`: includes id, role, status
 
 **Expense Operations**
 - `ExpenseCreate`: description, amount (> 0), category enum
