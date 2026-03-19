@@ -62,10 +62,14 @@ async def list_expenses(
 async def create_expense(
     expense: ExpenseCreate = Body(
         ...,
-        example={
-            "description": "Lunch at restaurant",
-            "amount": 25.5,
-            "category": "food",
+        examples={
+            "example": {
+                "value": {
+                    "description": "Lunch at restaurant",
+                    "amount": 25.5,
+                    "category": "food",
+                }
+            }
         },
     ),
     db: Session = Depends(get_db),

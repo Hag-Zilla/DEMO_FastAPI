@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordRequestFormStrict
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
+from ..core.enums import UserStatus
 from ..core.logging import get_logger
 from ..core.security import authenticate_user, create_access_token
 from ..database.session import get_db
@@ -32,11 +33,11 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if user.disabled:
-        logger.warning("Login attempt with disabled account: %s", form_data.username)
+    if user.status != UserStatus.ACTIVE:
+        logger.warning("Login attempt with non-active account: %s (status: %s)", form_data.username, user.status)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is disabled",
+            detail="User account is not active",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

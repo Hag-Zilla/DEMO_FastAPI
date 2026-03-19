@@ -1,5 +1,7 @@
 .PHONY: help init init-uv init-venv sync lock run test lint format bootstrap-admin clean
 
+PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
+
 help:
 	@echo "Usage: make <target>"
 	@echo "Targets: init, init-uv, init-venv, sync, lock, run, test, lint, format, bootstrap-admin, clean"
@@ -47,7 +49,7 @@ export-reqs: lock
 
 # Run in development mode (auto-reload)
 run:
-	uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+	$(PYTHON) -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
 	pytest -q

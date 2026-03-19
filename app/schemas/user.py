@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.enums import UserRole
+from app.core.enums import UserRole, UserStatus
 
 
 class UserBase(BaseModel):
@@ -15,13 +15,13 @@ class UserBase(BaseModel):
         min_length=3,
         max_length=50,
         description="The user's unique username",
-        example="john_doe",
+        json_schema_extra={"example": "john_doe"},
     )
     budget: float = Field(
         default=0.0,
         ge=0,
         description="The user's budget",
-        example=1000.0,
+        json_schema_extra={"example": 1000.0},
     )
 
 
@@ -32,7 +32,7 @@ class UserCreate(UserBase):
         ...,
         min_length=6,
         description="The user's password",
-        example="secure_password123",
+        json_schema_extra={"example": "secure_password123"},
     )
 
 
@@ -44,29 +44,29 @@ class UserUpdate(BaseModel):
         min_length=3,
         max_length=50,
         description="The user's unique username",
-        example="john_doe_updated",
+        json_schema_extra={"example": "john_doe_updated"},
     )
     password: Optional[str] = Field(
         default=None,
         min_length=6,
         description="The user's password",
-        example="new_secure_password123",
+        json_schema_extra={"example": "new_secure_password123"},
     )
     budget: Optional[float] = Field(
         default=None,
         ge=0,
         description="The user's budget",
-        example=1200.0,
+        json_schema_extra={"example": 1200.0},
     )
     role: Optional[UserRole] = Field(
         default=None,
         description="The user's role (admin or user)",
-        example=UserRole.USER,
+        json_schema_extra={"example": UserRole.USER},
     )
-    disabled: Optional[bool] = Field(
+    status: Optional[UserStatus] = Field(
         default=None,
-        description="Whether the user is disabled",
-        example=False,
+        description="The user's account status (pending, active, or disabled)",
+        json_schema_extra={"example": UserStatus.ACTIVE},
     )
 
 
@@ -80,19 +80,19 @@ class UserSelfUpdate(BaseModel):
         min_length=3,
         max_length=50,
         description="The user's unique username",
-        example="john_doe_updated",
+        json_schema_extra={"example": "john_doe_updated"},
     )
     password: Optional[str] = Field(
         default=None,
         min_length=6,
         description="The user's password",
-        example="new_secure_password123",
+        json_schema_extra={"example": "new_secure_password123"},
     )
     budget: Optional[float] = Field(
         default=None,
         ge=0,
         description="The user's budget",
-        example=1200.0,
+        json_schema_extra={"example": 1200.0},
     )
 
 
@@ -101,7 +101,7 @@ class UserResponse(UserBase):
 
     id: int
     role: UserRole
-    disabled: bool
+    status: UserStatus
 
     class Config:
         """Pydantic config."""
