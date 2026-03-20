@@ -45,7 +45,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: app/Dockerfile
     container_name: demo_app
     ports:
       - "8000:8000"

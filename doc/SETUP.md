@@ -34,7 +34,7 @@ SECRET_KEY=$(openssl rand -hex 32)
 echo "Generated SECRET_KEY: $SECRET_KEY"
 
 # Copy and customize environment
-cp .env.docker .env.docker.prod
+cp .env.docker.dev .env.docker.prod
 nano .env.docker.prod
 
 # Update in .env.docker.prod:
@@ -292,9 +292,9 @@ cd DEMO_FastAPI
 sudo bash firewall-rules.sh
 
 # 4. Configure environment
-cp .env.docker .env.prod
+cp .env.docker.dev .env.docker.prod
 # Edit with real values
-nano .env.prod
+nano .env.docker.prod
 
 # 5. Start services
 export $(cat .env.prod | xargs)

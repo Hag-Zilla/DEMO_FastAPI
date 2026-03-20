@@ -22,7 +22,7 @@ This deployment uses a 4-layer defense strategy against DDoS attacks:
 
 ```bash
 # Copy environment template
-cp .env.docker .env.docker.prod
+cp .env.docker.dev .env.docker.prod
 
 # Edit production values
 nano .env.docker.prod

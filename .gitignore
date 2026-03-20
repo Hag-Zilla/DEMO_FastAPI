@@ -149,3 +149,9 @@ data/
 followup.txt
 .admin_bootstrap_done
 logs/*.jsonl
+
+# Environment files (production secrets - never commit)
+.env
+.env.docker.prod
+.env.*.prod
+.env.local

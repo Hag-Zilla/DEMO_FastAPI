@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir uv
 # Create required directories
 RUN mkdir -p /app/data /app/logs
 
-# Copy project files
+# Copy project files (build context is repo root)
 COPY pyproject.toml uv.lock* ./
 COPY app/ ./app/
 COPY --chown=fastapi:fastapi data/ ./data/
