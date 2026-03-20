@@ -8,11 +8,12 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
-## � Table of Contents
+## 📖 Table of Contents
 
 - [📋 About](#-about)
 - [✨ Features](#-features)
 - [🚀 Quick Start](#-quick-start)
+- [📚 Documentation](#-documentation)
 - [🌐 Access the API](#-access-the-api)
 - [📁 Project Structure](#-project-structure)
 - [⚙️ Configuration](#️-configuration)
@@ -129,6 +130,23 @@ make format          # run black on app/
 make bootstrap-admin # run admin bootstrap script
 make clean           # remove common cache/build artifacts
 ```
+
+## 📚 Documentation
+
+Comprehensive guides for deployment, security, and development:
+
+| Document | Purpose |
+|----------|---------|
+| **[doc/SETUP.md](doc/SETUP.md)** | **START HERE** — Initial setup, firewall configuration, deployment checklist |
+| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment with Docker Compose, scaling, monitoring, troubleshooting |
+| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation guide, slowapi + Redis configuration examples |
+
+### Quick Links by Task
+
+- 🔧 **First-time setup?** → [doc/SETUP.md](doc/SETUP.md) (explains when to run firewall-rules.sh)
+- 🚀 **Deploy to production?** → [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
+- 🛡️ **Add rate limits?** → [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
+- 🔒 **Understand DDoS protection?** → [doc/DEPLOYMENT.md#architecture-overview](doc/DEPLOYMENT.md#architecture-overview)
 
 ## 🌐 Access the API
 ---
