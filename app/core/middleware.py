@@ -1,4 +1,4 @@
-"""HTTP request/response logging middleware."""
+"""HTTP request/response logging and rate limiting middleware."""
 
 import time
 from typing import Callable
@@ -6,10 +6,53 @@ from typing import Callable
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+# Initialize limiter with Redis storage for distributed rate limiting
+def get_limiter() -> Limiter:
+    """Create and return a configured Limiter instance.
+    
+    Uses Redis for distributed quota tracking across multiple instances.
+    Falls back to in-memory storage if Redis is unavailable.
+    """
+    try:
+        from redis import Redis
+        import os
+        
+        redis_url = os.getenv(
+            "REDIS_URL",
+            "redis://:redis_secure_password@redis:6379/0"
+        )
+        limiter = Limiter(
+            key_func=get_remote_address,
+            storage_uri=redis_url,
+            default_limits=["100/minute"],  # Default: 100 req/min per IP
+            swallow_errors=True,  # Don't break app if Redis fails
+        )
+        logger.info("Rate limiter initialized with Redis storage")
+        return limiter
+    except Exception as e:
+        logger.warning(
+            "Failed to initialize Redis limiter, falling back to memory: %s",
+            e
+        )
+        limiter = Limiter(
+            key_func=get_remote_address,
+            default_limits=["100/minute"],
+            swallow_errors=True,
+        )
+        return limiter
+
+
+# Global limiter instance
+limiter = get_limiter()
 
 
 class HTTPLoggingMiddleware(BaseHTTPMiddleware):
@@ -68,3 +111,4 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
         )
 
         return response
+
