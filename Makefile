@@ -1,10 +1,34 @@
-.PHONY: help init init-uv init-venv sync lock run test lint format bootstrap-admin clean
+.PHONY: help init init-uv init-venv sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-clean
 
 PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
 help:
-	@echo "Usage: make <target>"
-	@echo "Targets: init, init-uv, init-venv, sync, lock, run, test, lint, format, bootstrap-admin, clean"
+	@echo "=== DEVELOPMENT (Local) ==="
+	@echo "  make init             Setup environment (interactive, defaults to uv)"
+	@echo "  make init-uv          Setup with uv"
+	@echo "  make init-venv        Setup with venv (pip)"
+	@echo "  make sync             Install/sync dependencies from uv.lock"
+	@echo "  make run              Start FastAPI dev server (auto-reload)"
+	@echo "  make test             Run pytest suite"
+	@echo "  make lint             Run flake8 linting"
+	@echo "  make format           Format code with black"
+	@echo ""
+	@echo "=== DEPENDENCY MANAGEMENT ==="
+	@echo "  make lock             Refresh uv.lock"
+	@echo "  make export-reqs      Export requirements.txt from uv.lock"
+	@echo ""
+	@echo "=== DOCKER (Production) ==="
+	@echo "  make docker-build     Build Docker images"
+	@echo "  make docker-up        Start containers (docker-compose up -d)"
+	@echo "  make docker-down      Stop containers (docker-compose down)"
+	@echo "  make docker-logs      View container logs (follow mode)"
+	@echo "  make docker-test      Run tests inside containers"
+	@echo "  make docker-clean     Cleanup Docker artifacts"
+	@echo ""
+	@echo "=== MAINTENANCE ==="
+	@echo "  make bootstrap-admin  Bootstrap admin user (interactive)"
+	@echo "  make clean            Remove Python cache files"
+	@echo "  make help             Show this help message"
 
 # Wrapper (interactive) for setup.sh (default: uv)
 init:
@@ -67,3 +91,40 @@ bootstrap-admin:
 clean:
 	find . -type f -name "*.pyc" -delete
 	rm -rf __pycache__ .pytest_cache .mypy_cache build dist
+
+# ============================================================================
+# Docker targets (Production/Deployment)
+# ============================================================================
+
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose build
+
+docker-up:
+	@echo "Starting Docker containers..."
+	docker-compose up -d
+	@echo ""
+	@echo "✓ Services started. Check status with: make docker-logs"
+	@echo "  - Nginx (reverse proxy): http://localhost"
+	@echo "  - FastAPI (app): http://localhost/docs"
+	@echo "  - Redis (internal): 6379"
+
+docker-down:
+	@echo "Stopping Docker containers..."
+	docker-compose down
+
+docker-logs:
+	docker-compose logs -f app
+
+docker-test:
+	@echo "Running tests inside app container..."
+	docker-compose exec app pytest -q
+
+docker-clean:
+	@echo "Cleaning up Docker artifacts..."
+	docker-compose down --volumes
+	docker system prune -f
+	@echo "✓ Docker cleanup complete"
+
+docker-shell:
+	docker-compose exec app /bin/bash

@@ -113,21 +113,43 @@ make run # It will start the API
 
 ### Make Commands
 
-The project provides a `Makefile` to simplify the most common workflows:
+The project provides a `Makefile` to simplify common workflows for both development and production:
 
+**Development (Local without Docker):**
 ```bash
-make help            # list available targets
-make init            # interactive setup (default path: uv)
-make init-uv         # non-interactive uv setup
-make init-venv       # non-interactive venv setup
-make sync            # uv sync from pyproject.toml / uv.lock
+make init            # interactive setup (default: uv)
+make init-uv         # setup with uv (non-interactive)
+make init-venv       # setup with venv/pip (non-interactive)
+make sync            # install/sync dependencies from uv.lock
+make run             # run FastAPI dev server (auto-reload)
+make test            # run pytest suite
+make lint            # run flake8 linting on app/
+make format          # format code with black
+```
+
+**Dependency Management:**
+```bash
 make lock            # refresh uv lockfile
-make export-reqs     # generate a pinned requirements.txt from uv.lock (for venv/pip users)
-make run             # run FastAPI in reload mode
-make test            # run tests
-make lint            # run flake8 on app/
-make format          # run black on app/
-make bootstrap-admin # run admin bootstrap script
+make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
+```
+
+**Docker (Production):**
+```bash
+make docker-build    # build Docker images
+make docker-up       # start containers (docker-compose up -d)
+make docker-down     # stop containers (docker-compose down)
+make docker-logs     # view container logs (follow mode)
+make docker-test     # run tests inside app container
+make docker-clean    # cleanup Docker artifacts
+make docker-shell    # open bash shell in app container
+```
+
+**Maintenance:**
+```bash
+make bootstrap-admin # bootstrap admin user (interactive)
+make clean           # remove Python cache files
+make help            # show all available targets
+```
 make clean           # remove common cache/build artifacts
 ```
 
