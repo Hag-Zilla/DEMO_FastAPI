@@ -56,14 +56,37 @@ Two simple flows are supported: one for typical contributors (who consume the re
 
 **Contributor (quick start — use committed lock)**
 
-1) Clone and prepare env
+
+1) Clone and prepare environment
 
 ```bash
 git clone <repo-url>
 cd DEMO_FastAPI
-cp .env.example .env
-# edit .env as needed
+make init-env    # Create .env files from templates (.env, .env.docker.dev, .env.docker.prod)
+nano .env        # Edit with your values
+nano .env.docker.dev        # Edit with your values
+nano .env.docker.prod       # Edit with your values
 ```
+
+Tips :
+
+```bash
+# Generate SECRET_KEY (min 32 chars)
+openssl rand -hex 32
+
+# Generate REDIS_PASSWORD
+openssl rand -hex 16
+```
+
+Environment variables & secrets
+
+
+| File | Purpose |
+|------|---------|
+| `.env` | Dev local (FastAPI only) |
+| `.env.docker.dev` | Dev Docker (full stack) |
+| `.env.docker.prod` | Production |
+
 
 2) Initialize environment (uses committed `uv.lock` / `requirements.txt` if present)
 
@@ -111,12 +134,13 @@ source .venv/bin/activate  # or ./venv/bin/activate
 make run # It will start the API
 ```
 
-### Make Commands
+### Make commands list
 
 The project provides a `Makefile` to simplify common workflows for both development and production:
 
 **Development (Local without Docker):**
 ```bash
+make init-env        # create .env files from templates
 make init            # interactive setup (default: uv)
 make init-uv         # setup with uv (non-interactive)
 make init-venv       # setup with venv/pip (non-interactive)
@@ -149,26 +173,66 @@ make docker-shell    # open bash shell in app container
 make bootstrap-admin # bootstrap admin user (interactive)
 make clean           # remove Python cache files
 make help            # show all available targets
-```
 make clean           # remove common cache/build artifacts
+```
+
+## 🚀 Docker & Firewall Setup
+---
+
+### ⚠️ CRITICAL: Firewall Configuration (Run FIRST!)
+
+The `firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**:
+
+```bash
+# 1. Make script executable
+chmod +x firewall-rules.sh
+
+# 2. Run with sudo (required for firewall)
+sudo bash firewall-rules.sh
+
+# 3. Verify rules were applied
+sudo ufw status numbered
+
+# Expected: 22/tcp, 80/tcp, 443/tcp ALLOW | 8000/tcp, 6379/tcp DENY
+```
+
+### Why This Order?
+
+```
+1. sudo bash firewall-rules.sh      ← FIRST: Lock down the host
+2. docker-compose up -d             ← SECOND: Start services (behind firewall)
+3. All traffic → Nginx → FastAPI    ← Result: Protected architecture
+```
+
+If you run docker-compose **before** firewall-rules.sh, ports will be exposed to the internet!
+
+### Docker Deployment Steps
+
+```bash
+# 1. Setup environment
+make init-env
+nano .env.docker.prod        # Set real secrets!
+
+# 2. Apply firewall (ONE TIME ONLY, on host OS)
+sudo bash firewall-rules.sh
+
+# 3. Build and start services
+make docker-build
+make docker-up
+
+# 4. Verify all services are healthy
+docker-compose ps
+curl http://localhost/health   # Should return 200 OK
 ```
 
 ## 📚 Documentation
 
-Comprehensive guides for deployment, security, and development:
+For specialized topics:
 
 | Document | Purpose |
-|----------|---------|
-| **[doc/SETUP.md](doc/SETUP.md)** | **START HERE** — Initial setup, firewall configuration, deployment checklist |
-| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment with Docker Compose, scaling, monitoring, troubleshooting |
-| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation guide, slowapi + Redis configuration examples |
-
-### Quick Links by Task
-
-- 🔧 **First-time setup?** → [doc/SETUP.md](doc/SETUP.md) (explains when to run firewall-rules.sh)
-- 🚀 **Deploy to production?** → [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
-- 🛡️ **Add rate limits?** → [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
-- 🔒 **Understand DDoS protection?** → [doc/DEPLOYMENT.md#architecture-overview](doc/DEPLOYMENT.md#architecture-overview)
+|----------|----------|
+| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
+| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
 
 ## 🌐 Access the API
 ---

@@ -58,7 +58,7 @@ curl -i http://localhost/health
 
 ### 4. Firewall Configuration
 
-⚠️ **IMPORTANT:** See [`SETUP.md`](./SETUP.md) for when and how to run `firewall-rules.sh`
+⚠️ **IMPORTANT:** Run `firewall-rules.sh` **BEFORE** `docker-compose up`. See [README.md#-docker--firewall-setup](../README.md#-docker--firewall-setup) for firewall timing details.
 
 ```bash
 # Apply firewall rules (BEFORE docker-compose up)
