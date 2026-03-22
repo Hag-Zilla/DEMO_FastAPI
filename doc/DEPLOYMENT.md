@@ -56,23 +56,66 @@ docker-compose logs -f app
 curl -i http://localhost/health
 ```
 
-### 4. Firewall Configuration
+### 4. Firewall Configuration (Run FIRST!)
 
-⚠️ **IMPORTANT:** Run `firewall-rules.sh` **BEFORE** `docker-compose up`. See [README.md#-docker--firewall-setup](../README.md#-docker--firewall-setup) for firewall timing details.
+⚠️ **CRITICAL:** The `firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**. If you run docker-compose before firewall-rules.sh, ports will be exposed to the internet!
+
+#### Execution Order
+
+```
+1. sudo bash firewall-rules.sh      ← FIRST: Lock down the host
+2. docker-compose up -d             ← SECOND: Start services (behind firewall)
+3. All traffic → Nginx → FastAPI    ← Result: Protected architecture
+```
+
+#### Setup Steps
 
 ```bash
-# Apply firewall rules (BEFORE docker-compose up)
+# 1. Make script executable
+chmod +x firewall-rules.sh
+
+# 2. Run with sudo (required for firewall)
 sudo bash firewall-rules.sh
 
-# Verify rules
+# 3. Verify rules were applied
 sudo ufw status numbered
 
-# Expected output:
-#   ✓ SSH (22) - ALLOWED
-#   ✓ HTTP (80) - ALLOWED
-#   ✓ HTTPS (443) - ALLOWED
-#   ✗ FastAPI (8000) - BLOCKED
-#   ✗ Redis (6379) - BLOCKED
+# Expected: 22/tcp, 80/tcp, 443/tcp ALLOW | 8000/tcp, 6379/tcp DENY
+```
+
+### 5. Docker Deployment Steps
+
+```bash
+# 1. Setup environment
+make init-env
+nano .env.docker.prod        # Set real secrets!
+
+# 2. Apply firewall (ONE TIME ONLY, on host OS)
+sudo bash firewall-rules.sh
+
+# 3. Build and start services
+make docker-build
+make docker-up
+
+# 4. Verify all services are healthy
+docker-compose ps
+curl http://localhost/health   # Should return 200 OK
+```
+
+## Troubleshooting Firewall Issues
+
+If you see "connection refused" or timeout errors:
+
+```bash
+# Check if firewall rules are active
+sudo ufw status numbered
+
+# If not enabled, enable it
+sudo ufw enable
+
+# If ports are wrong, reset and reapply
+sudo ufw reset
+sudo bash firewall-rules.sh
 ```
 
 ## Rate Limiting Configuration

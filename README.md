@@ -31,7 +31,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 ---
 
-## �📋 About
+## 📋 About
 ---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
@@ -39,12 +39,15 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ## ✨ Features
 ---
 
-- **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/user)
+- **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/moderator/user)
+- **User Approval Workflow**: Admin/Moderator review and approval of new user registrations (pending/active/disabled statuses)
 - **Expense Tracking**: Add, update, delete expenses with typed categories and datetime tracking
 - **Budget Management**: Set personal budgets with automatic tracking
 - **Alerts**: Real-time detection of budget overruns
 - **Reports**: Generate monthly and custom-period expense reports by category
-- **Admin Interface**: System-wide user and expense management
+- **Admin & Moderator Interface**: System-wide user and expense management with moderation capabilities
+- **DDoS Protection**: 4-layer defense system (firewall, reverse proxy, application-level rate limiting, distributed quota storage)
+- **Rate Limiting**: Distributed request rate limiting with slowapi and Redis
 - **Error Handling**: Custom exception classes with proper HTTP status codes
 - **Logging**: Console and file-based logging for monitoring
 - **Type Validation**: Pydantic v2 with enums for categories and roles
@@ -54,7 +57,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 
 Two simple flows are supported: one for typical contributors (who consume the repo), and one for maintainers (who change dependencies).
 
-**Contributor (quick start — use committed lock)**
+### Contributor (quick start — use committed lock)
 
 
 1) Clone and prepare environment
@@ -78,15 +81,6 @@ openssl rand -hex 32
 openssl rand -hex 16
 ```
 
-Environment variables & secrets
-
-
-| File | Purpose |
-|------|---------|
-| `.env` | Dev local (FastAPI only) |
-| `.env.docker.dev` | Dev Docker (full stack) |
-| `.env.docker.prod` | Production |
-
 
 2) Initialize environment (uses committed `uv.lock` / `requirements.txt` if present)
 
@@ -106,7 +100,7 @@ source .venv/bin/activate  # or ./venv/bin/activate
 make run # It will start the API
 ```
 
-**Maintainer (update dependencies — produce canonical lock)**
+### Maintainer (update dependencies — produce canonical lock)
 
 1) If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
 
@@ -134,108 +128,7 @@ source .venv/bin/activate  # or ./venv/bin/activate
 make run # It will start the API
 ```
 
-### Make commands list
-
-The project provides a `Makefile` to simplify common workflows for both development and production:
-
-**Development (Local without Docker):**
-```bash
-make init-env        # create .env files from templates
-make init            # interactive setup (default: uv)
-make init-uv         # setup with uv (non-interactive)
-make init-venv       # setup with venv/pip (non-interactive)
-make sync            # install/sync dependencies from uv.lock
-make run             # run FastAPI dev server (auto-reload)
-make test            # run pytest suite
-make lint            # run flake8 linting on app/
-make format          # format code with black
-```
-
-**Dependency Management:**
-```bash
-make lock            # refresh uv lockfile
-make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
-```
-
-**Docker (Production):**
-```bash
-make docker-build    # build Docker images
-make docker-up       # start containers (docker-compose up -d)
-make docker-down     # stop containers (docker-compose down)
-make docker-logs     # view container logs (follow mode)
-make docker-test     # run tests inside app container
-make docker-clean    # cleanup Docker artifacts
-make docker-shell    # open bash shell in app container
-```
-
-**Maintenance:**
-```bash
-make bootstrap-admin # bootstrap admin user (interactive)
-make clean           # remove Python cache files
-make help            # show all available targets
-make clean           # remove common cache/build artifacts
-```
-
-## 🚀 Docker & Firewall Setup
----
-
-### ⚠️ CRITICAL: Firewall Configuration (Run FIRST!)
-
-The `firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**:
-
-```bash
-# 1. Make script executable
-chmod +x firewall-rules.sh
-
-# 2. Run with sudo (required for firewall)
-sudo bash firewall-rules.sh
-
-# 3. Verify rules were applied
-sudo ufw status numbered
-
-# Expected: 22/tcp, 80/tcp, 443/tcp ALLOW | 8000/tcp, 6379/tcp DENY
-```
-
-### Why This Order?
-
-```
-1. sudo bash firewall-rules.sh      ← FIRST: Lock down the host
-2. docker-compose up -d             ← SECOND: Start services (behind firewall)
-3. All traffic → Nginx → FastAPI    ← Result: Protected architecture
-```
-
-If you run docker-compose **before** firewall-rules.sh, ports will be exposed to the internet!
-
-### Docker Deployment Steps
-
-```bash
-# 1. Setup environment
-make init-env
-nano .env.docker.prod        # Set real secrets!
-
-# 2. Apply firewall (ONE TIME ONLY, on host OS)
-sudo bash firewall-rules.sh
-
-# 3. Build and start services
-make docker-build
-make docker-up
-
-# 4. Verify all services are healthy
-docker-compose ps
-curl http://localhost/health   # Should return 200 OK
-```
-
-## 📚 Documentation
-
-For specialized topics:
-
-| Document | Purpose |
-|----------|----------|
-| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
-| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
-
-## 🌐 Access the API
----
+### Access the API
 
 - **Interactive Docs (Swagger)**: http://localhost:8000/docs
 - **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
@@ -306,6 +199,16 @@ Logs:
 ---
 
 ### Environment Variables (`.env`)
+
+Environment variables & secrets
+
+
+| File | Purpose |
+|------|---------|
+| `.env` | Dev local (FastAPI only) |
+| `.env.docker.dev` | Dev Docker (full stack) |
+| `.env.docker.prod` | Production |
+
 
 ```env
 # JWT Configuration
@@ -626,6 +529,50 @@ SQLite works fine for small deployments. For production at scale, consider Postg
 
 The modular design allows easy database swaps with minimal code changes.
 
+## Make commands list
+---
+
+The project provides a `Makefile` to simplify common workflows for both development and production:
+
+**Development (Local without Docker):**
+```bash
+make init-env        # create .env files from templates
+make init            # interactive setup (default: uv)
+make init-uv         # setup with uv (non-interactive)
+make init-venv       # setup with venv/pip (non-interactive)
+make sync            # install/sync dependencies from uv.lock
+make run             # run FastAPI dev server (auto-reload)
+make test            # run pytest suite
+make lint            # run flake8 linting on app/
+make format          # format code with black
+```
+
+**Dependency Management:**
+```bash
+make lock            # refresh uv lockfile
+make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
+```
+
+**Docker (Production):**
+```bash
+make docker-build    # build Docker images
+make docker-up       # start containers (docker-compose up -d)
+make docker-down     # stop containers (docker-compose down)
+make docker-logs     # view container logs (follow mode)
+make docker-test     # run tests inside app container
+make docker-clean    # cleanup Docker artifacts
+make docker-shell    # open bash shell in app container
+```
+
+**Maintenance:**
+```bash
+make bootstrap-admin # bootstrap admin user (interactive)
+make clean           # remove Python cache files
+make help            # show all available targets
+make clean           # remove common cache/build artifacts
+```
+
+
 ## 📚 Resources
 ---
 
@@ -636,6 +583,15 @@ The modular design allows easy database swaps with minimal code changes.
 - [PyJWT Documentation](https://pyjwt.readthedocs.io/)
 - [Passlib Hashing](https://passlib.readthedocs.io/)
 - [DBeaver Database Tool](https://dbeaver.io/)
+
+##  Extra documentation
+
+For specialized topics:
+
+| Document | Purpose |
+|----------|----------|
+| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
+| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
 
 ## 🤝 Contributing
 ---
