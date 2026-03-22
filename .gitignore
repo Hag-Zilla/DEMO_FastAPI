@@ -150,8 +150,10 @@ followup.txt
 .admin_bootstrap_done
 logs/*.jsonl
 
-# Environment files (production secrets - never commit)
+# Environment files (actual files - never commit, use templates)
+# Templates (.example) ARE committed as documentation
 .env
+.env.docker.dev
 .env.docker.prod
+.env.*.local
 .env.*.prod
-.env.local

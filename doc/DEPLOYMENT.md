@@ -21,16 +21,20 @@ This deployment uses a 4-layer defense strategy against DDoS attacks:
 ### 2. Configuration
 
 ```bash
-# Copy environment template
-cp .env.docker.dev .env.docker.prod
+# Option 1: Use Makefile (recommended)
+make init-env
 
-# Edit production values
+# Option 2: Manual copy from template
+cp .env.docker.prod.example .env.docker.prod
+
+# Edit production values (do NOT skip this!)
 nano .env.docker.prod
 
 # Critical settings to customize:
 # - SECRET_KEY (min 32 chars, use: openssl rand -hex 32)
 # - REDIS_PASSWORD (strong password)
 # - DATABASE_URL (production database)
+# - DEBUG=false (IMPORTANT for production)
 ```
 
 ### 3. Deploy

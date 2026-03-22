@@ -1,4 +1,4 @@
-.PHONY: help init init-uv init-venv sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-clean
+.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-clean
 
 PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
@@ -7,6 +7,7 @@ help:
 	@echo "  make init             Setup environment (interactive, defaults to uv)"
 	@echo "  make init-uv          Setup with uv"
 	@echo "  make init-venv        Setup with venv (pip)"
+	@echo "  make init-env         Create .env files from templates (.example)"
 	@echo "  make sync             Install/sync dependencies from uv.lock"
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
@@ -39,6 +40,37 @@ init-uv:
 
 init-venv:
 	printf "venv\n" | bash setup.sh
+
+# Create .env files from .example templates (safe, won't overwrite existing)
+init-env:
+	@echo "=== Environment Files Setup ==="
+	@echo ""
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "✓ Created .env from .env.example"; \
+	else \
+		echo "✗ .env already exists (skipping)"; \
+	fi
+	@if [ ! -f .env.docker.dev ]; then \
+		cp .env.docker.dev.example .env.docker.dev; \
+		echo "✓ Created .env.docker.dev from .env.docker.dev.example"; \
+	else \
+		echo "✗ .env.docker.dev already exists (skipping)"; \
+	fi
+	@if [ ! -f .env.docker.prod ]; then \
+		cp .env.docker.prod.example .env.docker.prod; \
+		echo "✓ Created .env.docker.prod from .env.docker.prod.example"; \
+		echo "⚠️  WARNING: Edit .env.docker.prod with real secrets before deploying!"; \
+	else \
+		echo "✗ .env.docker.prod already exists (skipping)"; \
+	fi
+	@echo ""
+	@echo "Next steps:"; \
+	echo "  1. Edit your .env files with actual values"; \
+	echo "  2. For dev local: nano .env"; \
+	echo "  3. For dev docker: nano .env.docker.dev"; \
+	echo "  4. For production: nano .env.docker.prod"; \
+	echo ""
 
 # Sync dependencies from pyproject.toml/uv.lock
 sync:

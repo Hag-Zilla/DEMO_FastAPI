@@ -1,5 +1,69 @@
 # Initial Setup & Firewall Configuration
 
+## Environment Files Strategy
+
+This project uses a **template-based approach** for managing environment variables securely:
+
+### Files Overview
+
+| File | Purpose | Committed? | How to Create |
+|------|---------|-----------|----------------|
+| `.env.example` | Dev local (FastAPI only, no Docker) | ✅ Yes | Template, safe to commit |
+| `.env.docker.dev.example` | Dev Docker (full stack testing) | ✅ Yes | Template, safe to commit |
+| `.env.docker.prod.example` | Production template (git-ignored) | ✅ Yes | Template with security warnings |
+| `.env` | Dev local (actual, git-ignored) | ❌ No | `make init-env` copies from `.env.example` |
+| `.env.docker.dev` | Dev Docker (actual, git-ignored) | ❌ No | `make init-env` copies from `.env.docker.dev.example` |
+| `.env.docker.prod` | Production (actual, git-ignored) | ❌ No | `make init-env` copies from `.env.docker.prod.example` |
+
+### Setup Workflow
+
+```bash
+# 1. Create all .env files from templates (safe - won't overwrite)
+make init-env
+
+# 2. Edit files with your actual values
+nano .env                    # Dev local
+nano .env.docker.dev         # Dev Docker
+nano .env.docker.prod        # Production (WITH REAL SECRETS!)
+
+# 3. The actual files are git-ignored - your secrets stay safe
+# Verify with: git status
+```
+
+### Security Model
+
+- **Templates** (`.example` files): Committed to git with placeholder values and documentation
+- **Actual files** (`.env*` without `.example`): Git-ignored, never committed
+- **Production secrets**: Should only exist in `.env.docker.prod` during deployment
+- **CI/CD integration**: Use GitHub Secrets or your deployment platform's secret management
+
+### What NOT to Do ❌
+
+```bash
+# DON'T commit actual .env files
+git add .env .env.docker.dev .env.docker.prod  # ❌ NO!
+
+# DON'T hardcode secrets
+SECRET_KEY="hardcoded-value"  # ❌ NO!
+
+# DON'T track production credentials in version control
+```
+
+### What To Do ✅
+
+```bash
+# DO use environment files
+source .env
+export $(cat .env | xargs)
+
+# DO use make init-env to create files
+make init-env
+
+# DO regenerate secrets before each deployment
+openssl rand -hex 32  # For SECRET_KEY
+openssl rand -hex 16  # For REDIS_PASSWORD
+```
+
 ## When to Run firewall-rules.sh
 
 **Timing: RUN ONCE, BEFORE docker-compose up**
@@ -24,18 +88,20 @@ If you run docker-compose **before** firewall-rules.sh, ports will be exposed to
 
 ## Setup Checklist
 
-### Step 1: Prepare Environment
+### Step 1: Create & Configure Environment Files
 
 ```bash
 cd /path/to/DEMO_FastAPI
 
-# Generate strong SECRET_KEY
+# Create .env files from templates
+make init-env
+
+# Edit with your actual values
+nano .env.docker.prod
+
+# Generate strong secrets
 SECRET_KEY=$(openssl rand -hex 32)
 echo "Generated SECRET_KEY: $SECRET_KEY"
-
-# Copy and customize environment
-cp .env.docker.dev .env.docker.prod
-nano .env.docker.prod
 
 # Update in .env.docker.prod:
 # - SECRET_KEY=<paste-generated-value>
