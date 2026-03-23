@@ -24,9 +24,12 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Environment Variables](#environment-variables)
   - [Logging](#logging)
 - [Project Structure](#project-structure)
-- [Database](#database)
+- [Data Structures](#data-structures)
+  - [Enums](#enums)
+  - [ORM Models & Database Schema](#orm-models--database-schema)
   - [Technology Stack](#technology-stack)
-  - [Database Schema](#database-schema)
+  - [API Request/Response Models](#api-requestresponse-models)
+  - [Managing the Database](#managing-the-database)
   - [Database Migration](#database-migration)
 - [API Endpoints](#api-endpoints)
   - [Role-Based Access Control](#role-based-access-control)
@@ -42,9 +45,6 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Access Control Details](#access-control-details)
   - [Example Authentication Flow](#example-authentication-flow)
 - [Exception Handling](#exception-handling)
-- [Data Structures](#data-structures)
-  - [Enums](#enums)
-  - [Request/Response Models](#requestresponse-models)
 - [Testing](#testing)
 - [Make commands list](#make-commands-list)
 - [Resources](#resources)
@@ -324,19 +324,52 @@ DEMO_FastAPI/
 
 For Docker deployment details and firewall setup, see [Build and Run Services in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#build-and-run-services).
 
-## Database
+## Data Structures
 ---
 
-### Technology Stack
+### Enums
+
+Defined in `app/core/enums.py`, used throughout the application for type safety and validation:
+
+**UserRole**
+```python
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    MODERATOR = "moderator"
+    USER = "user"
+```
+
+**UserStatus**
+```python
+class UserStatus(str, Enum):
+    PENDING = "pending"      # Awaiting approval
+    ACTIVE = "active"        # Can access API
+    DISABLED = "disabled"    # Rejected or suspended
+```
+
+**ExpenseCategory**
+```python
+class ExpenseCategory(str, Enum):
+    FOOD = "food"
+    TRANSPORTATION = "transportation"
+    ENTERTAINMENT = "entertainment"
+    UTILITIES = "utilities"
+    HEALTHCARE = "healthcare"
+    EDUCATION = "education"
+    SHOPPING = "shopping"
+    OTHER = "other"
+```
+
+### ORM Models & Database Schema
+
+#### Technology Stack
 
 - **Engine**: SQLite (file-based, no server required)
 - **ORM**: SQLAlchemy 2.0.46
 - **Auto-creation**: Tables created automatically on app startup
-- **Type Validation**: Pydantic models with SQLAlchemy mapped classes
+- **Type Validation**: Pydantic + SQLAlchemy integration
 
-### Database Schema
-
-**Users Table**
+#### Users Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -344,10 +377,13 @@ For Docker deployment details and firewall setup, see [Build and Run Services in
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
 | budget | FLOAT | NOT NULL | Monthly budget limit |
-| role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, user |
-| disabled | BOOLEAN | default=False | Account status |
+| role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, moderator, user |
+| status | ENUM(UserStatus) | NOT NULL, default="pending" | Values: pending, active, disabled |
+| disabled | BOOLEAN | default=False | Legacy account status field |
 
-**Expenses Table**
+**ORM Model**: `app/database/models/user.py`
+
+#### Expenses Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -357,6 +393,23 @@ For Docker deployment details and firewall setup, see [Build and Run Services in
 | date | DATETIME | NOT NULL | When incurred (default=now) |
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
 | user_id | INTEGER | Foreign Key → users.id | Expense owner |
+
+**ORM Model**: `app/database/models/expense.py`
+
+### API Request/Response Models
+
+Defined in `app/schemas/`, these Pydantic models validate and serialize API requests/responses:
+
+**User Operations**
+- `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
+- `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
+- `UserUpdate`: admin update schema (username, password, budget, role, status)
+- `UserResponse`: includes id, role, status
+
+**Expense Operations**
+- `ExpenseCreate`: description, amount (> 0), category enum
+- `ExpenseUpdate`: all fields optional
+- `ExpenseResponse`: includes id, datetime, user_id
 
 ### Managing the Database
 
@@ -524,54 +577,6 @@ Custom exceptions with proper HTTP status codes:
 | `InternalServerException` | 500 | Server errors |
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
-
-## Data Structures
----
-
-### Enums
-
-**UserRole**
-```python
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    MODERATOR = "moderator"
-    USER = "user"
-```
-
-**UserStatus**
-```python
-class UserStatus(str, Enum):
-    PENDING = "pending"      # Awaiting approval
-    ACTIVE = "active"        # Can access API
-    DISABLED = "disabled"    # Rejected or suspended
-```
-
-**ExpenseCategory**
-```python
-class ExpenseCategory(str, Enum):
-    FOOD = "food"
-    TRANSPORTATION = "transportation"
-    ENTERTAINMENT = "entertainment"
-    UTILITIES = "utilities"
-    HEALTHCARE = "healthcare"
-    EDUCATION = "education"
-    SHOPPING = "shopping"
-    OTHER = "other"
-```
-
-### Request/Response Models
-
-**User Operations**
-- `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
-- `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
-- `UserUpdate`: admin update schema (username, password, budget, role, status)
-- `UserResponse`: includes id, role, status
-
-**Expense Operations**
-- `ExpenseCreate`: description, amount (> 0), category enum
-- `ExpenseUpdate`: all fields optional
-- `ExpenseResponse`: includes id, datetime, user_id
-
 
 ## Testing
 ---
