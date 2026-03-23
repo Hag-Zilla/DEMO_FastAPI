@@ -1,5 +1,19 @@
 # DDoS Protection & Deployment Guide
 
+## Table of Contents
+
+- [Architecture Overview](#architecture-overview)
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Build and Run Services](#build-and-run-services)
+- [Docker Deployment](#docker-deployment)
+- [Firewall Configuration](#firewall-configuration-critical-run-first)
+- [Rate Limiting Configuration](#rate-limiting-configuration)
+- [Monitoring & Health Checks](#monitoring)
+- [Advanced Configuration](#advanced-configuration)
+- [Production Checklist](#production-checklist)
+- [Maintenance & Troubleshooting](#maintenance)
+
 ## Architecture Overview
 
 This deployment uses a 4-layer defense strategy against DDoS attacks:
@@ -9,58 +23,98 @@ This deployment uses a 4-layer defense strategy against DDoS attacks:
 3. **Application (FastAPI)** - slowapi middleware with Redis backend for distributed rate limiting
 4. **Session Storage (Redis)** - Centralized quota tracking across all services
 
-## Quick Start
-
-### 1. Prerequisites
+## Prerequisites
 
 - Docker & Docker Compose (v2.0+)
 - Linux host with ufw (or iptables)
 - 2GB RAM minimum
 - Ports 80/443 available
 
-### 2. Configuration
+## Configuration
+
+For environment variable setup, SECRET_KEY generation, and general configuration guidance, see [Configuration section in README.md](../README.md#️-configuration).
+
+For production Docker deployment, use `.env.docker.prod`:
 
 ```bash
-# Option 1: Use Makefile (recommended)
+# Use Makefile to create from template
 make init-env
 
-# Option 2: Manual copy from template
-cp .env.docker.prod.example .env.docker.prod
-
-# Edit production values (do NOT skip this!)
+# Edit production values
 nano .env.docker.prod
 
-# Critical settings to customize:
-# - SECRET_KEY (min 32 chars, use: openssl rand -hex 32)
+# Critical settings for production:
+# - SECRET_KEY (min 32 chars)
 # - REDIS_PASSWORD (strong password)
-# - DATABASE_URL (production database)
-# - DEBUG=false (IMPORTANT for production)
+# - DEBUG=false
 ```
 
-### 3. Deploy
+## Build and Run Services
+
+### For Local Development
 
 ```bash
-# Load environment
-export $(cat .env.docker.prod | xargs)
+# Install dependencies (uses committed uv.lock or requirements.txt)
+make init
 
-# Start services
-docker-compose -f docker-compose.yml up -d
+# Activate virtual environment
+source .venv/bin/activate  # or ./venv/bin/activate
 
-# Verify all services are running
-docker-compose ps
-
-# Check logs
-docker-compose logs -f app
-
-# Test endpoint
-curl -i http://localhost/health
+# Start the API
+make run
 ```
 
-### 4. Firewall Configuration (Run FIRST!)
+### For Docker Development
+
+```bash
+# Edit development environment
+nano .env.docker.dev
+
+# Build and start services
+make docker-build
+make docker-up
+```
+
+### For Docker Production
+
+```bash
+# Edit production environment
+nano .env.docker.prod
+
+# Setup firewall (critical: run FIRST on host)
+sudo bash firewall-rules.sh
+
+# Build and start services
+make docker-build
+make docker-up
+```
+
+## Docker Deployment
+
+### Quick Start (3 Steps)
+
+```bash
+# 1. Setup environment
+make init-env
+nano .env.docker.prod        # Set real secrets!
+
+# 2. Apply firewall (ONE TIME ONLY, on host OS)
+sudo bash firewall-rules.sh
+
+# 3. Build and start services
+make docker-build
+make docker-up
+
+# Verify health
+docker-compose ps
+curl http://localhost/health   # Should return 200 OK
+```
+
+## Firewall Configuration (Critical: Run FIRST!)
 
 ⚠️ **CRITICAL:** The `firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**. If you run docker-compose before firewall-rules.sh, ports will be exposed to the internet!
 
-#### Execution Order
+### Execution Order
 
 ```
 1. sudo bash firewall-rules.sh      ← FIRST: Lock down the host
@@ -68,7 +122,7 @@ curl -i http://localhost/health
 3. All traffic → Nginx → FastAPI    ← Result: Protected architecture
 ```
 
-#### Setup Steps
+### Setup Steps
 
 ```bash
 # 1. Make script executable
@@ -83,24 +137,6 @@ sudo ufw status numbered
 # Expected: 22/tcp, 80/tcp, 443/tcp ALLOW | 8000/tcp, 6379/tcp DENY
 ```
 
-### 5. Docker Deployment Steps
-
-```bash
-# 1. Setup environment
-make init-env
-nano .env.docker.prod        # Set real secrets!
-
-# 2. Apply firewall (ONE TIME ONLY, on host OS)
-sudo bash firewall-rules.sh
-
-# 3. Build and start services
-make docker-build
-make docker-up
-
-# 4. Verify all services are healthy
-docker-compose ps
-curl http://localhost/health   # Should return 200 OK
-```
 
 ## Troubleshooting Firewall Issues
 
@@ -179,6 +215,8 @@ docker-compose logs -f nginx
 docker-compose logs -f redis
 ```
 
+## Observability
+
 ### Metrics (Optional: Prometheus)
 
 Install Prometheus exporter:
@@ -208,7 +246,7 @@ async def metrics_middleware(request, call_next):
 
 Monitor with: `curl http://localhost:8000/metrics`
 
-## Scaling
+## Advanced Configuration
 
 ### Horizontal Scaling (Multiple App Instances)
 
@@ -245,9 +283,9 @@ services:
 
 Redis remains **singleton** (one instance) for unified quota tracking.
 
-## Performance Tuning
+### Performance Tuning
 
-### Nginx Tuning
+#### Nginx Tuning
 
 ```nginx
 # nginx/nginx.conf adjustments for high traffic
@@ -257,7 +295,7 @@ keepalive_timeout 120;        # Longer keep-alive
 client_max_body_size 10M;     # If needed
 ```
 
-### Redis Tuning
+#### Redis Tuning
 
 ```bash
 # Increase Redis memory limit in docker-compose.yml
@@ -267,7 +305,7 @@ command: redis-server
   --maxmemory-policy allkeys-lru
 ```
 
-### FastAPI Tuning
+#### FastAPI Tuning
 
 ```bash
 # docker-compose.yml - app service
@@ -280,7 +318,9 @@ command: >
   --worker-class uvicorn.workers.UvicornWorker
 ```
 
-## Security Checklist
+## Production Checklist
+
+### Security
 
 - [ ] Change `SECRET_KEY` (min 32 random chars)
 - [ ] Change `REDIS_PASSWORD` (strong password)
@@ -293,9 +333,11 @@ command: >
 - [ ] Use strong database passwords
 - [ ] Regular backups of Redis and database
 
-## Troubleshooting
+## Maintenance
 
-### Port Already in Use
+### Troubleshooting
+
+#### Port Already in Use
 
 ```bash
 # Check what's using port 80/443/8000
@@ -305,7 +347,7 @@ sudo netstat -tlnp | grep -E ':(80|443|8000)'
 sudo kill -9 <PID>
 ```
 
-### Nginx Can't Reach FastAPI
+#### Nginx Can't Reach FastAPI
 
 ```bash
 # Check DNS/network
@@ -315,7 +357,7 @@ docker-compose exec nginx nslookup app
 docker-compose exec nginx curl -v http://app:8000/health
 ```
 
-### Redis Connection Refused
+#### Redis Connection Refused
 
 ```bash
 # Check Redis is running
