@@ -20,14 +20,14 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
     - [Build and Run Services](#build-and-run-services)
     - [Verify Installation](#verify-installation)
   - [Advanced Workflows](#advanced-workflows)
-- [Configuration](#configuration)
-  - [Environment Variables](#environment-variables)
-  - [Logging](#logging)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+    - [Logging](#logging)
+  - [Make commands list](#make-commands-list)
 - [Project Structure](#project-structure)
 - [Data Structures](#data-structures)
   - [Enums](#enums)
   - [ORM Models & Database Schema](#orm-models--database-schema)
-  - [Technology Stack](#technology-stack)
   - [API Request/Response Models](#api-requestresponse-models)
   - [Managing the Database](#managing-the-database)
   - [Database Migration](#database-migration)
@@ -43,10 +43,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [User Status Workflow](#user-status-workflow)
   - [Role Hierarchy](#role-hierarchy)
   - [Access Control Details](#access-control-details)
-  - [Example Authentication Flow](#example-authentication-flow)
 - [Exception Handling](#exception-handling)
-- [Testing](#testing)
-- [Make commands list](#make-commands-list)
 - [Resources](#resources)
 - [Extra documentation](#extra-documentation)
   - [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
@@ -225,6 +222,49 @@ Logs are written to:
 Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.py`.
 
 For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
+
+### Make commands list
+---
+
+The project provides a `Makefile` to simplify common workflows for both development and production:
+
+**Development (Local without Docker):**
+```bash
+make init-env        # create .env files from templates
+make init            # interactive setup (default: uv)
+make init-uv         # setup with uv (non-interactive)
+make init-venv       # setup with venv/pip (non-interactive)
+make sync            # install/sync dependencies from uv.lock
+make run             # run FastAPI dev server (auto-reload)
+make test            # run pytest suite
+make lint            # run flake8 linting on app/
+make format          # format code with black
+```
+
+**Dependency Management:**
+```bash
+make lock            # refresh uv lockfile
+make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
+```
+
+**Docker (Production):**
+```bash
+make docker-build    # build Docker images
+make docker-up       # start containers (docker-compose up -d)
+make docker-down     # stop containers (docker-compose down)
+make docker-logs     # view container logs (follow mode)
+make docker-test     # run tests inside app container
+make docker-clean    # cleanup Docker artifacts
+make docker-shell    # open bash shell in app container
+```
+
+**Maintenance:**
+```bash
+make bootstrap-admin # bootstrap admin user (interactive)
+make clean           # remove Python cache files
+make help            # show all available targets
+make clean           # remove common cache/build artifacts
+```
 
 ## Project Structure
 ---
@@ -530,37 +570,6 @@ New users follow an approval workflow before they can access the API:
 - **Required Status**: Only users with `status=ACTIVE` can authenticate
 - **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
-### Example Authentication Flow
-
-```bash
-# 1. Create new user (PUBLIC)
-curl -X POST "http://localhost:8000/users/create" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
-# Response: {..., "status": "pending"}
-
-# 2. Try login with PENDING status (FAILS - 403)
-curl -X POST "http://localhost:8000/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=alice&password=secure123&grant_type=password"
-# Response: 403 "User account is not active"
-
-# 3. Admin/Moderator approves user (MODERATOR role)
-curl -X POST "http://localhost:8000/users/1/approve" \
-  -H "Authorization: Bearer ADMIN_TOKEN"
-# Response: {..., "status": "active"}
-
-# 4. Now user can login (ACTIVE status)
-curl -X POST "http://localhost:8000/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=alice&password=secure123&grant_type=password"
-# Response: {"access_token": "eyJhbGc...", "token_type": "bearer"}
-
-# 5. Use token in requests
-curl -X GET "http://localhost:8000/users/me" \
-  -H "Authorization: Bearer eyJhbGc..."
-```
-
 ## Exception Handling
 ---
 
@@ -577,75 +586,6 @@ Custom exceptions with proper HTTP status codes:
 | `InternalServerException` | 500 | Server errors |
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
-
-## Testing
----
-
-Run the interactive API documentation to test endpoints:
-
-```bash
-# After starting the server, visit:
-http://localhost:8000/docs
-```
-
-Or use curl:
-
-```bash
-# Create user
-curl -X POST "http://localhost:8000/users/create" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
-
-# Get current user
-curl -X GET "http://localhost:8000/users/me" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
----
-
-## Make commands list
----
-
-The project provides a `Makefile` to simplify common workflows for both development and production:
-
-**Development (Local without Docker):**
-```bash
-make init-env        # create .env files from templates
-make init            # interactive setup (default: uv)
-make init-uv         # setup with uv (non-interactive)
-make init-venv       # setup with venv/pip (non-interactive)
-make sync            # install/sync dependencies from uv.lock
-make run             # run FastAPI dev server (auto-reload)
-make test            # run pytest suite
-make lint            # run flake8 linting on app/
-make format          # format code with black
-```
-
-**Dependency Management:**
-```bash
-make lock            # refresh uv lockfile
-make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
-```
-
-**Docker (Production):**
-```bash
-make docker-build    # build Docker images
-make docker-up       # start containers (docker-compose up -d)
-make docker-down     # stop containers (docker-compose down)
-make docker-logs     # view container logs (follow mode)
-make docker-test     # run tests inside app container
-make docker-clean    # cleanup Docker artifacts
-make docker-shell    # open bash shell in app container
-```
-
-**Maintenance:**
-```bash
-make bootstrap-admin # bootstrap admin user (interactive)
-make clean           # remove Python cache files
-make help            # show all available targets
-make clean           # remove common cache/build artifacts
-```
-
 
 ## Resources
 ---
