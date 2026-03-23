@@ -1,4 +1,4 @@
-.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-clean
+.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-shell docker-clean prometheus grafana metrics
 
 PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
@@ -24,7 +24,13 @@ help:
 	@echo "  make docker-down      Stop containers (docker-compose down)"
 	@echo "  make docker-logs      View container logs (follow mode)"
 	@echo "  make docker-test      Run tests inside containers"
+	@echo "  make docker-shell     Open bash shell in app container"
 	@echo "  make docker-clean     Cleanup Docker artifacts"
+	@echo ""
+	@echo "=== MONITORING ==="
+	@echo "  make prometheus       Open Prometheus UI (http://localhost:9090)"
+	@echo "  make grafana          Open Grafana UI (http://localhost:3000)"
+	@echo "  make metrics          View raw metrics endpoint (http://localhost:8000/metrics)"
 	@echo ""
 	@echo "=== MAINTENANCE ==="
 	@echo "  make bootstrap-admin  Bootstrap admin user (interactive)"
@@ -160,3 +166,32 @@ docker-clean:
 
 docker-shell:
 	docker-compose exec app /bin/bash
+
+# ============================================================================
+# Monitoring & Observability
+# ============================================================================
+
+prometheus:
+	@echo "Opening Prometheus UI..."
+	@if command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open http://localhost:9090; \
+	elif command -v open >/dev/null 2>&1; then \
+		open http://localhost:9090; \
+	else \
+		echo "Prometheus UI: http://localhost:9090"; \
+	fi
+
+grafana:
+	@echo "Opening Grafana UI..."
+	@if command -v xdg-open >/dev/null 2>&1; then \
+		xdg-open http://localhost:3000; \
+	elif command -v open >/dev/null 2>&1; then \
+		open http://localhost:3000; \
+	else \
+		echo "Grafana UI: http://localhost:3000"; \
+	fi
+
+metrics:
+	@echo "Fetching raw metrics from FastAPI..."
+	curl -s http://localhost:8000/metrics | head -50
+	@echo "\n\n(Showing first 50 lines. For all metrics: curl http://localhost:8000/metrics)"

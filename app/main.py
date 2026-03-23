@@ -21,6 +21,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
+from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
 
 from .core.config import settings
 from .core.exceptions import AppException
@@ -182,6 +183,15 @@ async def favicon_ico():
     return Response(
         status_code=204,
         headers={"Cache-Control": "public, max-age=31536000"},
+    )
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
     )
 
 # ========================================================================

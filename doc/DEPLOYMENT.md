@@ -159,6 +159,81 @@ docker-compose logs -f nginx
 docker-compose logs -f redis
 ```
 
+### Prometheus & Grafana Monitoring
+
+Complete observability stack with Prometheus time-series metrics and Grafana visualizations.
+
+#### Access Prometheus & Grafana
+
+```bash
+# Prometheus (metrics scraper and storage)
+http://localhost:9090
+
+# Grafana (visualization and dashboards)
+http://localhost:3000
+# Default credentials: admin / (password from GRAFANA_PASSWORD env var, default: admin)
+```
+
+#### Key Metrics Tracked
+
+**HTTP Request Metrics**
+- `http_requests_total` - Total requests by method, endpoint, and status code
+- `http_request_duration_seconds` - Request latency histogram (p50, p95, p99)
+
+**Rate Limiting Metrics**
+- `rate_limit_hits_total` - Rejections by zone (api_limit, auth_limit, upload_limit)
+- Per-IP tracking for suspicious traffic patterns
+
+**Infrastructure Metrics**
+- `redis_connected` - Redis connection health (1=up, 0=down)
+- `redis_connection_errors_total` - Connection error rate
+
+#### Pre-configured Dashboards
+
+1. **FastAPI Overview**
+   - Request rate (req/s)
+   - p95 latency
+   - HTTP status breakdown
+   - 5xx error rate by endpoint
+
+2. **Rate Limiting**
+   - Rejections by zone
+   - Top rate-limited IPs
+   - Zone-specific thresholds
+
+3. **Infrastructure & Redis**
+   - Redis health status
+   - Connection error trends
+   - Latency percentiles (p50/p95/p99)
+
+#### Alerts
+
+Prometheus is configured with automated alerts in `config/alert.rules.yml`:
+
+- **HighErrorRate**: 5xx rate > 5% for 5 minutes
+- **HighLatency**: p95 latency > 1 second for 5 minutes
+- **HighRateLimitRejections**: Zone rejections > 10/sec for 2 minutes
+- **RedisConnectionErrors**: Any connection errors (1+ minute)
+- **RedisUnavailable**: Redis down (triggers fallback to in-memory rate limiting)
+
+#### Querying Metrics
+
+Raw metrics endpoint (Prometheus format):
+
+```bash
+# Get all metrics
+curl http://localhost:8000/metrics
+
+# Filter specific metrics
+curl http://localhost:8000/metrics | grep http_requests_total
+```
+
+#### Storage & Persistence
+
+- Prometheus data: `prometheus_data` volume (30-day retention by default)
+- Grafana dashboards: `grafana_data` volume (persisted across restarts)
+- Datasources auto-configured; no manual setup needed
+
 ## Rate Limiting Configuration
 
 ### Nginx Layer
@@ -189,37 +264,6 @@ limiter = Limiter(
 async def get_expenses(current_user: User = Depends(get_current_user)):
     ...
 ```
-
-## Observability [OPTIONAL]
-
-### Metrics (Optional: Prometheus)
-
-Install Prometheus exporter:
-
-```bash
-# Add to pyproject.toml
-uv add prometheus-client
-
-# In app/main.py
-from prometheus_client import Counter, Histogram
-import time
-
-request_count = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint'])
-request_latency = Histogram('http_request_duration_seconds', 'HTTP Request Latency')
-
-@app.middleware("http")
-async def metrics_middleware(request, call_next):
-    start = time.time()
-    response = await call_next(request)
-    duration = time.time() - start
-    
-    request_count.labels(method=request.method, endpoint=request.url.path).inc()
-    request_latency.observe(duration)
-    
-    return response
-```
-
-Monitor with: `curl http://localhost:8000/metrics`
 
 ## Advanced Configuration
 
