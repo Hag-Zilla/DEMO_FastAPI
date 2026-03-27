@@ -2,6 +2,10 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
+# Update base image for security patches
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
