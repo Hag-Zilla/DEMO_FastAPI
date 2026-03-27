@@ -8,6 +8,7 @@ to reading `app/utils/branding/*.txt` by path. It also replaces a
 `{{PROJECT_NAME}}` placeholder from the `PROJECT_NAME` environment
 variable if present.
 """
+
 from __future__ import annotations
 
 import os
@@ -17,7 +18,7 @@ from pathlib import Path
 try:
     from importlib import resources
 except ImportError:  # pragma: no cover - importlib is available on py3
-    resources = None
+    resources = None  # type: ignore[assignment]
 
 
 def _read_with_importlib(package: str, filename: str) -> str:

@@ -7,10 +7,9 @@
 #
 ####################################################################################################
 
-"""
-    Fast API demo : Expanse tracker API
-    Handcraft with love and sweat by : Damien Mascheix @Hagzilla
+"""Fast API demo: Expense tracker API.
 
+Handcraft with love and sweat by Damien Mascheix @Hagzilla.
 """
 # ==================================    Modules import     =========================================
 
@@ -20,11 +19,13 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from .core.config import settings
 from .core.exceptions import AppException
 from .core.logging import get_logger
-from .core.middleware import HTTPLoggingMiddleware
+from .core.middleware import HTTPLoggingMiddleware, limiter
 from .database.session import Base, engine
 from .routers import users, auth, health, expenses, alerts, reports
 from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
@@ -51,7 +52,7 @@ app = FastAPI(
         },
         {
             "name": "User Management",
-            "description": "Operations related to user creation and management.",
+            "description": "Operations related to user creation, management, and admin approvals.",
         },
         {
             "name": "Expenses",
@@ -65,13 +66,15 @@ app = FastAPI(
             "name": "Alerts",
             "description": "Endpoints to generate alerts for budget overruns.",
         },
-    ]
+    ],
 )
+
+# Attach SlowAPI limiter to app for decorator usage
+app.state.limiter = limiter
+app.state.startup_complete = False
 
 # Add HTTP logging middleware
 app.add_middleware(HTTPLoggingMiddleware)
-
-app.state.startup_complete = False
 
 
 @app.on_event("startup")
@@ -79,9 +82,9 @@ async def on_startup():
     """Mark application startup as completed."""
     print(STARTUP_BANNER)
     logger.info(LOG_SIGNATURE)
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("🚀 Expense Tracker API is running and ready to accept requests")
-    logger.info("="*70)
+    logger.info("=" * 70)
     app.state.startup_complete = True
 
 
@@ -92,6 +95,23 @@ async def on_shutdown():
 
 
 # Exception handlers
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Handle rate limit exceeded errors (HTTP 429)."""
+    logger.warning(
+        "Rate limit exceeded for %s from %s",
+        request.url.path,
+        request.client.host if request.client else "unknown",
+    )
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "Rate limit exceeded. Please try again later.",
+            "retry_after": exc.detail if hasattr(exc, "detail") else None,
+        },
+    )
+
+
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):  # pylint: disable=unused-argument
     """Handle custom AppException."""
@@ -103,7 +123,9 @@ async def app_exception_handler(request: Request, exc: AppException):  # pylint:
 
 
 @app.exception_handler(RequestValidationError)
-async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
     """Log and return request validation errors (HTTP 422)."""
     logger.warning(
         "Validation error on %s %s: %s",
@@ -164,11 +186,20 @@ async def favicon_ico():
         headers={"Cache-Control": "public, max-age=31536000"},
     )
 
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
+
+
 # ========================================================================
 # =                          Standalone way                              =
 # ========================================================================
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     print("Try to do something smart...")
     print("... but I don't know what yet.")

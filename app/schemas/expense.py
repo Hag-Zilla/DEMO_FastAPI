@@ -16,20 +16,20 @@ class ExpenseBase(BaseModel):
         min_length=1,
         max_length=200,
         description="Description of the expense",
-        example="Lunch at restaurant",
+        json_schema_extra={"example": "Lunch at restaurant"},
     )
     amount: float = Field(
-        ..., gt=0, description="Expense amount", example=25.50
+        ..., gt=0, description="Expense amount", json_schema_extra={"example": 25.50}
     )
     category: ExpenseCategory = Field(
-        ..., description="Expense category", example=ExpenseCategory.FOOD
+        ...,
+        description="Expense category",
+        json_schema_extra={"example": ExpenseCategory.FOOD},
     )
 
 
 class ExpenseCreate(ExpenseBase):
     """Schema for expense creation."""
-
-    pass
 
 
 class ExpenseUpdate(BaseModel):
@@ -40,15 +40,18 @@ class ExpenseUpdate(BaseModel):
         min_length=1,
         max_length=200,
         description="Description of the expense",
-        example="Lunch at restaurant",
+        json_schema_extra={"example": "Lunch at restaurant"},
     )
     amount: Optional[float] = Field(
-        default=None, gt=0, description="Expense amount", example=30.00
+        default=None,
+        gt=0,
+        description="Expense amount",
+        json_schema_extra={"example": 30.00},
     )
     category: Optional[ExpenseCategory] = Field(
         default=None,
         description="Expense category",
-        example=ExpenseCategory.FOOD,
+        json_schema_extra={"example": ExpenseCategory.FOOD},
     )
 
 

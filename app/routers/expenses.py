@@ -42,7 +42,7 @@ async def list_expenses(
         query = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id)
 
     if category:
-        query = query.filter(ExpenseModel.category == category)
+        query = query.filter(ExpenseModel.category == category)  # type: ignore[arg-type]
     if start_date:
         query = query.filter(ExpenseModel.date >= start_date)
     if end_date:
@@ -147,11 +147,11 @@ async def update_expense(
 
     # Update only provided fields
     if expense_update.description is not None:
-        expense.description = expense_update.description
+        expense.description = expense_update.description  # type: ignore[assignment]
     if expense_update.amount is not None:
-        expense.amount = expense_update.amount
+        expense.amount = expense_update.amount  # type: ignore[assignment]
     if expense_update.category is not None:
-        expense.category = expense_update.category
+        expense.category = expense_update.category  # type: ignore[assignment]
 
     db.commit()
     db.refresh(expense)
@@ -159,7 +159,9 @@ async def update_expense(
     return expense
 
 
-@router.delete("/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_expense(
     expense_id: int,
     db: Session = Depends(get_db),

@@ -5,13 +5,14 @@ from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationException, AuthorizationException
-from app.core.enums import UserRole
+from app.core.enums import UserRole, UserStatus
 from app.core.logging import get_logger
 from app.database.session import get_db
 from app.database.models.user import User as UserModel
@@ -37,15 +38,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
-        # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to jose
-        secret = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, "get_secret_value") else settings.SECRET_KEY
+        # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to PyJWT
+        secret = (
+            settings.SECRET_KEY.get_secret_value()
+            if hasattr(settings.SECRET_KEY, "get_secret_value")
+            else settings.SECRET_KEY
+        )
         payload = jwt.decode(
             token,
             secret,
             algorithms=[settings.ALGORITHM],
         )
         return payload
-    except JWTError as e:
+    except InvalidTokenError as e:
         raise AuthenticationException("Invalid authentication credentials") from e
 
 
@@ -53,17 +58,21 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserModel:
-    """
-    Dependency to retrieve the current authenticated user from the JWT token.
-    - Decodes the JWT token and extracts the username (sub claim).
-    - Fetches the user from the database.
-    - Raises HTTP 401 if credentials are invalid or user not found.
-    - Raises HTTP 403 if the user account is disabled.
-    - Returns the User SQLAlchemy model instance if authentication is successful.
+    """Dependency to retrieve the current authenticated user from the JWT token.
+
+    Decodes JWT token, extracts username, fetches user from database.
+    Raises 401 if credentials invalid. Raises 403 if account not active.
+
+    Returns:
+        UserModel: The authenticated user if successful.
+
+    Raises:
+        AuthenticationException: If token is invalid or user not found.
+        AuthorizationException: If user account is not active.
     """
     try:
         payload = decode_jwt_token(token)
-        username: str = payload.get("sub")
+        username: str = payload.get("sub")  # type: ignore[assignment]
         if username is None:
             logger.warning("JWT token missing 'sub' claim")
             raise AuthenticationException()
@@ -71,9 +80,13 @@ async def get_current_user(
         if user is None:
             logger.warning("User not found for token: %s", username)
             raise AuthenticationException()
-        if user.disabled:
-            logger.warning("Login attempt with disabled account: %s", username)
-            raise AuthorizationException("User account is disabled")
+        if user.status != UserStatus.ACTIVE:
+            logger.warning(
+                "Login attempt with non-active account: %s (status: %s)",
+                username,
+                user.status,
+            )
+            raise AuthorizationException("User account is not active")
         return user  # Return the SQLAlchemy model instance directly
 
     except (AuthenticationException, AuthorizationException):
@@ -84,48 +97,54 @@ async def get_current_user(
 
 
 def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
-    """
-    Dependency to ensure the current user has admin privileges.
+    """Dependency to ensure the current user has admin privileges.
+
     Raises HTTP 403 if the user is not an admin.
-    Returns the current user if authorized.
+
+    Args:
+        current_user: The authenticated user from get_current_user.
+
+    Returns:
+        UserModel: The current user if they are an admin.
+
+    Raises:
+        AuthorizationException: If user is not an admin.
     """
     if current_user.role != UserRole.ADMIN:
         logger.warning("Unauthorized access attempt by user %s", current_user.id)
-        raise AuthorizationException("You do not have permission to perform this action.")
+        raise AuthorizationException(
+            "You do not have permission to perform this action."
+        )
     return current_user
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    """
-    Generates a JSON Web Token (JWT) for authentication.
+    """Generate a JSON Web Token (JWT) for authentication.
 
     Args:
-        data (dict): A dictionary containing the payload data for the token.
-                     Must include a "sub" key representing the subject (e.g., user ID).
-        expires_delta (timedelta | None): Optional. A timedelta object representing the
-                                           desired expiration time for the token. If not
-                                           provided, the token will expire based on the
-                                           JWT_EXPIRATION_MINUTES constant.
+        data: Dictionary containing payload data (must include 'sub' key).
+        expires_delta: Optional timedelta for token expiration. If not provided,
+            the token will expire based on JWT_EXPIRATION_MINUTES constant.
 
     Returns:
-        str: The encoded JWT as a string.
+        str: The encoded JWT token.
 
     Raises:
-        KeyError: If the "sub" key is not present in the input data.
-
-    Notes:
-        - The token includes an expiration time ("exp") and a subject ("sub").
-        - The expiration time is calculated based on the current UTC time and
-          the JWT_EXPIRATION_MINUTES constant, or based on the provided expires_delta.
-        - The token is signed using the SECRET_KEY and the specified ALGORITHM.
+        KeyError: If the 'sub' key is not present in input data.
     """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.JWT_EXPIRATION_MINUTES
+        )
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    secret = settings.SECRET_KEY.get_secret_value() if hasattr(settings.SECRET_KEY, "get_secret_value") else settings.SECRET_KEY
+    secret = (
+        settings.SECRET_KEY.get_secret_value()
+        if hasattr(settings.SECRET_KEY, "get_secret_value")
+        else settings.SECRET_KEY
+    )
     encoded_jwt = jwt.encode(
         to_encode,
         secret,
@@ -139,6 +158,6 @@ def authenticate_user(db: Session, username: str, password: str):
     user = db.query(UserModel).filter(UserModel.username == username).first()
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.hashed_password):  # type: ignore[arg-type]
         return None
     return user

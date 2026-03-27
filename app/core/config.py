@@ -1,5 +1,7 @@
 """Application configuration management using Pydantic Settings."""
 
+from typing import Literal
+
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,7 +11,8 @@ class Settings(BaseSettings):
 
     # JWT Configuration
     SECRET_KEY: SecretStr = Field(..., min_length=32)
-    ALGORITHM: str = Field(..., min_length=1)
+    # Restrict signing algorithm to a vetted value.
+    ALGORITHM: Literal["HS256"] = "HS256"
     JWT_EXPIRATION_MINUTES: int = Field(30, ge=1)
 
     # Database Configuration
@@ -26,6 +29,11 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+
+# ============================================================================
+# MODULE SETUP / EXPORTS
+# ============================================================================
 
 # Single instance of settings (typed to help static analyzers)
 settings: Settings = Settings()

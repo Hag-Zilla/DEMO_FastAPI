@@ -1,6 +1,19 @@
 #!/bin/bash
-
-#!/bin/bash
+#
+# Setup Script - Initialize Development Environment
+#
+# This script sets up a complete Python development environment for DEMO_FastAPI.
+# It handles multiple environment managers (uv, venv, conda, pipenv) and runs
+# the admin bootstrap process to create initial database and admin user.
+#
+# Usage:
+#   bash setup.sh        # Interactive setup
+#   uv venv && uv sync   # Manual uv setup
+#   python -m venv venv  # Manual venv setup
+#
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
 # Print banners from app/utils/branding so they live outside scripts
 if [ -f "app/utils/branding/mammoth.txt" ]; then
@@ -20,6 +33,10 @@ set -euo pipefail
 
 # Arrays to track warnings
 declare -a SETUP_WARNINGS
+
+# =============================================================================
+# PRIVATE HELPERS
+# =============================================================================
 
 # Function to run commands and handle errors
 run_command() {
@@ -88,6 +105,10 @@ run_admin_bootstrap() {
         echo "Warning: project_spec.sh not found. Skipping admin bootstrap."
     fi
 }
+
+# =============================================================================
+# PUBLIC FUNCTIONS
+# =============================================================================
 
 # Function to create a uv environment
 create_uv_env() {
@@ -235,7 +256,7 @@ create_venv_env() {
             run_command "uv export --format=requirements.txt -o requirements.txt"
             run_command "pip install -r requirements.txt"
         else
-            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually." 
+            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually."
             if [ -f "pyproject.toml" ]; then
                 echo "Falling back to editable install from pyproject.toml"
                 run_command "pip install -e ."
@@ -253,6 +274,10 @@ create_venv_env() {
 
     echo "The venv environment 'venv' has been created successfully."
 }
+
+# =============================================================================
+# COMMAND LINE INTERFACE
+# =============================================================================
 
 # Ask the user which environment manager to use
 echo "Which environment manager would you like to use? [uv/venv] (default: uv)"

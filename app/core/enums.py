@@ -20,4 +20,13 @@ class UserRole(str, Enum):
     """User roles."""
 
     ADMIN = "admin"
+    MODERATOR = "moderator"
     USER = "user"
+
+
+class UserStatus(str, Enum):
+    """User account status."""
+
+    PENDING = "pending"
+    ACTIVE = "active"
+    DISABLED = "disabled"
