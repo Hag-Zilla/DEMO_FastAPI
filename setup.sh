@@ -256,7 +256,7 @@ create_venv_env() {
             run_command "uv export --format=requirements.txt -o requirements.txt"
             run_command "pip install -r requirements.txt"
         else
-            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually." 
+            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually."
             if [ -f "pyproject.toml" ]; then
                 echo "Falling back to editable install from pyproject.toml"
                 run_command "pip install -e ."

@@ -1,7 +1,7 @@
 ╔════════════════════════════════════════════════════════════════╗
-              ✅ SETUP COMPLETED SUCCESSFULLY ✅               
-                                                               
-            Your {{PROJECT_NAME}} is ready to roll!            
-                                                                
-         Made with 💪 by Hagzilla - @github.com/hagzilla              
+              ✅ SETUP COMPLETED SUCCESSFULLY ✅
+
+            Your {{PROJECT_NAME}} is ready to roll!
+
+         Made with 💪 by Hagzilla - @github.com/hagzilla
 ╚════════════════════════════════════════════════════════════════╝

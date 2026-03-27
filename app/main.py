@@ -7,10 +7,9 @@
 #
 ####################################################################################################
 
-"""
-    Fast API demo : Expanse tracker API
-    Handcraft with love and sweat by : Damien Mascheix @Hagzilla
+"""Fast API demo: Expense tracker API.
 
+Handcraft with love and sweat by Damien Mascheix @Hagzilla.
 """
 # ==================================    Modules import     =========================================
 
@@ -21,7 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
-from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from .core.config import settings
 from .core.exceptions import AppException
@@ -67,7 +66,7 @@ app = FastAPI(
             "name": "Alerts",
             "description": "Endpoints to generate alerts for budget overruns.",
         },
-    ]
+    ],
 )
 
 # Attach SlowAPI limiter to app for decorator usage
@@ -83,9 +82,9 @@ async def on_startup():
     """Mark application startup as completed."""
     print(STARTUP_BANNER)
     logger.info(LOG_SIGNATURE)
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("🚀 Expense Tracker API is running and ready to accept requests")
-    logger.info("="*70)
+    logger.info("=" * 70)
     app.state.startup_complete = True
 
 
@@ -108,7 +107,7 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         status_code=429,
         content={
             "detail": "Rate limit exceeded. Please try again later.",
-            "retry_after": exc.detail if hasattr(exc, 'detail') else None,
+            "retry_after": exc.detail if hasattr(exc, "detail") else None,
         },
     )
 
@@ -124,7 +123,9 @@ async def app_exception_handler(request: Request, exc: AppException):  # pylint:
 
 
 @app.exception_handler(RequestValidationError)
-async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
     """Log and return request validation errors (HTTP 422)."""
     logger.warning(
         "Validation error on %s %s: %s",
@@ -194,11 +195,11 @@ async def metrics():
         media_type=CONTENT_TYPE_LATEST,
     )
 
+
 # ========================================================================
 # =                          Standalone way                              =
 # ========================================================================
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     print("Try to do something smart...")
     print("... but I don't know what yet.")

@@ -23,7 +23,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Configuration](#configuration)
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
-  - [Make commands list](#make-commands-list)
+  - [Makefile & Common Tasks](#makefile--common-tasks)
 - [Project Structure](#project-structure)
 - [Data Structures](#data-structures)
   - [Enums](#enums)
@@ -44,13 +44,16 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Role Hierarchy](#role-hierarchy)
   - [Access Control Details](#access-control-details)
 - [Exception Handling](#exception-handling)
-- [Extra documentation](#extra-documentation)
+- [🛠️ Code Quality & Development Standards](#-code-quality--development-standards)
+- [📖 Extra documentation](#-extra-documentation)
   - [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
   - [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
-- [Resources](#resources)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
+  - [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)
+  - [doc/STANDARDS.md](doc/STANDARDS.md)
+- [📚 Resources](#-resources)
+- [🤝 Contributing](#-contributing)
+- [💬 Support](#-support)
+- [📜 License](#-license)
 
 ---
 
@@ -73,7 +76,9 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 - **Rate Limiting**: Distributed request rate limiting with slowapi and Redis
 - **Error Handling**: Custom exception classes with proper HTTP status codes
 - **Logging**: Console and file-based logging for monitoring
+- **Monitoring**: Prometheus metrics collection + Grafana dashboards with built-in alerts
 - **Type Validation**: Pydantic v2 with enums for categories and roles
+- **Code Quality**: Pre-commit hooks, automated linting, type checking, and code standards enforcement
 
 ## 🚀 Quick Start
 ---
@@ -159,7 +164,7 @@ curl http://localhost/health
 ```bash
 curl -X POST "http://localhost:8000/users/create" \
   -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
+  -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
 
 
@@ -223,47 +228,20 @@ Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.p
 
 For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
 
-### Make commands list
----
+### Makefile & Common Tasks
 
-The project provides a `Makefile` to simplify common workflows for both development and production:
+The project provides a comprehensive `Makefile` to simplify common workflows:
 
-**Development (Local without Docker):**
+**Quick Commands:**
+- `make init` — Setup environment and install dependencies
+- `make run` — Start the dev server
+- `make test` — Run test suite
+- `make run-hooks` — Run code quality checks
+
+**For all available Makefile targets** (development, Docker, monitoring, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
+
 ```bash
-make init-env        # create .env files from templates
-make init            # interactive setup (default: uv)
-make init-uv         # setup with uv (non-interactive)
-make init-venv       # setup with venv/pip (non-interactive)
-make sync            # install/sync dependencies from uv.lock
-make run             # run FastAPI dev server (auto-reload)
-make test            # run pytest suite
-make lint            # run flake8 linting on app/
-make format          # format code with black
-```
-
-**Dependency Management:**
-```bash
-make lock            # refresh uv lockfile
-make export-reqs     # export pinned requirements.txt from uv.lock (for venv users)
-```
-
-**Docker (Production):**
-```bash
-make docker-build    # build Docker images
-make docker-up       # start containers (docker-compose up -d)
-make docker-down     # stop containers (docker-compose down)
-make docker-logs     # view container logs (follow mode)
-make docker-test     # run tests inside app container
-make docker-clean    # cleanup Docker artifacts
-make docker-shell    # open bash shell in app container
-```
-
-**Maintenance:**
-```bash
-make bootstrap-admin # bootstrap admin user (interactive)
-make clean           # remove Python cache files
-make help            # show all available targets
-make clean           # remove common cache/build artifacts
+make help     # Show all available targets
 ```
 
 ## 📁 Project Structure
@@ -463,7 +441,7 @@ SQLite works fine for small deployments. For production at scale, consider Postg
 
 ```python
 # app/core/config.py
-# DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"
+# DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"  # pragma: allowlist secret
 ```
 
 The modular design allows easy database swaps with minimal code changes.
@@ -545,7 +523,7 @@ New users follow an approval workflow before they can access the API:
    ↓
 2. Admin/Moderator Reviews
    ↓
-  ├─→ POST /users/{id}/approve → Status: ACTIVE ✅ (can login) 
+  ├─→ POST /users/{id}/approve → Status: ACTIVE ✅ (can login)
    └─→ POST /users/{id}/reject  → Status: DISABLED ❌ (approved= false)
    ↓
 3. Active User Lifecycle
@@ -587,14 +565,41 @@ Custom exceptions with proper HTTP status codes:
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
 
+---
+
+## 🛠️ Code Quality & Development Standards
+---
+
+This project maintains strict code quality standards enforced through automated tools:
+
+- **Pre-commit Hooks**: 10+ automated checks (detect-secrets, ruff, mypy, pydocstyle, shellcheck, etc.)
+- **Code Standards**: Strict naming conventions, Google-style docstrings, type hints, and organization
+- **Type Checking**: Full static type checking with mypy
+- **Formatting**: Auto-formatting with ruff
+- **Development Workflow**: Makefile automation for common tasks
+
+**Quick Setup:**
+```bash
+make install-hooks   # Install pre-commit hooks
+make run-hooks       # Test all hooks on all files
+```
+
+**For detailed information:**
+- **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
+- **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
+
+---
+
 ## 📖 Extra documentation
 
-For specialized topics:
+For specialized topics and detailed guides:
 
 | Document | Purpose |
 |----------|----------|
 | **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
 | **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
+| **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
+| **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
 
 ## 📚 Resources
 ---

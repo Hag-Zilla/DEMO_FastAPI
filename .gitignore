@@ -157,3 +157,6 @@ logs/*.jsonl
 .env.docker.prod
 .env.*.local
 .env.*.prod
+
+# Pre-commit framework
+.pre-commit-framework/

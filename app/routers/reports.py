@@ -19,8 +19,20 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
-def _build_expense_report(db: Session, user_id: int, start_date: datetime, end_date: datetime):
-    """Helper function to build expense report for a user within a date range."""
+def _build_expense_report(
+    db: Session, user_id: int, start_date: datetime, end_date: datetime
+):
+    """Build expense report for a user within a date range.
+
+    Args:
+        db: Database session.
+        user_id: ID of the user.
+        start_date: Start date for the report period.
+        end_date: End date for the report period.
+
+    Returns:
+        Dict with keys: total_expenses, count, average, by_category.
+    """
     # Get total expenses
     total_query = (
         db.query(func.sum(ExpenseModel.amount))  # pylint: disable=not-callable
@@ -47,7 +59,7 @@ def _build_expense_report(db: Session, user_id: int, start_date: datetime, end_d
 
     # Get breakdown by category
     category_breakdown = (
-        db.query(
+        db.query(  # type: ignore[call-overload]
             ExpenseModel.category,
             func.count(ExpenseModel.id).label("count"),  # pylint: disable=not-callable
             func.sum(ExpenseModel.amount).label("total"),  # pylint: disable=not-callable
@@ -87,8 +99,16 @@ async def get_monthly_report(
     """Get monthly expense report for the authenticated user.
 
     Args:
-        year: Year (e.g., 2026)
-        month: Month (1-12)
+        year: Year (e.g., 2026).
+        month: Month (1-12).
+        db: Database session.
+        current_user: Current authenticated user.
+
+    Returns:
+        Dict with user info and monthly expense report.
+
+    Raises:
+        ValueError: If month is not between 1 and 12.
     """
     # Validate month
     if not 1 <= month <= 12:
@@ -96,15 +116,13 @@ async def get_monthly_report(
 
     # Get date range for the month
     start_date = datetime(year, month, 1)
-    end_date = (
-        datetime(year, month + 1, 1)
-        if month < 12
-        else datetime(year + 1, 1, 1)
+    end_date = datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
+
+    report = _build_expense_report(db, current_user.id, start_date, end_date)  # type: ignore[arg-type]
+
+    logger.info(
+        "User %s generated monthly report for %s-%02d", current_user.id, year, month
     )
-
-    report = _build_expense_report(db, current_user.id, start_date, end_date)
-
-    logger.info("User %s generated monthly report for %s-%02d", current_user.id, year, month)
 
     return {
         "user_id": current_user.id,
@@ -124,14 +142,22 @@ async def get_period_report(
 ):
     """Get expense report for a custom date range.
 
-    Query parameters:
-    - start_date: Start date (ISO format: 2026-02-01T00:00:00)
-    - end_date: End date (ISO format: 2026-02-28T23:59:59)
+    Args:
+        start_date: Start date in ISO format (e.g., 2026-02-01T00:00:00).
+        end_date: End date in ISO format (e.g., 2026-02-28T23:59:59).
+        db: Database session.
+        current_user: Current authenticated user.
+
+    Returns:
+        Dict with user info and custom period expense report.
+
+    Raises:
+        ValueError: If start_date is not before end_date.
     """
     if start_date >= end_date:
         raise ValueError("start_date must be before end_date")
 
-    report = _build_expense_report(db, current_user.id, start_date, end_date)
+    report = _build_expense_report(db, current_user.id, start_date, end_date)  # type: ignore[arg-type]
 
     logger.info(
         "User %s generated period report from %s to %s",
@@ -156,10 +182,12 @@ async def get_all_reports(
 ):
     """Get aggregated expense reports for all users (admin only).
 
+    Args:
+        db: Database session.
+        _admin: Admin user (access already validated by dependency).
+
     Returns:
-    - total_across_users: Total expenses across all users
-    - user_count: Number of users with expenses
-    - by_user: Breakdown by user
+        Dict with keys: report_type, total_across_users, total_expenses_count, by_user.
     """
     # Total across all users
     total_query = db.query(func.sum(ExpenseModel.amount)).scalar()  # pylint: disable=not-callable
@@ -171,11 +199,7 @@ async def get_all_reports(
 
     # Get report by user
     user_reports = {}
-    users_with_expenses = (
-        db.query(ExpenseModel.user_id)
-        .distinct()
-        .all()
-    )
+    users_with_expenses = db.query(ExpenseModel.user_id).distinct().all()
 
     for (user_id,) in users_with_expenses:
         user = db.query(UserModel).filter(UserModel.id == user_id).first()

@@ -30,6 +30,7 @@ _SECRET_PAIR_RE = re.compile(
 # PRIVATE HELPERS
 # ============================================================================
 
+
 def _redact_text(value: str) -> str:
     """Mask common sensitive patterns in log text."""
     redacted = _URL_CREDENTIALS_RE.sub(r"\1\2:***@", value)
@@ -54,10 +55,19 @@ def _redact_obj(value):
 # PUBLIC CLASSES
 # ============================================================================
 
+
 class SafeFormatter(logging.Formatter):
     """Formatter that redacts sensitive values from messages and tracebacks."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format a log record with sensitive data redaction.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The formatted log string with sensitive values masked.
+        """
         original_msg = record.msg
         original_args = record.args
         try:
@@ -71,6 +81,14 @@ class SafeFormatter(logging.Formatter):
             record.args = original_args
 
     def formatException(self, ei) -> str:  # noqa: N802 - stdlib API naming
+        """Format exception information with sensitive data redaction.
+
+        Args:
+            ei: The exception info tuple.
+
+        Returns:
+            The formatted exception string with sensitive values masked.
+        """
         return _redact_text(super().formatException(ei))
 
 
@@ -110,6 +128,7 @@ class JSONFormatter(logging.Formatter):
 # ============================================================================
 # MODULE SETUP / CONFIGURATION
 # ============================================================================
+
 
 def _default_logging_config(log_level: str) -> dict:
     """Return fallback logging config when YAML file is unavailable."""

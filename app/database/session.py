@@ -20,7 +20,7 @@ from app.core.config import settings
 # Database configuration
 DATABASE_URL = settings.DATABASE_URL
 
-engine_kwargs = {}
+engine_kwargs: dict = {}
 
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
@@ -49,6 +49,7 @@ Base = declarative_base()
 # ============================================================================
 # PUBLIC FUNCTIONS
 # ============================================================================
+
 
 def get_db():
     """Dependency to retrieve a database session."""

@@ -20,6 +20,19 @@ dependencies = [
     "prometheus-client>=0.20,<1.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.5,<4.0",
+    "pytest>=7.4,<8.0",
+    "black>=23.0,<24.0",
+    "flake8>=6.1,<7.0",
+    "ruff>=0.3,<1.0",
+    "mypy>=1.8,<2.0",
+    "pydocstyle>=6.3,<7.0",
+    "autoflake>=2.0,<3.0",
+    "types-PyYAML>=6.0,<7.0",
+]
+
 [tool.uv]
 package = false
 

@@ -1,4 +1,4 @@
-.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-shell docker-clean prometheus grafana metrics
+.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-shell docker-clean prometheus grafana metrics install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 
 PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
 
@@ -31,6 +31,13 @@ help:
 	@echo "  make prometheus       Open Prometheus UI (http://localhost:9090)"
 	@echo "  make grafana          Open Grafana UI (http://localhost:3000)"
 	@echo "  make metrics          View raw metrics endpoint (http://localhost:8000/metrics)"
+	@echo ""
+	@echo "=== CODE QUALITY & GIT HOOKS ==="
+	@echo "  make install-hooks    Install pre-commit hooks"
+	@echo "  make run-hooks        Run all hooks on all files"
+	@echo "  make run-hooks-staged Run hooks on staged files only"
+	@echo "  make update-hooks     Update hooks to latest versions"
+	@echo "  make clean-hooks      Clean pre-commit cache"
 	@echo ""
 	@echo "=== MAINTENANCE ==="
 	@echo "  make bootstrap-admin  Bootstrap admin user (interactive)"
@@ -195,3 +202,31 @@ metrics:
 	@echo "Fetching raw metrics from FastAPI..."
 	curl -s http://localhost:8000/metrics | head -50
 	@echo "\n\n(Showing first 50 lines. For all metrics: curl http://localhost:8000/metrics)"
+
+# ============================================================================
+# Code Quality & Git Hooks
+# ============================================================================
+
+install-hooks:
+	@echo "Installing pre-commit hooks..."
+	$(PYTHON) -m pre_commit install
+	$(PYTHON) -m pre_commit install-hooks
+	@echo "✓ Pre-commit hooks installed"
+
+run-hooks:
+	@echo "Running pre-commit hooks on all files..."
+	$(PYTHON) -m pre_commit run --all-files
+
+run-hooks-staged:
+	@echo "Running pre-commit hooks on staged files..."
+	$(PYTHON) -m pre_commit run
+
+update-hooks:
+	@echo "Updating pre-commit hooks to latest versions..."
+	$(PYTHON) -m pre_commit autoupdate
+	@echo "✓ Hooks updated. Review changes in .pre-commit-config.yaml"
+
+clean-hooks:
+	@echo "Cleaning pre-commit cache..."
+	$(PYTHON) -m pre_commit clean
+	$(PYTHON) -m pre_commit clean-files

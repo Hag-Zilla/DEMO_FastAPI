@@ -59,14 +59,14 @@ router = APIRouter(tags=["Authentication"])
 @limiter.limit("5/minute")  # Max 5 login attempts per minute
 async def login_for_access_token(form_data: OAuth2PasswordRequestFormStrict, db: Session):
     """Authenticate user and return access token.
-    
+
     Rate limit: 5 requests per minute per IP
     (Helps prevent brute-force attacks)
     """
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     token = create_access_token({"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 ```
@@ -78,7 +78,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestFormStrict, db:
 @limiter.limit("100/minute")  # Max 100 requests per minute
 async def list_expenses(current_user: User = Depends(get_current_user)):
     """List user expenses.
-    
+
     Rate limit: 100 requests per minute per IP
     (Relaxed because it's read-only and not resource-intensive)
     """
@@ -95,7 +95,7 @@ async def batch_import_expenses(
     current_user: User = Depends(get_current_user)
 ):
     """Batch import expenses from CSV.
-    
+
     Rate limit: 2 requests per minute per IP
     (Strict: prevents resource exhaustion from large file imports)
     """
@@ -113,7 +113,7 @@ async def get_annual_report(
     current_user: User = Depends(get_current_user)
 ):
     """Generate annual report.
-    
+
     Rate limits:
     - 5 requests per minute (burst traffic protection)
     - 50 requests per hour (sustained usage limit)
@@ -173,14 +173,14 @@ async function fetchWithRetry(url, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url);
-      
+
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After') || 60;
         console.warn(`Rate limited. Waiting ${retryAfter} seconds...`);
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
         continue; // Retry
       }
-      
+
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -204,7 +204,7 @@ from urllib3.util.retry import Retry
 
 def create_session_with_retry():
     session = requests.Session()
-    
+
     # Retry strategy
     retry_strategy = Retry(
         total=3,
@@ -214,7 +214,7 @@ def create_session_with_retry():
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
-    
+
     return session
 
 # Usage
@@ -318,13 +318,13 @@ async def expensive_operation():
 def get_user_rate_limit(request: Request) -> str:
     """Determine rate limit based on user subscription tier."""
     user = request.state.user  # Set by authentication middleware
-    
+
     tier_limits = {
         "free": "10/minute",
         "premium": "100/minute",
         "enterprise": "1000/minute"
     }
-    
+
     return tier_limits.get(user.subscription_tier, "10/minute")
 
 tier_limiter = Limiter(key_func=get_user_rate_limit)
@@ -369,14 +369,14 @@ def test_login_rate_limit():
     for i in range(5):
         response = client.post(
             "/api/v1/auth/token",
-            data={"username": "user", "password": "pass"}
+            data={"username": "user", "password": "pass"}  # pragma: allowlist secret
         )
         assert response.status_code != 429, f"Unexpected 429 on request {i+1}"
-    
+
     # 6th request should hit the limit
     response = client.post(
         "/api/v1/auth/token",
-        data={"username": "user", "password": "pass"}
+        data={"username": "user", "password": "pass"}  # pragma: allowlist secret
     )
     assert response.status_code == 429, "Rate limit not enforced"
     assert "Rate limit exceeded" in response.json()["detail"]

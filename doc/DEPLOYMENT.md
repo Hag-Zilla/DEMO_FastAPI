@@ -328,9 +328,9 @@ client_max_body_size 10M;     # If needed
 
 ```bash
 # Increase Redis memory limit in docker-compose.yml
-command: redis-server 
-  --appendonly yes 
-  --maxmemory 1gb 
+command: redis-server
+  --appendonly yes
+  --maxmemory 1gb
   --maxmemory-policy allkeys-lru
 ```
 
@@ -339,11 +339,11 @@ command: redis-server
 ```bash
 # docker-compose.yml - app service
 command: >
-  ./.venv/bin/python -m uvicorn 
-  app.main:app 
-  --host 0.0.0.0 
-  --port 8000 
-  --workers 4 
+  ./.venv/bin/python -m uvicorn
+  app.main:app
+  --host 0.0.0.0
+  --port 8000
+  --workers 4
   --worker-class uvicorn.workers.UvicornWorker
 ```
 

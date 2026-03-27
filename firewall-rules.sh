@@ -44,7 +44,7 @@ ufw deny 6379/udp comment "Redis - internal only"
 if command -v nft &> /dev/null; then
     echo ""
     echo "[OPTIONAL] Applying nftables rate limiting rules..."
-    
+
     # Create nftables config
     cat > /etc/nftables-ddos.conf << 'EOF'
 #!/usr/bin/nft -f
@@ -83,7 +83,7 @@ table inet ddos {
     }
 }
 EOF
-    
+
     # Load rules
     nft -f /etc/nftables-ddos.conf || echo "WARNING: nftables rules failed to load"
 fi
