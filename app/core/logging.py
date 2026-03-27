@@ -1,5 +1,9 @@
 """Logging configuration for the application."""
 
+# ============================================================================
+# IMPORTS
+# ============================================================================
+
 import json
 import logging
 import re
@@ -12,11 +16,19 @@ import yaml
 from app.core.config import settings
 
 
+# ============================================================================
+# CONFIGURATION / CONSTANTS
+# ============================================================================
+
 _URL_CREDENTIALS_RE = re.compile(r"([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\s]+):([^@/\s]+)@")
 _SECRET_PAIR_RE = re.compile(
     r"(?i)\b(SECRET_KEY|PASSWORD|TOKEN|API_KEY|AUTHORIZATION)\b\s*([=:])\s*([^\s,;]+)"
 )
 
+
+# ============================================================================
+# PRIVATE HELPERS
+# ============================================================================
 
 def _redact_text(value: str) -> str:
     """Mask common sensitive patterns in log text."""
@@ -37,6 +49,10 @@ def _redact_obj(value):
         return {k: _redact_obj(v) for k, v in value.items()}
     return value
 
+
+# ============================================================================
+# PUBLIC CLASSES
+# ============================================================================
 
 class SafeFormatter(logging.Formatter):
     """Formatter that redacts sensitive values from messages and tracebacks."""
@@ -90,6 +106,10 @@ class JSONFormatter(logging.Formatter):
 
         return json.dumps(log_data, ensure_ascii=False)
 
+
+# ============================================================================
+# MODULE SETUP / CONFIGURATION
+# ============================================================================
 
 def _default_logging_config(log_level: str) -> dict:
     """Return fallback logging config when YAML file is unavailable."""
