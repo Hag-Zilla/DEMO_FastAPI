@@ -30,5 +30,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+
+# ============================================================================
+# MODULE SETUP / EXPORTS
+# ============================================================================
+
 # Single instance of settings (typed to help static analyzers)
 settings: Settings = Settings()

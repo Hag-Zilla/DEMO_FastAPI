@@ -57,7 +57,7 @@ async def check_alerts(
 
     # Query expenses by category for current month
     category_breakdown = (
-        db.query(
+        db.query(  # type: ignore[call-overload]
             ExpenseModel.category,
             func.count(ExpenseModel.id).label("count"),  # pylint: disable=not-callable
             func.sum(ExpenseModel.amount).label("total"),  # pylint: disable=not-callable
@@ -75,15 +75,15 @@ async def check_alerts(
     expenses_by_category = {
         row.category.value: {
             "count": row.count,
-            "total": float(row.total) if row.total else 0.0,
+            "total": float(row.total) if row.total else 0.0,  # type: ignore[arg-type]
         }
         for row in category_breakdown
     }
 
     # Calculate budget status
-    budget = current_user.budget
+    budget = float(current_user.budget)
     remaining = budget - total_spent
-    percentage = (total_spent / budget * 100) if budget > 0 else 0
+    percentage: float = (total_spent / budget * 100) if budget > 0 else 0.0
 
     # Determine status
     if total_spent > budget:

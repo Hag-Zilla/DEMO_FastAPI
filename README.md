@@ -8,29 +8,56 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
-## � Table of Contents
+![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Docker](https://img.shields.io/badge/docker-✓-blue.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
 
-- [📋 About](#-about)
-- [✨ Features](#-features)
-- [🚀 Quick Start](#-quick-start)
-- [🌐 Access the API](#-access-the-api)
-- [📁 Project Structure](#-project-structure)
-- [⚙️ Configuration](#️-configuration)
-- [🗄️ Database](#-database)
-- [🔌 API Endpoints](#-api-endpoints)
-- [🔐 Authentication & Authorization](#-authentication--authorization)
-- [🛡️ Exception Handling](#️-exception-handling)
-- [📊 Data Structures](#-data-structures)
-- [🧪 Testing](#-testing)
-- [🚢 Deployment Notes](#-deployment-notes)
+## 📑 Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Quick Start](#quick-start)
+  - [Clone and Setup Environment](#clone-and-setup-environment)
+    - [Essential Configuration Variables](#essential-configuration-variables)
+    - [Build and Run Services](#build-and-run-services)
+    - [Verify Installation](#verify-installation)
+  - [Advanced Workflows](#advanced-workflows)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+    - [Logging](#logging)
+  - [Makefile & Common Tasks](#makefile--common-tasks)
+- [Project Structure](#project-structure)
+- [Data Structures](#data-structures)
+  - [Enums](#enums)
+  - [ORM Models & Database Schema](#orm-models--database-schema)
+  - [API Request/Response Models](#api-requestresponse-models)
+  - [Managing the Database](#managing-the-database)
+  - [Database Migration](#database-migration)
+- [API Endpoints](#api-endpoints)
+  - [Role-Based Access Control](#role-based-access-control)
+  - [Authentication](#authentication)
+  - [User Management](#user-management)
+  - [Expenses](#expenses)
+  - [Reports](#reports)
+  - [Alerts](#alerts)
+  - [Health](#health)
+- [Authentication & Authorization](#authentication--authorization)
+  - [User Status Workflow](#user-status-workflow)
+  - [Role Hierarchy](#role-hierarchy)
+  - [Access Control Details](#access-control-details)
+- [Exception Handling](#exception-handling)
+- [🛠️ Code Quality & Development Standards](#-code-quality--development-standards)
+- [📖 Extra documentation](#-extra-documentation)
+  - [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
+  - [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
+  - [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)
+  - [doc/STANDARDS.md](doc/STANDARDS.md)
 - [📚 Resources](#-resources)
 - [🤝 Contributing](#-contributing)
 - [💬 Support](#-support)
-- [📝 License](#-license)
+- [📜 License](#-license)
 
 ---
 
-## �📋 About
+## 📖 About
 ---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
@@ -38,185 +65,150 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ## ✨ Features
 ---
 
-- **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/user)
+- **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/moderator/user)
+- **User Approval Workflow**: Admin/Moderator review and approval of new user registrations (pending/active/disabled statuses)
 - **Expense Tracking**: Add, update, delete expenses with typed categories and datetime tracking
 - **Budget Management**: Set personal budgets with automatic tracking
 - **Alerts**: Real-time detection of budget overruns
 - **Reports**: Generate monthly and custom-period expense reports by category
-- **Admin Interface**: System-wide user and expense management
+- **Admin & Moderator Interface**: System-wide user and expense management with moderation capabilities
+- **DDoS Protection**: 4-layer defense system (firewall, reverse proxy, application-level rate limiting, distributed quota storage)
+- **Rate Limiting**: Distributed request rate limiting with slowapi and Redis
 - **Error Handling**: Custom exception classes with proper HTTP status codes
 - **Logging**: Console and file-based logging for monitoring
+- **Monitoring**: Prometheus metrics collection + Grafana dashboards with built-in alerts
 - **Type Validation**: Pydantic v2 with enums for categories and roles
+- **Code Quality**: Pre-commit hooks, automated linting, type checking, and code standards enforcement
 
 ## 🚀 Quick Start
 ---
 
-Two simple flows are supported: one for typical contributors (who consume the repo), and one for maintainers (who change dependencies).
-
-**Contributor (quick start — use committed lock)**
-
-1) Clone and prepare env
+### Clone and Setup Environment
 
 ```bash
 git clone <repo-url>
 cd DEMO_FastAPI
-cp .env.example .env
-# edit .env as needed
+make init-env    # Create .env files from templates
 ```
 
-2) Initialize environment (uses committed `uv.lock` / `requirements.txt` if present)
+### Essential Configuration Variables
+
+Edit `.env` and set these required values:
 
 ```bash
-# Interactive (defaults to uv)
+nano .env
+```
+
+**Essential variables:**
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `SECRET_KEY` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
+| `ALGORITHM` | JWT algorithm | `HS256` |
+| `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
+| `DATABASE_URL` | SQLite database path | `sqlite:///./data/expense_tracker.db` |
+| `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
+
+Quick generation:
+```bash
+# Generate SECRET_KEY
+ossl rand -hex 32
+
+# For Docker, also set REDIS_PASSWORD
+openssl rand -hex 16
+```
+
+> **For Docker development and production**, see [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#environment-configuration) for environment-specific configuration files (`.env.docker.dev`, `.env.docker.prod`) and detailed setup instructions.
+
+### Build and Run Services
+
+**For local development:**
+
+```bash
+# Install dependencies (uses committed uv.lock or requirements.txt)
 make init
-# or force paths:
-make init-uv    # use uv
-make init-venv  # use venv (uses requirements.txt if present)
-```
 
-3) Run tests and start
-
-```bash
-make test
+# Activate virtual environment
 source .venv/bin/activate  # or ./venv/bin/activate
-make run # It will start the API
+
+# Start the API
+make run
 ```
 
-**Maintainer (update dependencies — produce canonical lock)**
+For **Docker development** and **Docker production** setup, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
 
-1) If you change `pyproject.toml` or need to update dependency versions, maintainers should produce and commit the canonical lock and an exported `requirements.txt` for venv users:
+### Verify Installation
+
+**Check if services are running:**
 
 ```bash
-# update pyproject.toml as needed
-make lock                 # generates/refreshes uv.lock
-make export-reqs          # export pinned requirements.txt from uv.lock
-git add pyproject.toml uv.lock requirements.txt
-git commit -m "Update deps: refresh uv.lock and exported requirements.txt"
-git push
+# Local development
+curl http://localhost:8000/health
+
+# Docker
+docker-compose ps
+curl http://localhost/health
 ```
 
-Notes
-- If `uv.lock` is committed, contributors do NOT need to run `make lock` — `uv sync` (used by `make init`) will install the exact versions from the lock.
-- If `requirements.txt` is present, `venv` users can install from it directly without `uv`.
-- To ensure the lock matches production, generate `uv.lock` on the CI or the platform matching production (use `uv lock --python 3.14` to target a specific Python minor).
-
-This split keeps onboarding minimal for contributors, while allowing maintainers to control the canonical dependency graph for CI/production.
-
-2) Run tests and start
-
-```bash
-make test
-source .venv/bin/activate  # or ./venv/bin/activate
-make run # It will start the API
-```
-
-### Make Commands
-
-The project provides a `Makefile` to simplify the most common workflows:
-
-```bash
-make help            # list available targets
-make init            # interactive setup (default path: uv)
-make init-uv         # non-interactive uv setup
-make init-venv       # non-interactive venv setup
-make sync            # uv sync from pyproject.toml / uv.lock
-make lock            # refresh uv lockfile
-make export-reqs     # generate a pinned requirements.txt from uv.lock (for venv/pip users)
-make run             # run FastAPI in reload mode
-make test            # run tests
-make lint            # run flake8 on app/
-make format          # run black on app/
-make bootstrap-admin # run admin bootstrap script
-make clean           # remove common cache/build artifacts
-```
-
-## 🌐 Access the API
----
+**Access the API:**
 
 - **Interactive Docs (Swagger)**: http://localhost:8000/docs
 - **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
-- **Liveness Check**: http://localhost:8000/health/live
-- **Readiness Check**: http://localhost:8000/health/ready
-- **Startup Check**: http://localhost:8000/health/startup
-- **Legacy Health Check**: http://localhost:8000/health
+- **Health Checks**:
+  - Liveness: http://localhost:8000/health/live
+  - Readiness: http://localhost:8000/health/ready
+  - Startup: http://localhost:8000/health/startup
 
-## 📁 Project Structure
----
+**Example request:**
 
-```
-app/
-├── main.py                      # FastAPI application factory + exception handlers
-│
-├── core/                        # Infrastructure & configuration
-│   ├── config.py               # Pydantic Settings (environment config)
-│   ├── security.py             # JWT, authentication, password hashing
-│   ├── exceptions.py           # Custom exception classes
-│   ├── enums.py                # UserRole, ExpenseCategory enums
-│   ├── logging.py              # Logging configuration (file + console)
-│   ├── middleware.py           # HTTP logging middleware
-│   └── branding.py             # Startup banner and log signature
-│
-├── database/                    # Data layer (Recettes vs Ustensiles)
-│   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
-│   └── models/
-│       ├── user.py             # User ORM model (id, username, budget, role)
-│       └── expense.py          # Expense ORM model (id, amount, category, date)
-│
-├── routers/                     # API endpoints (APIRouter pattern)
-│   ├── auth.py                 # POST /token (login)
-│   ├── users.py                # User CRUD endpoints
-│   ├── expenses.py             # Expense endpoints
-│   ├── alerts.py               # Budget alert endpoints
-│   ├── reports.py              # Report generation
-│   └── health.py               # Liveness and readiness checks
-│
-├── schemas/                     # Pydantic request/response models
-│   ├── user.py                 # UserCreate, UserUpdate, UserResponse
-│   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
-│   └── common.py               # Token schema
-│
-└── utils/                       # Generic utilities (Ustensiles)
-  ├── dependencies.py         # get_admin_user() dependency
-  ├── print_banner.py         # Banner rendering helper
-  ├── static/
-  │   └── favicon.svg
-  └── branding/
-    ├── startup.txt
-    ├── completion.txt
-    ├── setup.txt
-    └── mammoth.txt
-
-Configuration Files:
-├── .env.example                # Environment variables template
-├── pyproject.toml              # Project metadata and dependency constraints (uv-first)
-├── requirements.txt            # Python dependencies
-└── setup.sh                    # Setup script
-
-Logs:
-├── logs/app.log                # Application log file
-├── logs/app.jsonl              # Structured JSONL logs
-└── logs/config/logging.yaml    # Logging configuration
+```bash
+curl -X POST "http://localhost:8000/users/create" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
 
-## ⚙️ Configuration
----
 
-### Environment Variables (`.env`)
+### Advanced Workflows
 
-```env
-# JWT Configuration
-SECRET_KEY=your_super_secret_key_here_change_in_production
-ALGORITHM=HS256
-JWT_EXPIRATION_MINUTES=30
+#### Contributor (use committed lock)
 
-# Database Configuration
-DATABASE_URL=sqlite:///./data/expense_tracker.db
+If `uv.lock` or `requirements.txt` is committed:
 
-# Application Configuration
-APP_NAME=Expense Tracker API
-APP_VERSION=1.0.0
-DEBUG=False
+```bash
+make init        # Install exact versions from lock
+make test
+make run
 ```
+
+#### Maintainer (update dependencies)
+
+To update dependencies and produce new lock:
+
+```bash
+# Update pyproject.toml as needed
+make lock                 # generates/refreshes uv.lock
+make export-reqs          # export pinned requirements.txt from uv.lock
+git add pyproject.toml uv.lock requirements.txt
+git commit -m "Update deps: refresh uv.lock and requirements.txt"
+git push
+```
+
+**Notes:**
+- If `uv.lock` is committed, contributors do NOT need to run `make lock`
+- If `requirements.txt` is present, venv users can install directly without uv
+- Generate lock on CI or platform matching production: `uv lock --python 3.14`
+
+### Configuration
+
+#### Environment Variables
+
+Environment variables & secrets
+
+| File | Purpose |
+|------|---------|
+| `.env` | Dev local (FastAPI only) |
+| `.env.docker.dev` | Dev Docker (full stack) |
+| `.env.docker.prod` | Production |
 
 Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
 
@@ -224,7 +216,9 @@ Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with valida
 - For SQLite, the app auto-creates the parent folder (default: `data/`).
 - `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
 
-### Logging
+For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configuration in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#configuration).
+
+#### Logging
 
 Logs are written to:
 - **Console**: For development feedback
@@ -232,19 +226,168 @@ Logs are written to:
 
 Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.py`.
 
-## 🗄️ Database
+For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
+
+### Makefile & Common Tasks
+
+The project provides a comprehensive `Makefile` to simplify common workflows:
+
+**Quick Commands:**
+- `make init` — Setup environment and install dependencies
+- `make run` — Start the dev server
+- `make test` — Run test suite
+- `make run-hooks` — Run code quality checks
+
+**For all available Makefile targets** (development, Docker, monitoring, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
+
+```bash
+make help     # Show all available targets
+```
+
+## 📁 Project Structure
 ---
 
-### Technology Stack
+```
+DEMO_FastAPI/
+│
+├── app/                         # Main application package
+│   ├── main.py                      # FastAPI application factory + exception handlers
+│   │
+│   ├── core/                        # Infrastructure & configuration
+│   │   ├── config.py               # Pydantic Settings (environment config)
+│   │   ├── security.py             # JWT, authentication, password hashing
+│   │   ├── exceptions.py           # Custom exception classes
+│   │   ├── enums.py                # UserRole, UserStatus, ExpenseCategory enums
+│   │   ├── logging.py              # Logging configuration (file + console)
+│   │   ├── middleware.py           # HTTP logging middleware
+│   │   └── branding.py             # Startup banner and log signature
+│   │
+│   ├── database/                    # Data layer
+│   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
+│   │   └── models/
+│   │       ├── user.py             # User ORM model (id, username, budget, role, status)
+│   │       └── expense.py          # Expense ORM model (id, amount, category, date)
+│   │
+│   ├── routers/                     # API endpoints (APIRouter pattern)
+│   │   ├── auth.py                 # POST /token (login)
+│   │   ├── users.py                # User CRUD + approval workflow endpoints
+│   │   ├── expenses.py             # Expense CRUD endpoints
+│   │   ├── alerts.py               # Budget alert endpoints
+│   │   ├── reports.py              # Report generation endpoints
+│   │   └── health.py               # Liveness, readiness, startup checks
+│   │
+│   ├── schemas/                     # Pydantic request/response models
+│   │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
+│   │   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
+│   │   └── common.py               # Token schema
+│   │
+│   └── utils/                       # Generic utilities
+│       ├── dependencies.py          # get_admin_user(), get_current_user() dependencies
+│       ├── print_banner.py          # Banner rendering helper
+│       ├── static/
+│       │   └── favicon.svg
+│       └── branding/
+│           ├── startup.txt
+│           ├── completion.txt
+│           ├── setup.txt
+│           └── mammoth.txt
+│
+├── doc/                            # Project documentation
+│   ├── DEPLOYMENT.md               # Production deployment, firewall, monitoring, scaling
+│   └── RATE_LIMITING.md            # Rate limiting implementation details
+│
+├── nginx/                          # Reverse proxy configuration (Docker production)
+│   └── nginx.conf                  # Nginx config: SSL, rate limiting, routing
+│
+├── logs/                           # Log output directory
+│   ├── app.log                     # Application log file
+│   ├── app.jsonl                   # Structured JSONL logs
+│   └── config/
+│       └── logging.yaml            # Logging configuration
+│
+├── data/                           # SQLite database directory
+│   └── expense_tracker.db          # SQLite database (auto-created)
+│
+├── Root Configuration Files
+│   ├── docker-compose.yml          # Multi-service orchestration (FastAPI, Nginx, Redis)
+│   ├── firewall-rules.sh           # Bash script for host firewall setup (ufw/nftables)
+│   ├── Makefile                    # Build, run, and deployment automation
+│   ├── pyproject.toml              # uv project config + dependency constraints
+│   ├── requirements.txt            # Python dependencies (exported from uv.lock)
+│   ├── uv.lock                     # Locked dependency versions (commit this)
+│   ├── setup.sh                    # Initial setup script
+│   ├── .env.example                # Dev environment variables template
+│   ├── .env.docker.dev.example     # Docker dev environment template
+│   ├── .env.docker.prod.example    # Docker production environment template
+│   └── LICENSE                     # CC BY-NC 4.0
+
+├── .env                            # Dev local (git-ignored, created by make init-env)
+├── .env.docker.dev                 # Docker dev (git-ignored, created by make init-env)
+├── .env.docker.prod                # Docker prod (git-ignored, created by make init-env)
+└── .gitignore                      # Git ignore rules
+```
+
+**Key Directories:**
+- **`app/`** - FastAPI application (authentication, endpoints, data models)
+- **`doc/`** - Specialized documentation (deployment, rate limiting)
+- **`nginx/`** - Docker production reverse proxy configuration
+- **`logs/`** - Application logs (JSON and text formats)
+- **`data/`** - SQLite database location
+
+**Configuration & Deployment:**
+- **`docker-compose.yml`** - Orchestrates FastAPI, Nginx, Redis containers
+- **`firewall-rules.sh`** - **MUST run before docker-compose** for DDoS protection
+- **`Makefile`** - Simplifies common development and deployment tasks
+- **`pyproject.toml` + `uv.lock`** - Pinned dependency management
+
+For Docker deployment details and firewall setup, see [Build and Run Services in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#build-and-run-services).
+
+## 📊 Data Structures
+---
+
+### Enums
+
+Defined in `app/core/enums.py`, used throughout the application for type safety and validation:
+
+**UserRole**
+```python
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    MODERATOR = "moderator"
+    USER = "user"
+```
+
+**UserStatus**
+```python
+class UserStatus(str, Enum):
+    PENDING = "pending"      # Awaiting approval
+    ACTIVE = "active"        # Can access API
+    DISABLED = "disabled"    # Rejected or suspended
+```
+
+**ExpenseCategory**
+```python
+class ExpenseCategory(str, Enum):
+    FOOD = "food"
+    TRANSPORTATION = "transportation"
+    ENTERTAINMENT = "entertainment"
+    UTILITIES = "utilities"
+    HEALTHCARE = "healthcare"
+    EDUCATION = "education"
+    SHOPPING = "shopping"
+    OTHER = "other"
+```
+
+### ORM Models & Database Schema
+
+#### Technology Stack
 
 - **Engine**: SQLite (file-based, no server required)
 - **ORM**: SQLAlchemy 2.0.46
 - **Auto-creation**: Tables created automatically on app startup
-- **Type Validation**: Pydantic models with SQLAlchemy mapped classes
+- **Type Validation**: Pydantic + SQLAlchemy integration
 
-### Database Schema
-
-**Users Table**
+#### Users Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -252,10 +395,13 @@ Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.p
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
 | budget | FLOAT | NOT NULL | Monthly budget limit |
-| role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, user |
-| disabled | BOOLEAN | default=False | Account status |
+| role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, moderator, user |
+| status | ENUM(UserStatus) | NOT NULL, default="pending" | Values: pending, active, disabled |
+| disabled | BOOLEAN | default=False | Legacy account status field |
 
-**Expenses Table**
+**ORM Model**: `app/database/models/user.py`
+
+#### Expenses Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -266,11 +412,39 @@ Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.p
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
 | user_id | INTEGER | Foreign Key → users.id | Expense owner |
 
+**ORM Model**: `app/database/models/expense.py`
+
+### API Request/Response Models
+
+Defined in `app/schemas/`, these Pydantic models validate and serialize API requests/responses:
+
+**User Operations**
+- `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
+- `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
+- `UserUpdate`: admin update schema (username, password, budget, role, status)
+- `UserResponse`: includes id, role, status
+
+**Expense Operations**
+- `ExpenseCreate`: description, amount (> 0), category enum
+- `ExpenseUpdate`: all fields optional
+- `ExpenseResponse`: includes id, datetime, user_id
+
 ### Managing the Database
 
 Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQLite database graphically.
 
 ⚠️ **Important**: Stop the API server before making manual database changes to avoid file locks.
+
+### Database Migration
+
+SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
+
+```python
+# app/core/config.py
+# DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"  # pragma: allowlist secret
+```
+
+The modular design allows easy database swaps with minimal code changes.
 
 ## 🔌 API Endpoints
 ---
@@ -349,7 +523,7 @@ New users follow an approval workflow before they can access the API:
    ↓
 2. Admin/Moderator Reviews
    ↓
-  ├─→ POST /users/{id}/approve → Status: ACTIVE ✅ (can login) 
+  ├─→ POST /users/{id}/approve → Status: ACTIVE ✅ (can login)
    └─→ POST /users/{id}/reject  → Status: DISABLED ❌ (approved= false)
    ↓
 3. Active User Lifecycle
@@ -374,38 +548,7 @@ New users follow an approval workflow before they can access the API:
 - **Required Status**: Only users with `status=ACTIVE` can authenticate
 - **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
-### Example Authentication Flow
-
-```bash
-# 1. Create new user (PUBLIC)
-curl -X POST "http://localhost:8000/users/create" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
-# Response: {..., "status": "pending"}
-
-# 2. Try login with PENDING status (FAILS - 403)
-curl -X POST "http://localhost:8000/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=alice&password=secure123&grant_type=password"
-# Response: 403 "User account is not active"
-
-# 3. Admin/Moderator approves user (MODERATOR role)
-curl -X POST "http://localhost:8000/users/1/approve" \
-  -H "Authorization: Bearer ADMIN_TOKEN"
-# Response: {..., "status": "active"}
-
-# 4. Now user can login (ACTIVE status)
-curl -X POST "http://localhost:8000/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=alice&password=secure123&grant_type=password"
-# Response: {"access_token": "eyJhbGc...", "token_type": "bearer"}
-
-# 5. Use token in requests
-curl -X GET "http://localhost:8000/users/me" \
-  -H "Authorization: Bearer eyJhbGc..."
-```
-
-## 🛡️ Exception Handling
+## ⚠️ Exception Handling
 ---
 
 Custom exceptions with proper HTTP status codes:
@@ -422,105 +565,41 @@ Custom exceptions with proper HTTP status codes:
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
 
-## 📊 Data Structures
 ---
 
-### Enums
-
-**UserRole**
-```python
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    MODERATOR = "moderator"
-    USER = "user"
-```
-
-**UserStatus**
-```python
-class UserStatus(str, Enum):
-    PENDING = "pending"      # Awaiting approval
-    ACTIVE = "active"        # Can access API
-    DISABLED = "disabled"    # Rejected or suspended
-```
-
-**ExpenseCategory**
-```python
-class ExpenseCategory(str, Enum):
-    FOOD = "food"
-    TRANSPORTATION = "transportation"
-    ENTERTAINMENT = "entertainment"
-    UTILITIES = "utilities"
-    HEALTHCARE = "healthcare"
-    EDUCATION = "education"
-    SHOPPING = "shopping"
-    OTHER = "other"
-```
-
-### Request/Response Models
-
-**User Operations**
-- `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
-- `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
-- `UserUpdate`: admin update schema (username, password, budget, role, status)
-- `UserResponse`: includes id, role, status
-
-**Expense Operations**
-- `ExpenseCreate`: description, amount (> 0), category enum
-- `ExpenseUpdate`: all fields optional
-- `ExpenseResponse`: includes id, datetime, user_id
-
-
-## 🧪 Testing
+## 🛠️ Code Quality & Development Standards
 ---
 
-Run the interactive API documentation to test endpoints:
+This project maintains strict code quality standards enforced through automated tools:
 
+- **Pre-commit Hooks**: 10+ automated checks (detect-secrets, ruff, mypy, pydocstyle, shellcheck, etc.)
+- **Code Standards**: Strict naming conventions, Google-style docstrings, type hints, and organization
+- **Type Checking**: Full static type checking with mypy
+- **Formatting**: Auto-formatting with ruff
+- **Development Workflow**: Makefile automation for common tasks
+
+**Quick Setup:**
 ```bash
-# After starting the server, visit:
-http://localhost:8000/docs
+make install-hooks   # Install pre-commit hooks
+make run-hooks       # Test all hooks on all files
 ```
 
-Or use curl:
-
-```bash
-# Create user
-curl -X POST "http://localhost:8000/users/create" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "alice", "password": "secure123", "budget": 1000}'
-
-# Get current user
-curl -X GET "http://localhost:8000/users/me" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
+**For detailed information:**
+- **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
+- **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
 
 ---
 
-## 🚢 Deployment Notes
----
+## 📖 Extra documentation
 
-### Development
+For specialized topics and detailed guides:
 
-```bash
-uvicorn app.main:app --reload
-```
-
-### Production
-
-```bash
-# Use Gunicorn with Uvicorn workers
-gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-```
-
-### Database Migration
-
-SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
-
-```python
-# app/core/config.py
-# DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"
-```
-
-The modular design allows easy database swaps with minimal code changes.
+| Document | Purpose |
+|----------|----------|
+| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
+| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
+| **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
+| **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
 
 ## 📚 Resources
 ---
@@ -556,7 +635,7 @@ Please ensure your scripts include:
 
 > Maintained by [Hag-Zilla](https://github.com/Hag-Zilla)
 
-## 📝 License
+## 📜 License
 ---
 
 See [LICENSE](LICENSE) file for details.

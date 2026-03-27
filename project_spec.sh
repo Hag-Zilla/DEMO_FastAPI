@@ -1,4 +1,21 @@
 #!/bin/bash
+#
+# Project Spec Script - Admin Bootstrap and Database Initialization
+#
+# This script handles admin account creation and database initialization
+# for the FastAPI application. It prompts for a password, validates it
+# against security requirements, and persists the admin user to the database.
+#
+# The script uses a lock file (.admin_bootstrap_done) to prevent re-running
+# automatically after initial setup. Use ADMIN_BOOTSTRAP_FORCE=1 to override.
+#
+# Usage:
+#   bash project_spec.sh           # Normal run
+#   ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh  # Force re-init
+#
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
 set -euo pipefail
 umask 077
@@ -8,11 +25,19 @@ umask 077
 
 BOOTSTRAP_LOCK_FILE=".admin_bootstrap_done"
 
+# =============================================================================
+# BOOTSTRAP CHECK
+# =============================================================================
+
 if [ -f "${BOOTSTRAP_LOCK_FILE}" ] && [ "${ADMIN_BOOTSTRAP_FORCE:-0}" != "1" ]; then
     echo "Admin bootstrap already completed. Skipping."
     echo "To force a rerun, execute: ADMIN_BOOTSTRAP_FORCE=1 bash project_spec.sh"
     exit 0
 fi
+
+# =============================================================================
+# ADMIN USER VALIDATION
+# =============================================================================
 
 ADMIN_EXISTS=$(python <<'EOF'
 from app.database.models.expense import Expense  # noqa: F401
@@ -37,6 +62,10 @@ if [ "${ADMIN_EXISTS}" = "1" ]; then
         exit 0
     fi
 fi
+
+# =============================================================================
+# PASSWORD COLLECTION AND VALIDATION
+# =============================================================================
 
 read -r -s -p "Enter your ADM_SECRET_KEY for the admin account: " ADM_SECRET_KEY
 echo
@@ -79,6 +108,10 @@ if [ -f .env ] && grep -q '^ADM_SECRET_KEY=' .env; then
   sed -i '/^ADM_SECRET_KEY=/d' .env
   echo "Removed legacy ADM_SECRET_KEY from .env to keep app settings valid."
 fi
+
+# =============================================================================
+# ADMIN USER CREATION/UPDATE
+# =============================================================================
 
 ADM_SECRET_KEY="${ADM_SECRET_KEY}" python <<'EOF'
 import os
@@ -124,6 +157,10 @@ try:
 finally:
     db.close()
 EOF
+
+# =============================================================================
+# FINALIZATION
+# =============================================================================
 
 echo "Admin bootstrap completed."
 

@@ -18,6 +18,6 @@ class Expense(Base):
     description = Column(String)
     amount = Column(Float)
     date = Column(DateTime, default=datetime.utcnow)
-    category = Column(Enum(ExpenseCategory))
+    category: ExpenseCategory = Column(Enum(ExpenseCategory))  # type: ignore[assignment]
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="expenses")

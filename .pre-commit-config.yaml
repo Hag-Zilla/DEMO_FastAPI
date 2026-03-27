@@ -1,0 +1,170 @@
+# Pre-commit Framework Configuration
+#
+# Automated code quality checks that run before each git commit.
+# Prevents commits with linting issues, formatting problems, or security risks.
+#
+# Installation:
+#   pre-commit install
+#
+# Test hooks without committing:
+#   pre-commit run --all-files
+#
+# Update hooks to latest:
+#   pre-commit autoupdate
+#
+# Skip checks for a specific commit:
+#   git commit --no-verify
+
+# ============================================================================
+# Global Configuration
+# ============================================================================
+
+default_language_version:
+  python: python3.14
+
+repos:
+  # ===== SECURITY: Detect Secrets =====
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: ^(uv\.lock|poetry\.lock|requirements\.txt|\.env.*|\.example)$
+        stages: [commit]
+
+  # ===== FILE VALIDATION: YAML/JSON/TOML =====
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        name: Check YAML syntax
+        args: ['--unsafe']  # Allow multiple documents in YAML
+      
+      - id: check-json
+        name: Check JSON syntax
+      
+      - id: check-toml
+        name: Check TOML syntax
+      
+      - id: check-xml
+        name: Check XML syntax
+      
+      - id: check-ast
+        name: Check Python AST
+        types: [python]
+      
+      - id: check-docstring-first
+        name: Check docstring is first
+        types: [python]
+      
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+        types: [text]
+        exclude: ^\.pre-commit-config\.yaml$
+      
+      - id: end-of-file-fixer
+        name: Fix end of files
+        types: [text]
+      
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+        args: ['--fix=lf']
+        types: [text]
+
+  # ===== PYTHON LINTING & FORMATTING: Ruff =====
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        name: Lint with Ruff
+        types: [python]
+        args: ['--fix']  # Auto-fix simple issues
+        stages: [commit]
+      
+      - id: ruff-format
+        name: Format with Ruff
+        types: [python]
+        stages: [commit]
+
+  # ===== PYTHON TYPE CHECKING: Mypy =====
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: Type check with mypy
+        types: [python]
+        additional_dependencies:
+          - 'pydantic>=2.0'
+          - 'sqlalchemy>=2.0'
+          - 'fastapi'
+          - 'types-PyYAML'
+        args: ['--ignore-missing-imports']
+        stages: [commit]
+
+  # ===== DOCSTRING QUALITY: Pydocstyle =====
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        name: Check docstring format
+        types: [python]
+        args:
+          - --convention=google  # Your project uses Google-style docstrings
+          - --add-ignore=D100,D104  # Allow missing module/init docstrings in some cases
+        stages: [commit]
+
+  # ===== SHELL SCRIPT VALIDATION: ShellCheck =====
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: Check shell scripts
+        types: [shell]
+        args: ['--severity=warning']
+        stages: [commit]
+
+  # ===== UNUSED IMPORTS: Autoflake =====
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.0.2
+    hooks:
+      - id: autoflake
+        name: Remove unused imports
+        types: [python]
+        args:
+          - '--in-place'
+          - '--remove-all-unused-imports'
+          - '--remove-unused-variables'
+          - '--remove-duplicate-keys'
+        stages: [commit]
+
+  # ===== MERGE CONFLICT CHECK =====
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        types: [text]
+
+# ============================================================================
+# Configuration Details
+# ============================================================================
+#
+# STAGES:
+#   - commit: Runs on git commit (default)
+#   - push: Runs before git push
+#   - manual: Only with --hook-stage=manual
+#
+# TO BYPASS HOOKS:
+#   git commit --no-verify
+#
+# TO TEST ALL FILES:
+#   pre-commit run --all-files
+#
+# TROUBLESHOOTING:
+#   If hooks fail mysteriously, update them:
+#   pre-commit autoupdate
+#
+#   Or reinstall in case of cached issues:
+#   pre-commit clean-files
+#   pre-commit uninstall && pre-commit install

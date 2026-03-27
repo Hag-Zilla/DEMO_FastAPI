@@ -16,6 +16,8 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     budget = Column(Float)
-    role = Column(Enum(UserRole), default=UserRole.USER)
-    status = Column(Enum(UserStatus), default=UserStatus.PENDING)  # PENDING, ACTIVE, or DISABLED
+    role: UserRole = Column(Enum(UserRole), default=UserRole.USER)  # type: ignore[assignment]
+    status: UserStatus = Column(  # type: ignore[assignment]
+        Enum(UserStatus), default=UserStatus.PENDING
+    )  # PENDING, ACTIVE, or DISABLED
     expenses = relationship("Expense", back_populates="owner")

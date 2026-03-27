@@ -1,5 +1,9 @@
 """Logging configuration for the application."""
 
+# ============================================================================
+# IMPORTS
+# ============================================================================
+
 import json
 import logging
 import re
@@ -12,10 +16,19 @@ import yaml
 from app.core.config import settings
 
 
+# ============================================================================
+# CONFIGURATION / CONSTANTS
+# ============================================================================
+
 _URL_CREDENTIALS_RE = re.compile(r"([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\s]+):([^@/\s]+)@")
 _SECRET_PAIR_RE = re.compile(
     r"(?i)\b(SECRET_KEY|PASSWORD|TOKEN|API_KEY|AUTHORIZATION)\b\s*([=:])\s*([^\s,;]+)"
 )
+
+
+# ============================================================================
+# PRIVATE HELPERS
+# ============================================================================
 
 
 def _redact_text(value: str) -> str:
@@ -38,10 +51,23 @@ def _redact_obj(value):
     return value
 
 
+# ============================================================================
+# PUBLIC CLASSES
+# ============================================================================
+
+
 class SafeFormatter(logging.Formatter):
     """Formatter that redacts sensitive values from messages and tracebacks."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format a log record with sensitive data redaction.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The formatted log string with sensitive values masked.
+        """
         original_msg = record.msg
         original_args = record.args
         try:
@@ -55,6 +81,14 @@ class SafeFormatter(logging.Formatter):
             record.args = original_args
 
     def formatException(self, ei) -> str:  # noqa: N802 - stdlib API naming
+        """Format exception information with sensitive data redaction.
+
+        Args:
+            ei: The exception info tuple.
+
+        Returns:
+            The formatted exception string with sensitive values masked.
+        """
         return _redact_text(super().formatException(ei))
 
 
@@ -89,6 +123,11 @@ class JSONFormatter(logging.Formatter):
             log_data["exception"] = _redact_text(self.formatException(record.exc_info))
 
         return json.dumps(log_data, ensure_ascii=False)
+
+
+# ============================================================================
+# MODULE SETUP / CONFIGURATION
+# ============================================================================
 
 
 def _default_logging_config(log_level: str) -> dict:
