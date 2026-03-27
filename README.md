@@ -10,7 +10,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 ![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Docker](https://img.shields.io/badge/docker-✓-blue.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
 
-## Table of Contents
+## 📑 Table of Contents
 
 - [About](#about)
 - [Features](#features)
@@ -44,22 +44,22 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Role Hierarchy](#role-hierarchy)
   - [Access Control Details](#access-control-details)
 - [Exception Handling](#exception-handling)
-- [Resources](#resources)
 - [Extra documentation](#extra-documentation)
   - [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
   - [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
+- [Resources](#resources)
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
 
 ---
 
-## About
+## 📖 About
 ---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
 
-## Features
+## ✨ Features
 ---
 
 - **User Management**: Create accounts, OAuth2 authentication, role-based access control (admin/moderator/user)
@@ -75,7 +75,7 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 - **Logging**: Console and file-based logging for monitoring
 - **Type Validation**: Pydantic v2 with enums for categories and roles
 
-## Quick Start
+## 🚀 Quick Start
 ---
 
 ### Clone and Setup Environment
@@ -266,7 +266,7 @@ make help            # show all available targets
 make clean           # remove common cache/build artifacts
 ```
 
-## Project Structure
+## 📁 Project Structure
 ---
 
 ```
@@ -364,7 +364,7 @@ DEMO_FastAPI/
 
 For Docker deployment details and firewall setup, see [Build and Run Services in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#build-and-run-services).
 
-## Data Structures
+## 📊 Data Structures
 ---
 
 ### Enums
@@ -468,7 +468,7 @@ SQLite works fine for small deployments. For production at scale, consider Postg
 
 The modular design allows easy database swaps with minimal code changes.
 
-## API Endpoints
+## 🔌 API Endpoints
 ---
 
 ### Role-Based Access Control
@@ -531,7 +531,7 @@ All endpoints have defined permission requirements:
 | `/health/startup` | GET | 🟢 PUBLIC | Startup phase completion check |
 | `/health` | GET | 🟢 PUBLIC | Legacy alias for liveness |
 
-## Authentication & Authorization
+## 🔐 Authentication & Authorization
 ---
 
 ### User Status Workflow
@@ -570,7 +570,7 @@ New users follow an approval workflow before they can access the API:
 - **Required Status**: Only users with `status=ACTIVE` can authenticate
 - **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
-## Exception Handling
+## ⚠️ Exception Handling
 ---
 
 Custom exceptions with proper HTTP status codes:
@@ -587,7 +587,16 @@ Custom exceptions with proper HTTP status codes:
 
 All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
 
-## Resources
+## 📖 Extra documentation
+
+For specialized topics:
+
+| Document | Purpose |
+|----------|----------|
+| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
+| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
+
+## 📚 Resources
 ---
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -598,16 +607,7 @@ All exceptions are caught by global exception handlers in `app/main.py` and retu
 - [Passlib Hashing](https://passlib.readthedocs.io/)
 - [DBeaver Database Tool](https://dbeaver.io/)
 
-##  Extra documentation
-
-For specialized topics:
-
-| Document | Purpose |
-|----------|----------|
-| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
-| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
-
-## Contributing
+## 🤝 Contributing
 ---
 
 Contributions are welcome! If you have scripts, tools, or improvements to share:
@@ -625,12 +625,12 @@ Please ensure your scripts include:
 - Comments in English
 
 
-## Support
+## 💬 Support
 ---
 
 > Maintained by [Hag-Zilla](https://github.com/Hag-Zilla)
 
-## License
+## 📜 License
 ---
 
 See [LICENSE](LICENSE) file for details.

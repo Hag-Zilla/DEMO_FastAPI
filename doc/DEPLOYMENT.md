@@ -1,6 +1,7 @@
 # Deployment Guide
 
-## Table of Contents
+## 📑 Table of Contents
+---
 
 - [Architecture Overview](#architecture-overview)
 - [Prerequisites](#prerequisites)
@@ -16,7 +17,8 @@
   - [Kubernetes Deployment](#kubernetes-deployment-optionaladvanced)
 - [References](#references)
 
-## Architecture Overview
+## 🏗️ Architecture Overview
+---
 
 This deployment uses a 4-layer defense strategy against DDoS attacks:
 
@@ -25,14 +27,16 @@ This deployment uses a 4-layer defense strategy against DDoS attacks:
 3. **Application (FastAPI)** - slowapi middleware with Redis backend for distributed rate limiting
 4. **Session Storage (Redis)** - Centralized quota tracking across all services
 
-## Prerequisites
+## ✅ Prerequisites
+---
 
 - Docker & Docker Compose (v2.0+)
 - Linux host with ufw (or iptables)
 - 2GB RAM minimum
 - Ports 80/443 available
 
-## Configuration & Deployment
+## ⚙️ Configuration & Deployment
+---
 
 ### Environment Setup
 
@@ -85,7 +89,8 @@ curl http://localhost/health   # Should return 200 OK
 
 > For **local development without Docker**, see [Build and Run Services](../README.md#build-and-run-services) in README.md
 
-## Firewall Configuration (Production Only)
+## 🔥 Firewall Configuration (Production Only)
+---
 
 ### When to Use Firewall
 
@@ -129,7 +134,8 @@ sudo ufw status numbered
 
 
 
-## Monitoring & Health Checks
+## 📊 Monitoring & Health Checks
+---
 
 ### Health Checks
 
@@ -234,7 +240,8 @@ curl http://localhost:8000/metrics | grep http_requests_total
 - Grafana dashboards: `grafana_data` volume (persisted across restarts)
 - Datasources auto-configured; no manual setup needed
 
-## Rate Limiting Configuration
+## 🚦 Rate Limiting Configuration
+---
 
 ### Nginx Layer
 
@@ -265,7 +272,8 @@ async def get_expenses(current_user: User = Depends(get_current_user)):
     ...
 ```
 
-## Advanced Configuration
+## 🚀 Advanced Configuration
+---
 
 ### Scaling [PERFORMANCE]
 
@@ -380,7 +388,8 @@ For multiple environments, use separate `.env` files:
 .env.prod-backup  # Disaster recovery
 ```
 
-## Production Checklist
+## ✓️ Production Checklist
+---
 
 ### Security
 
@@ -395,7 +404,8 @@ For multiple environments, use separate `.env` files:
 - [ ] Use strong database passwords
 - [ ] Regular backups of Redis and database
 
-## Troubleshooting
+## 🔧 Troubleshooting
+---
 
 ### Docker & Port Issues
 
@@ -466,7 +476,8 @@ sudo ufw enable
 sudo systemctl restart ufw
 ```
 
-## References [DOCUMENTATION]
+## 📚 References [DOCUMENTATION]
+---
 
 - [Nginx Rate Limiting](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html)
 - [slowapi Documentation](https://github.com/laurenceisla/slowapi)

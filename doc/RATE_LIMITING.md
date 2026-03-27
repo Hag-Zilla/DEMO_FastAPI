@@ -2,7 +2,22 @@
 
 This guide explains how to add rate limiting to FastAPI endpoints using the slowapi library with Redis storage.
 
-## Overview
+## 📑 Table of Contents
+
+- [Overview](#overview)
+- [How slowapi Works](#how-slowapi-works)
+- [Adding Rate Limits to Endpoints](#adding-rate-limits-to-endpoints)
+- [Recommended Limits by Endpoint Type](#recommended-limits-by-endpoint-type)
+- [Handling Rate Limit Exceeded (429 Errors)](#handling-rate-limit-exceeded-429-errors)
+- [Monitoring Rate Limits](#monitoring-rate-limits)
+- [Disabling Rate Limits](#disabling-rate-limits)
+- [Advanced: Custom Rate Limiting](#advanced-custom-rate-limiting)
+- [Testing Rate Limits](#testing-rate-limits)
+- [Common Issues & Solutions](#common-issues--solutions)
+- [Production Considerations](#production-considerations)
+- [References](#references)
+
+## 🌍 Overview
 
 The application uses a **4-layer rate limiting strategy**:
 
@@ -11,7 +26,7 @@ The application uses a **4-layer rate limiting strategy**:
 3. **Application Layer (slowapi)** - Endpoint-specific limits with Redis tracking
 4. **Database** - Query optimization to prevent resource exhaustion
 
-## How slowapi Works
+## ⚙️ How slowapi Works
 
 The `limiter` object from `app.core.middleware` tracks requests per IP address and enforces configured limits. It stores quota information in Redis for distributed tracking across multiple app instances.
 
@@ -30,7 +45,7 @@ Combining:
 - "10/minute;100/hour"  → max 10 per minute AND 100 per hour
 ```
 
-## Adding Rate Limits to Endpoints
+## ➕ Adding Rate Limits to Endpoints
 
 ### Example 1: Authentication Endpoint (Strict)
 
@@ -107,7 +122,7 @@ async def get_annual_report(
     return report_generator.generate_annual(current_user.id, year)
 ```
 
-## Recommended Limits by Endpoint Type
+## 🎯 Recommended Limits by Endpoint Type
 
 ### Authentication Endpoints
 ```python
@@ -137,7 +152,7 @@ async def get_annual_report(
 - /generate-pdf      → 3/minute   (PDF generation)
 ```
 
-## Handling Rate Limit Exceeded (429 Errors)
+## ⚠️ Handling Rate Limit Exceeded (429 Errors)
 
 When a request exceeds the limit, the application returns:
 
@@ -207,7 +222,7 @@ session = create_session_with_retry()
 response = session.get('http://localhost:8000/api/v1/expenses')
 ```
 
-## Monitoring Rate Limits
+## 📊 Monitoring Rate Limits
 
 ### Check if Redis is Operating Correctly
 
@@ -252,7 +267,7 @@ rate_limit_exceeded_total{endpoint="/api/v1/login"}
 http_request_duration_seconds{endpoint="/api/v1/health"}
 ```
 
-## Disabling Rate Limits
+## 🔓 Disabling Rate Limits
 
 **For specific endpoints only** (e.g., health checks):
 
@@ -271,7 +286,7 @@ async def health_check():
 limiter = Limiter(key_func=get_remote_address, default_limits=[])
 ```
 
-## Advanced: Custom Rate Limiting
+## 🎓 Advanced: Custom Rate Limiting
 
 ### Rate Limit by User Instead of IP
 
@@ -321,7 +336,7 @@ async def generate_report():
     pass
 ```
 
-## Testing Rate Limits
+## ✅ Testing Rate Limits
 
 ### Manual Testing
 
@@ -384,7 +399,7 @@ def test_report_generation_limit():
     # (depends on configured limit)
 ```
 
-## Common Issues & Solutions
+## 🐛 Common Issues & Solutions
 
 ### Issue: Rate Limit Not Taking Effect
 
@@ -398,6 +413,8 @@ docker-compose ps redis
 docker-compose logs app | grep "limiter initialized"
 # Should see: "Rate limiter initialized with Redis storage"
 ```
+
+## 🚀 Production Considerations
 
 **Fix:**
 ```bash
@@ -431,7 +448,7 @@ async def endpoint():
     pass
 ```
 
-## Production Considerations
+## 🚀 Production Considerations
 
 1. **Monitor Redis Memory**: Rate limit keys can accumulate
    ```bash
@@ -459,7 +476,7 @@ async def endpoint():
    - App: More granular per-endpoint limits
    - Firewall: Connection limits at OS level
 
-## References
+## 📚 References
 
 - [slowapi Documentation](https://github.com/laurenceisla/slowapi)
 - [Redis Documentation](https://redis.io/docs/)
