@@ -1,0 +1,210 @@
+"""User management endpoint tests."""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.database.models.user import User
+from app.core.enums import UserRole, UserStatus
+
+
+class TestCreateUser:
+    """Test cases for POST /users/create endpoint."""
+
+    def test_create_user_success(self, client: TestClient, db: Session) -> None:
+        """Test successful user creation."""
+        response = client.post(
+            "/users/create",
+            json={
+                "username": "newuser",
+                "password": "NewPassword123!",
+                "budget": 1500.0,
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["username"] == "newuser"
+        assert data["status"] == "pending"
+        assert data["role"] == "user"
+        assert data["budget"] == 1500.0
+
+        # Verify in database
+        user = db.query(User).filter(User.username == "newuser").first()
+        assert user is not None
+        assert user.status == UserStatus.PENDING
+
+    def test_create_user_duplicate_username(
+        self, client: TestClient, test_user: User
+    ) -> None:
+        """Test creating user with existing username returns 409."""
+        response = client.post(
+            "/users/create",
+            json={
+                "username": "testuser",  # Already exists
+                "password": "AnotherPassword123!",
+                "budget": 1000.0,
+            },
+        )
+        assert response.status_code == 409
+        assert "already taken" in response.json()["detail"]
+
+    def test_create_user_weak_password(self, client: TestClient) -> None:
+        """Test creating user with weak password."""
+        response = client.post(
+            "/users/create",
+            json={
+                "username": "weakpass",
+                "password": "weak",  # Too short
+                "budget": 500.0,
+            },
+        )
+        # Should fail validation
+        assert response.status_code in [400, 422]
+
+    def test_new_user_pending_status(self, client: TestClient, db: Session) -> None:
+        """Test that new users start in PENDING status."""
+        response = client.post(
+            "/users/create",
+            json={
+                "username": "pendingcheck",
+                "password": "SafePassword123!",
+                "budget": 1000.0,
+            },
+        )
+        assert response.status_code == 201
+        user = db.query(User).filter(User.username == "pendingcheck").first()
+        assert user.status == UserStatus.PENDING
+
+
+class TestAdminUserOperations:
+    """Test cases for admin user management endpoints."""
+
+    def test_list_users_by_status(
+        self, admin_client: TestClient, db: Session
+    ) -> None:
+        """Test listing users filtered by status."""
+        # Create users with different statuses
+        db.query(User).delete()
+        db.commit()
+
+        active_user = User(
+            username="active1",
+            hashed_password="hashed",
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            budget=1000.0,
+        )
+        pending_user = User(
+            username="pending1",
+            hashed_password="hashed",
+            role=UserRole.USER,
+            status=UserStatus.PENDING,
+            budget=1000.0,
+        )
+        db.add(active_user)
+        db.add(pending_user)
+        db.commit()
+
+        # List active users
+        response = admin_client.get("/users/?status=active")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1
+        assert all(user["status"] == "active" for user in data)
+
+    def test_approve_user(
+        self, admin_client: TestClient, test_pending_user: User, db: Session
+    ) -> None:
+        """Test admin approving a pending user."""
+        response = admin_client.post(f"/users/{test_pending_user.id}/approve")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "active"
+
+        # Verify in database
+        db.refresh(test_pending_user)
+        assert test_pending_user.status == UserStatus.ACTIVE
+
+    def test_approve_user_not_found(self, admin_client: TestClient) -> None:
+        """Test approving nonexistent user returns 404."""
+        response = admin_client.post("/users/99999/approve")
+        assert response.status_code == 404
+
+    def test_admin_update_user(
+        self, admin_client: TestClient, test_user: User
+    ) -> None:
+        """Test admin updating user fields."""
+        response = admin_client.put(
+            f"/users/update/{test_user.id}/",
+            json={
+                "username": "renameduser",
+                "budget": 2000.0,
+                "status": "active",
+                "role": "user",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["username"] == "renameduser"
+        assert data["budget"] == 2000.0
+
+    def test_delete_user(self, admin_client: TestClient, db: Session) -> None:
+        """Test admin deleting a user."""
+        # Create a user to delete
+        user_to_delete = User(
+            username="todelete",
+            hashed_password="hashed",
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            budget=500.0,
+        )
+        db.add(user_to_delete)
+        db.commit()
+        user_id = user_to_delete.id
+
+        # Delete it
+        response = admin_client.delete(f"/users/delete/{user_id}/")
+        assert response.status_code == 204
+
+        # Verify it's deleted
+        user = db.query(User).filter(User.id == user_id).first()
+        assert user is None
+
+
+class TestUserSelfOperations:
+    """Test cases for user self-service operations."""
+
+    def test_self_update_username(
+        self, authenticated_client: TestClient, test_user: User, db: Session
+    ) -> None:
+        """Test user updating their own username."""
+        response = authenticated_client.put(
+            "/users/update/",
+            json={
+                "username": "newusername",
+                "budget": None,
+                "password": None,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["username"] == "newusername"
+
+    def test_self_update_password(
+        self, authenticated_client: TestClient, test_user: User
+    ) -> None:
+        """Test user updating their own password."""
+        response = authenticated_client.put(
+            "/users/update/",
+            json={
+                "username": None,
+                "budget": None,
+                "password": "NewPassword123!",
+            },
+        )
+        assert response.status_code == 200
+        # Old password should no longer work
+        login_response = authenticated_client.post(
+            "/token",
+            data={"username": "testuser", "password": "testpassword123"},
+        )
+        assert login_response.status_code == 401
