@@ -24,6 +24,11 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
   - [Makefile & Common Tasks](#makefile--common-tasks)
+  - [Running Tests](#running-tests)
+  - [CI/CD & Automation](#cicd--automation)
+  - [Scripts Management](#scripts-management)
+- [Architecture](#architecture)
+  - [Services Layer](#services-layer)
 - [Project Structure](#project-structure)
 - [Data Structures](#data-structures)
   - [Enums](#enums)
@@ -244,6 +249,67 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 make help     # Show all available targets
 ```
 
+### Running Tests
+
+Comprehensive pytest framework with 20+ tests covering authentication, user management, and expenses:
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage report
+pytest --cov=app --cov-report=html
+
+# Run specific test file
+pytest tests/test_auth.py -v
+
+# Run specific test class
+pytest tests/test_users.py::TestAdminUserOperations -v
+```
+
+**Test Structure:**
+- `tests/conftest.py` - Pytest fixtures (database, authentication, test data)
+- `tests/test_auth.py` - Authentication & token tests
+- `tests/test_users.py` - User management & admin operations
+- `tests/test_expenses.py` - Expense CRUD & filtering tests
+
+For detailed testing guide, see [tests/README.md](tests/README.md).
+
+### CI/CD & Automation
+
+Two-tier GitHub Actions pipelines for automated quality assurance:
+
+**Light Pipeline (dev branch - ~2-3 min):**
+- Triggered on push to `dev`
+- Detects modified services
+- Runs selective unit tests
+- Security & pre-commit checks
+- Fast feedback loop
+
+**Full Pipeline (main branch - ~8-10 min):**
+- Triggered on push to `main`
+- Tests on Python 3.10, 3.11, 3.12
+- Full unit + integration tests
+- Type checking (mypy)
+- Code quality (Black, isort, Ruff, Flake8)
+- Security scanning (bandit, safety, TruffleHog)
+- Docker build validation
+- Coverage reporting (Codecov)
+
+Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.yml`
+
+### Scripts Management
+
+Administrative scripts organized in the `scripts/` directory:
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `setup.sh` | Environment initialization | `./scripts/setup.sh` |
+| `project_spec.sh` | Admin bootstrap & DB init | `./scripts/project_spec.sh` |
+| `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./scripts/firewall-rules.sh` |
+
+See [scripts/ directory](scripts/) for detailed documentation.
+
 ## 📁 Project Structure
 ---
 
@@ -275,6 +341,13 @@ DEMO_FastAPI/
 │   │   ├── alerts.py               # Budget alert endpoints
 │   │   ├── reports.py              # Report generation endpoints
 │   │   └── health.py               # Liveness, readiness, startup checks
+│   │
+│   ├── services/                    # Business logic layer
+│   │   ├── auth_service.py         # Authentication & token management
+│   │   ├── user_service.py         # User CRUD & admin operations
+│   │   ├── expense_service.py      # Expense management & filtering
+│   │   ├── alert_service.py        # Budget alerts & threshold monitoring
+│   │   └── report_service.py       # Analytics & reporting
 │   │
 │   ├── schemas/                     # Pydantic request/response models
 │   │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
@@ -308,14 +381,29 @@ DEMO_FastAPI/
 ├── data/                           # SQLite database directory
 │   └── expense_tracker.db          # SQLite database (auto-created)
 │
+├── scripts/                        # Administrative scripts
+│   ├── setup.sh                    # Environment initialization
+│   ├── project_spec.sh             # Admin bootstrap & database init
+│   └── firewall-rules.sh           # DDoS protection (ufw/nftables)
+│
+├── tests/                          # Automated test suite (pytest)
+│   ├── conftest.py                 # Pytest fixtures & configuration
+│   ├── test_auth.py                # Authentication tests
+│   ├── test_users.py               # User management tests
+│   └── test_expenses.py            # Expense CRUD tests
+│
+├── .github/                        # GitHub configuration
+│   └── workflows/
+│       ├── ci-light.yml            # Dev branch: selective testing
+│       └── ci-full.yml             # Main branch: comprehensive validation
+│
 ├── Root Configuration Files
 │   ├── docker-compose.yml          # Multi-service orchestration (FastAPI, Nginx, Redis)
-│   ├── firewall-rules.sh           # Bash script for host firewall setup (ufw/nftables)
 │   ├── Makefile                    # Build, run, and deployment automation
 │   ├── pyproject.toml              # uv project config + dependency constraints
+│   ├── pytest.ini                  # Pytest configuration
 │   ├── requirements.txt            # Python dependencies (exported from uv.lock)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
-│   ├── setup.sh                    # Initial setup script
 │   ├── .env.example                # Dev environment variables template
 │   ├── .env.docker.dev.example     # Docker dev environment template
 │   ├── .env.docker.prod.example    # Docker production environment template
