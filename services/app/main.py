@@ -13,10 +13,12 @@ Handcraft with love and sweat by Damien Mascheix @Hagzilla.
 """
 # ==================================    Modules import     =========================================
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
@@ -33,8 +35,24 @@ from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
 # Initialize logger
 logger = get_logger(__name__)
 
-# Initialize the database (create tables)
-Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: startup and shutdown logic."""
+    # --- Startup ---
+    Base.metadata.create_all(bind=engine)
+    print(STARTUP_BANNER)
+    logger.info(LOG_SIGNATURE)
+    logger.info("=" * 70)
+    logger.info("🚀 Expense Tracker API is running and ready to accept requests")
+    logger.info("=" * 70)
+    app.state.startup_complete = True
+
+    yield
+
+    # --- Shutdown ---
+    app.state.startup_complete = False
+
 
 # Create FastAPI application instance
 app = FastAPI(
@@ -44,6 +62,7 @@ app = FastAPI(
         "and create detailed reports."
     ),
     version=settings.APP_VERSION,
+    lifespan=lifespan,
     openapi_tags=[
         {"name": "Main", "description": "Health check and main operations."},
         {
@@ -69,29 +88,21 @@ app = FastAPI(
     ],
 )
 
+# CORS – restrict allow_origins in production
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Attach SlowAPI limiter to app for decorator usage
 app.state.limiter = limiter
 app.state.startup_complete = False
 
 # Add HTTP logging middleware
 app.add_middleware(HTTPLoggingMiddleware)
-
-
-@app.on_event("startup")
-async def on_startup():
-    """Mark application startup as completed."""
-    print(STARTUP_BANNER)
-    logger.info(LOG_SIGNATURE)
-    logger.info("=" * 70)
-    logger.info("🚀 Expense Tracker API is running and ready to accept requests")
-    logger.info("=" * 70)
-    app.state.startup_complete = True
-
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    """Mark application as not started when shutting down."""
-    app.state.startup_complete = False
 
 
 # Exception handlers
@@ -164,13 +175,13 @@ if static_dir.exists():
 
 
 @app.get("/", name="API Root", tags=["Main"])
-async def read_root():
+def read_root():
     """Root endpoint."""
     return {"message": "Personal Expense Tracking API"}
 
 
 @app.get("/favicon.svg", include_in_schema=False)
-async def favicon_svg():
+def favicon_svg():
     """Serve the favicon."""
     favicon_path = Path(__file__).parent / "utils" / "static" / "favicon.svg"
     if favicon_path.exists():
@@ -179,7 +190,7 @@ async def favicon_svg():
 
 
 @app.get("/favicon.ico", include_in_schema=False)
-async def favicon_ico():
+def favicon_ico():
     """Serve favicon in ICO format (redirect to SVG)."""
     return Response(
         status_code=204,
@@ -188,7 +199,7 @@ async def favicon_ico():
 
 
 @app.get("/metrics", include_in_schema=False)
-async def metrics():
+def metrics():
     """Prometheus metrics endpoint."""
     return Response(
         generate_latest(),

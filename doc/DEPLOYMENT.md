@@ -76,7 +76,7 @@ nano .env.docker.prod
 # - DEBUG=false
 
 # 2. Apply firewall (critical: run FIRST on host)
-sudo bash firewall-rules.sh
+sudo bash startup/firewall-rules.sh
 
 # 3. Build and start services
 make docker-build
@@ -106,24 +106,24 @@ Only needed for production deployments:
 
 ### Production Firewall Requirements
 
-⚠️ **CRITICAL:** The `firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**. If you run docker-compose before firewall-rules.sh, ports will be exposed to the internet!
+⚠️ **CRITICAL:** The `startup/firewall-rules.sh` script **MUST** be executed **on the host machine BEFORE docker-compose up**. If you run docker-compose before firewall-rules.sh, ports will be exposed to the internet!
 
 ### Execution Order
 
 ```
-1. sudo bash firewall-rules.sh      ← FIRST: Lock down the host
-2. docker-compose up -d             ← SECOND: Start services (behind firewall)
-3. All traffic → Nginx → FastAPI    ← Result: Protected architecture
+1. sudo bash startup/firewall-rules.sh  ← FIRST: Lock down the host
+2. docker-compose up -d                 ← SECOND: Start services (behind firewall)
+3. All traffic → Nginx → FastAPI        ← Result: Protected architecture
 ```
 
 ### Setup Steps
 
 ```bash
 # 1. Make script executable
-chmod +x firewall-rules.sh
+chmod +x startup/firewall-rules.sh
 
 # 2. Run with sudo (required for firewall)
-sudo bash firewall-rules.sh
+sudo bash startup/firewall-rules.sh
 
 # 3. Verify rules were applied
 sudo ufw status numbered
@@ -255,7 +255,7 @@ Configured in `nginx/nginx.conf`:
 
 ### Application Layer
 
-Configured in `app/core/middleware.py` with slowapi + Redis. See [`RATE_LIMITING.md`](./RATE_LIMITING.md) for detailed examples.
+Configured in `services/app/core/middleware.py` with slowapi + Redis. See [`RATE_LIMITING.md`](./RATE_LIMITING.md) for detailed examples.
 
 ```python
 from slowapi import Limiter

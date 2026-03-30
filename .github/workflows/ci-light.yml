@@ -1,0 +1,184 @@
+name: CI Light (Dev Branch)
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  detect-changes:
+    name: Detect Modified Services
+    runs-on: ubuntu-latest
+    outputs:
+      modified-services: ${{ steps.detect.outputs.modified }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: detect
+        run: |
+          # Get list of changed files since last commit on main
+          if git rev-parse origin/main >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          else
+            # If main doesn't exist, use last commit
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          fi
+
+          # Parse which services changed
+          SERVICES=""
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check for core changes
+          if echo "$CHANGED_FILES" | grep -E "^services/app/core/|^services/app/database/"; then
+            SERVICES="all"
+          fi
+
+          # Check service changes
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/auth\|^services/app/services/auth"; then
+            SERVICES="${SERVICES} auth"
+          fi
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/users\|^services/app/services/user"; then
+            SERVICES="${SERVICES} users"
+          fi
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/expenses\|^services/app/services/expense"; then
+            SERVICES="${SERVICES} expenses"
+          fi
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/alerts\|^services/app/services/alert"; then
+            SERVICES="${SERVICES} alerts"
+          fi
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/reports\|^services/app/services/report"; then
+            SERVICES="${SERVICES} reports"
+          fi
+
+          # If no specific service, run all tests
+          if [ -z "$SERVICES" ] || [ "$SERVICES" = " " ]; then
+            SERVICES="all"
+          fi
+
+          echo "modified=$SERVICES" >> $GITHUB_OUTPUT
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+
+  unit-tests:
+    name: Unit Tests (Modified Services Only)
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.has-changes == 'true'
+
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Lint with Ruff
+        run: |
+          pip install ruff
+          ruff check services/app services/app/tests --select E,W,F
+        continue-on-error: true
+
+      - name: Type check with mypy
+        run: |
+          pip install mypy sqlalchemy-stubs types-all
+          mypy services/app --ignore-missing-imports
+        continue-on-error: true
+
+      - name: Run unit tests (modified services)
+        run: |
+          SERVICES="${{ needs.detect-changes.outputs.modified-services }}"
+
+          if [ "$SERVICES" = "all" ]; then
+            pytest services/app/tests/ -v --tb=short
+          else
+            # Run selective tests based on modified services
+            pytest services/app/tests/ -v --tb=short -k "$SERVICES"
+          fi
+
+  security-check:
+    name: Security & Dependencies Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Run safety check
+        run: |
+          pip install safety
+          safety check --json
+        continue-on-error: true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+        continue-on-error: true
+
+  pre-commit:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Run pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
+  summary:
+    name: CI Light Summary
+    needs: [detect-changes, unit-tests, security-check, pre-commit]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check jobs status
+        run: |
+          echo "=== CI LIGHT SUMMARY ==="
+          echo "Detected changes in services: ${{ needs.detect-changes.outputs.modified-services }}"
+          echo "Unit tests: ${{ needs.unit-tests.result }}"
+          echo "Security check: ${{ needs.security-check.result }}"
+          echo "Pre-commit: ${{ needs.pre-commit.result }}"
+
+          # Fail if any required job failed
+          if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.pre-commit.result }}" = "failure" ]; then
+            echo "❌ Pre-commit checks failed"
+            exit 1
+          fi
+
+          echo "✅ CI Light passed"

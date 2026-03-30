@@ -1,6 +1,6 @@
 """Alert router - Budget overflow detection."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 
 @router.get("/", name="Check Budget Alerts")
-async def check_alerts(
+def check_alerts(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ):
@@ -34,12 +34,12 @@ async def check_alerts(
     - expenses_by_category: Breakdown by category
     """
     # Get current month
-    now = datetime.utcnow()
-    start_of_month = datetime(now.year, now.month, 1)
+    now = datetime.now(timezone.utc)
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
     start_of_next_month = (
-        datetime(now.year, now.month + 1, 1)
+        datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
         if now.month < 12
-        else datetime(now.year + 1, 1, 1)
+        else datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
     )
 
     # Query total expenses for current month

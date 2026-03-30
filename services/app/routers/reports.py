@@ -90,7 +90,7 @@ def _build_expense_report(
 
 
 @router.get("/monthly/{year}/{month}", name="Monthly Report")
-async def get_monthly_report(
+def get_monthly_report(
     year: int,
     month: int,
     db: Annotated[Session, Depends(get_db)],
@@ -134,7 +134,7 @@ async def get_monthly_report(
 
 
 @router.get("/period", name="Period Report")
-async def get_period_report(
+def get_period_report(
     start_date: datetime,
     end_date: datetime,
     db: Annotated[Session, Depends(get_db)],
@@ -176,7 +176,7 @@ async def get_period_report(
 
 
 @router.get("/all", name="Admin All Reports")
-async def get_all_reports(
+def get_all_reports(
     db: Annotated[Session, Depends(get_db)],
     _admin: Annotated[UserModel, Depends(get_admin_user)],
 ):

@@ -54,7 +54,7 @@ def decode_jwt_token(token: str) -> dict:
         raise AuthenticationException("Invalid authentication credentials") from e
 
 
-async def get_current_user(
+def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserModel:

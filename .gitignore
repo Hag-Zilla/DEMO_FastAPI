@@ -124,13 +124,16 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Ruff cache
+.ruff_cache/
+
 # Pyre type checker
 .pyre/
 
 # Database files
 *.db
 *.db-journal
-data/
+services/data/
 
 # Compiled Python files
 *.py[cod]
@@ -148,7 +151,8 @@ data/
 # Project-specific directories and files
 followup.txt
 .admin_bootstrap_done
-logs/*.jsonl
+services/app/logs/*.log
+services/app/logs/*.jsonl
 
 # Environment files (actual files - never commit, use templates)
 # Templates (.example) ARE committed as documentation

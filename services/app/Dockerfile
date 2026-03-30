@@ -21,7 +21,7 @@ RUN mkdir -p /app/data /app/logs
 # Copy project files (build context is repo root)
 COPY pyproject.toml uv.lock* ./
 COPY app/ ./app/
-COPY --chown=fastapi:fastapi data/ ./data/
+COPY --chown=fastapi:fastapi services/data/ ./data/
 COPY --chown=fastapi:fastapi logs/ ./logs/
 
 # Install dependencies with uv
