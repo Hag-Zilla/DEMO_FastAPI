@@ -15,6 +15,7 @@ class TestLogin:
             data={
                 "username": "testuser",
                 "password": "testpassword123",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         assert response.status_code == 200
@@ -29,6 +30,7 @@ class TestLogin:
             data={
                 "username": "testuser",
                 "password": "wrongpassword",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         assert response.status_code == 401
@@ -41,6 +43,7 @@ class TestLogin:
             data={
                 "username": "nonexistent",
                 "password": "anypassword",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         assert response.status_code == 401
@@ -54,6 +57,7 @@ class TestLogin:
             data={
                 "username": "pendinguser",
                 "password": "pendingpass123",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         assert response.status_code == 403
@@ -66,6 +70,7 @@ class TestLogin:
             data={
                 "username": "testuser",
                 "password": "testpassword123",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         token = response.json()["access_token"]
@@ -88,12 +93,12 @@ class TestCurrentUser:
         assert data["id"] == test_user.id
 
     def test_get_current_user_unauthorized(self, client: TestClient) -> None:
-        """Test accessing /users/me without token returns 403."""
+        """Test accessing /users/me without token returns 401."""
         response = client.get("/users/me")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_get_current_user_invalid_token(self, client: TestClient) -> None:
-        """Test accessing /users/me with invalid token returns 403."""
+        """Test accessing /users/me with invalid token returns 401."""
         client.headers.update({"Authorization": "Bearer invalidtoken"})
         response = client.get("/users/me")
-        assert response.status_code == 403
+        assert response.status_code == 401

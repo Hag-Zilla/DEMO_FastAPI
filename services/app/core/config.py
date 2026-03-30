@@ -1,6 +1,6 @@
 """Application configuration management using Pydantic Settings."""
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     # Database Configuration
     DATABASE_URL: str = Field(..., min_length=1)
+
+    # Redis Configuration (optional – falls back to in-memory if absent)
+    REDIS_URL: Optional[str] = None
 
     # Application Configuration
     APP_NAME: str = Field(..., min_length=1)

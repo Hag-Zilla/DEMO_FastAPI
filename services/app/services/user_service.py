@@ -59,6 +59,19 @@ class UserService:
         return db_user
 
     @staticmethod
+    def list_users(
+        db: Session,
+        status_filter: Optional[UserStatus] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[User]:
+        """List all users with optional status filter and pagination."""
+        query = db.query(User)
+        if status_filter is not None:
+            query = query.filter(User.status == status_filter)  # type: ignore[arg-type]
+        return query.offset(offset).limit(limit).all()
+
+    @staticmethod
     def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
         """
         Retrieve user by ID.

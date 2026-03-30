@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.core.enums import ExpenseCategory, UserRole
-from app.core.exceptions import ResourceNotFoundException, AuthorizationException
+from app.core.exceptions import ResourceNotFoundException
 from app.core.logging import get_logger
 from app.database.models.expense import Expense
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate
@@ -25,24 +25,14 @@ class ExpenseService:
         category: Optional[ExpenseCategory] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> List[Expense]:
         """
-        List expenses with optional filtering.
+        List expenses with optional filtering and pagination.
 
         Admins can see all expenses, regular users only their own.
-
-        Args:
-            db: Database session
-            user_id: Current user ID
-            user_role: Current user role
-            category: Optional expense category filter
-            start_date: Optional start date filter
-            end_date: Optional end date filter
-
-        Returns:
-            List of Expense objects
         """
-        # Admins see all expenses; regular users only their own
         if user_role == UserRole.ADMIN:
             query = db.query(Expense)
         else:
@@ -55,7 +45,7 @@ class ExpenseService:
         if end_date:
             query = query.filter(Expense.date <= end_date)
 
-        expenses = query.order_by(Expense.date.desc()).all()
+        expenses = query.order_by(Expense.date.desc()).offset(offset).limit(limit).all()
         logger.info("User %s listed %s expenses", user_id, len(expenses))
         return expenses
 
@@ -134,15 +124,14 @@ class ExpenseService:
         if not expense:
             raise ResourceNotFoundException(f"Expense with id {expense_id} not found")
 
+        # Return 404 (not 403) for unauthorized access to avoid revealing existence
         if user_role != UserRole.ADMIN and expense.user_id != user_id:
             logger.warning(
                 "User %s attempted unauthorized access to expense %s",
                 user_id,
                 expense_id,
             )
-            raise AuthorizationException(
-                "You don't have permission to access this expense"
-            )
+            raise ResourceNotFoundException(f"Expense with id {expense_id} not found")
 
         return expense
 

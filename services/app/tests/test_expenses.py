@@ -40,7 +40,7 @@ class TestCreateExpense:
                 "category": "food",
             },
         )
-        assert response.status_code == 403
+        assert response.status_code == 401
 
     def test_create_expense_invalid_category(
         self, authenticated_client: TestClient
@@ -214,4 +214,6 @@ class TestUpdateDeleteExpense:
 
         # Current user (test_user) tries to access another user's expense
         response = authenticated_client.get(f"/expenses/{other_expense.id}")
-        assert response.status_code == 403  # Forbidden
+        assert (
+            response.status_code == 404
+        )  # 404 not 403: avoid revealing resource existence

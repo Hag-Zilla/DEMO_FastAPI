@@ -81,10 +81,7 @@ class TestAdminUserOperations:
 
     def test_list_users_by_status(self, admin_client: TestClient, db: Session) -> None:
         """Test listing users filtered by status."""
-        # Create users with different statuses
-        db.query(User).delete()
-        db.commit()
-
+        # Create users with different statuses (do NOT delete testadmin - it would invalidate the token)
         active_user = User(
             username="active1",
             hashed_password="hashed",  # pragma: allowlist secret
@@ -119,9 +116,10 @@ class TestAdminUserOperations:
         data = response.json()
         assert data["status"] == "active"
 
-        # Verify in database
-        db.refresh(test_pending_user)
-        assert test_pending_user.status == UserStatus.ACTIVE
+        # Verify in database (re-query since session was closed after the request)
+        updated_user = db.get(User, test_pending_user.id)
+        assert updated_user is not None
+        assert updated_user.status == UserStatus.ACTIVE
 
     def test_approve_user_not_found(self, admin_client: TestClient) -> None:
         """Test approving nonexistent user returns 404."""
@@ -204,6 +202,7 @@ class TestUserSelfOperations:
             data={
                 "username": "testuser",
                 "password": "testpassword123",  # pragma: allowlist secret
+                "grant_type": "password",
             },
         )
         assert login_response.status_code == 401

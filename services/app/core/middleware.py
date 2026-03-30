@@ -53,30 +53,29 @@ def get_limiter() -> Limiter:
     Uses Redis for distributed quota tracking across multiple instances.
     Falls back to in-memory storage if Redis is unavailable.
     """
-    try:
-        import os
+    from app.core.config import settings
 
-        redis_url = os.getenv(
-            "REDIS_URL", "redis://:redis_secure_password@redis:6379/0"
-        )
-        limiter = Limiter(
-            key_func=get_remote_address,
-            storage_uri=redis_url,
-            default_limits=["100/minute"],  # Default: 100 req/min per IP
-            swallow_errors=True,  # Don't break app if Redis fails
-        )
-        logger.info("Rate limiter initialized with Redis storage")
-        return limiter
-    except Exception as e:
-        logger.warning(
-            "Failed to initialize Redis limiter, falling back to memory: %s", e
-        )
-        limiter = Limiter(
-            key_func=get_remote_address,
-            default_limits=["100/minute"],
-            swallow_errors=True,
-        )
-        return limiter
+    redis_url = settings.REDIS_URL
+    if redis_url:
+        try:
+            limiter = Limiter(
+                key_func=get_remote_address,
+                storage_uri=redis_url,
+                default_limits=["100/minute"],
+                swallow_errors=True,
+            )
+            logger.info("Rate limiter initialized with Redis storage")
+            return limiter
+        except Exception as e:
+            logger.warning(
+                "Failed to initialize Redis limiter, falling back to memory: %s", e
+            )
+
+    return Limiter(
+        key_func=get_remote_address,
+        default_limits=["100/minute"],
+        swallow_errors=True,
+    )
 
 
 # Global limiter instance
@@ -90,10 +89,11 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
         """Process request and log HTTP activity."""
         start_time = time.time()
 
-        # Extract client IP (support X-Forwarded-For for proxies)
-        client_ip = request.headers.get("X-Forwarded-For") or (
-            request.client.host if request.client else "unknown"
-        )
+        # Resolve client IP: use direct connection IP (safe), log the forwarded header for context.
+        # X-Forwarded-For is for logging only; rate limiting relies on get_remote_address
+        # which should be configured with trusted proxies in production.
+        client_ip = request.client.host if request.client else "unknown"
+        forwarded_for = request.headers.get("X-Forwarded-For")
 
         try:
             response = await call_next(request)
@@ -125,6 +125,7 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
             "http_status": response.status_code,
             "duration_ms": round(duration * 1000, 3),
             "client_ip": client_ip,
+            "forwarded_for": forwarded_for,
         }
 
         logger.info(

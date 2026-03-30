@@ -8,6 +8,7 @@ This module provides:
 """
 
 from typing import Generator
+from datetime import datetime, timezone, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -125,14 +126,12 @@ def test_pending_user(db: Session) -> User:
 @pytest.fixture
 def test_expense(db: Session, test_user: User) -> Expense:
     """Create a test expense for test_user."""
-    from datetime import datetime
-
     expense = Expense(
         description="Test meal",
         amount=25.50,
         category=ExpenseCategory.FOOD,
         user_id=test_user.id,
-        date=datetime.utcnow(),
+        date=datetime.now(timezone.utc),
     )
     db.add(expense)
     db.commit()
@@ -148,6 +147,7 @@ def auth_token(client: TestClient, test_user: User) -> str:
         data={
             "username": "testuser",
             "password": "testpassword123",  # pragma: allowlist secret
+            "grant_type": "password",
         },
     )
     assert response.status_code == 200
@@ -163,6 +163,7 @@ def admin_auth_token(client: TestClient, test_admin: User) -> str:
         data={
             "username": "testadmin",
             "password": "adminpassword123",  # pragma: allowlist secret
+            "grant_type": "password",
         },
     )
     assert response.status_code == 200
@@ -187,10 +188,8 @@ def admin_client(client: TestClient, admin_auth_token: str) -> TestClient:
 @pytest.fixture
 def multiple_expenses(db: Session, test_user: User) -> list[Expense]:
     """Create multiple test expenses for bulk testing."""
-    from datetime import datetime, timedelta
-
     expenses = []
-    base_date = datetime.utcnow()
+    base_date = datetime.now(timezone.utc)
     categories = [
         ExpenseCategory.FOOD,
         ExpenseCategory.TRANSPORTATION,

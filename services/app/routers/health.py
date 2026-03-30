@@ -12,7 +12,7 @@ router = APIRouter(tags=["Main"])
 
 
 @router.get("/health/startup", name="Startup Check")
-async def get_startup(request: Request):
+def get_startup(request: Request):
     """Check whether the application startup phase is complete."""
     startup_complete = getattr(request.app.state, "startup_complete", False)
     if not startup_complete:
@@ -28,7 +28,7 @@ async def get_startup(request: Request):
 
 
 @router.get("/health/live", name="Liveness Check")
-async def get_liveness():
+def get_liveness():
     """Check whether the API process is alive."""
     return {
         "status": "ok",
@@ -38,7 +38,7 @@ async def get_liveness():
 
 
 @router.get("/health/ready", name="Readiness Check")
-async def get_readiness(db: Session = Depends(get_db)):
+def get_readiness(db: Session = Depends(get_db)):
     """Check whether the API is ready to serve traffic."""
     db.execute(text("SELECT 1"))
     return {
@@ -50,7 +50,7 @@ async def get_readiness(db: Session = Depends(get_db)):
 
 
 @router.get("/health", name="Health check of the API")
-async def get_health():
+def get_health():
     """Backward-compatible health endpoint (alias of liveness)."""
     return {
         "status": "ok",

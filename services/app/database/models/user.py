@@ -1,6 +1,6 @@
 """User database model."""
 
-from sqlalchemy import Column, Integer, String, Float, Enum
+from sqlalchemy import Column, Integer, String, Numeric, Enum
 from sqlalchemy.orm import relationship
 
 from ..session import Base
@@ -15,7 +15,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    budget = Column(Float)
+    budget = Column(Numeric(precision=12, scale=2))
     role: UserRole = Column(Enum(UserRole), default=UserRole.USER)  # type: ignore[assignment]
     status: UserStatus = Column(  # type: ignore[assignment]
         Enum(UserStatus), default=UserStatus.PENDING
