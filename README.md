@@ -111,7 +111,7 @@ nano .env
 | `SECRET_KEY` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
 | `ALGORITHM` | JWT algorithm | `HS256` |
 | `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
-| `DATABASE_URL` | SQLite database path | `sqlite:///./services/app/data/expense_tracker.db` |
+| `DATABASE_URL` | SQLite database path | `sqlite:///./services/data/expense_tracker.db` |
 | `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
 
 Quick generation:
@@ -218,7 +218,7 @@ Environment variables & secrets
 Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
 
 - `DATABASE_URL` is the single source of truth for database connection.
-- For SQLite, the app auto-creates the parent folder (default: `services/app/data/`).
+- For SQLite, the app auto-creates the parent folder (default: `services/data/`).
 - `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
 - Run setup with: `bash startup/setup.sh`
 
@@ -373,18 +373,18 @@ DEMO_FastAPI/
 │   │   │   ├── test_auth.py            # Authentication tests
 │   │   │   ├── test_users.py           # User management tests
 │   │   │   └── test_expenses.py        # Expense CRUD tests
-│   │   │
-│   │   ├── data/                        # SQLite database (service-local, git-ignored)
-│   │   │   └── expense_tracker.db      # SQLite database (auto-created)
-│   │   │
-│   │   └── logs/                        # Application logs (service-local, git-ignored)
-│   │       ├── app.log                 # Text log file
-│   │       ├── app.jsonl               # Structured JSONL logs
-│   │       └── config/
-│   │           └── logging.yaml        # Logging configuration
 │   │
-│   ├── nginx/                       # Reverse proxy service (Docker production)
-│   │   ├── nginx.conf               # Nginx config: SSL, rate limiting, routing
+│   ├── data/                           # SQLite database (shared, git-ignored)
+│   │   └── expense_tracker.db          # SQLite database (auto-created)
+│   │
+│   ├── logs/                           # Application logs (service-local, git-ignored)
+│   │   ├── app.log                     # Text log file
+│   │   ├── app.jsonl                   # Structured JSONL logs
+│   │   └── config/
+│   │       └── logging.yaml            # Logging configuration
+│   │
+│   ├── nginx/                          # Reverse proxy service (Docker production)
+│   │   ├── nginx.conf                  # Nginx config: SSL, rate limiting, routing
 │   │   └── ssl/                     # SSL certificates
 │   │
 │   └── monitoring/                  # Monitoring services (Grafana + Prometheus)
