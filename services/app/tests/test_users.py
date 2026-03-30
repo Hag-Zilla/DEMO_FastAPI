@@ -206,3 +206,65 @@ class TestUserSelfOperations:
             },
         )
         assert login_response.status_code == 401
+
+    def test_self_update_duplicate_username(
+        self, authenticated_client: TestClient, test_user: User, db: Session
+    ) -> None:
+        """Test that updating to an already-taken username returns 409."""
+        # Create a second user whose username we will try to steal
+        existing = User(
+            username="takenusername",
+            hashed_password="hashed",  # pragma: allowlist secret
+            role=UserRole.USER,
+            status=UserStatus.ACTIVE,
+            budget=500.0,
+        )
+        db.add(existing)
+        db.commit()
+
+        response = authenticated_client.put(
+            "/users/update/",
+            json={"username": "takenusername", "budget": None, "password": None},
+        )
+        assert response.status_code == 409
+        assert "already taken" in response.json()["detail"]
+
+
+class TestRBACAdminRoutes:
+    """Verify that regular users cannot access admin-only endpoints."""
+
+    def test_non_admin_cannot_list_users(
+        self, authenticated_client: TestClient
+    ) -> None:
+        """Regular user is forbidden from GET /users/."""
+        response = authenticated_client.get("/users/")
+        assert response.status_code == 403
+
+    def test_non_admin_cannot_approve_user(
+        self, authenticated_client: TestClient, test_pending_user: User
+    ) -> None:
+        """Regular user is forbidden from POST /users/{id}/approve."""
+        response = authenticated_client.post(f"/users/{test_pending_user.id}/approve")
+        assert response.status_code == 403
+
+    def test_non_admin_cannot_admin_update_user(
+        self, authenticated_client: TestClient, test_user: User
+    ) -> None:
+        """Regular user is forbidden from PUT /users/update/{id}/."""
+        response = authenticated_client.put(
+            f"/users/update/{test_user.id}/",
+            json={
+                "username": "hack",
+                "budget": 0.0,
+                "status": "active",
+                "role": "admin",
+            },
+        )
+        assert response.status_code == 403
+
+    def test_non_admin_cannot_delete_user(
+        self, authenticated_client: TestClient, test_user: User
+    ) -> None:
+        """Regular user is forbidden from DELETE /users/delete/{id}/."""
+        response = authenticated_client.delete(f"/users/delete/{test_user.id}/")
+        assert response.status_code == 403

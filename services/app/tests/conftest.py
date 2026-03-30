@@ -124,6 +124,24 @@ def test_pending_user(db: Session) -> User:
 
 
 @pytest.fixture
+def test_disabled_user(db: Session) -> User:
+    """Create a test user with DISABLED status."""
+    user = User(
+        username="disableduser",
+        hashed_password=get_password_hash(
+            "disabledpass123"
+        ),  # pragma: allowlist secret
+        budget=800.0,
+        role=UserRole.USER,
+        status=UserStatus.DISABLED,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@pytest.fixture
 def test_expense(db: Session, test_user: User) -> Expense:
     """Create a test expense for test_user."""
     expense = Expense(

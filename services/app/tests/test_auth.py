@@ -63,6 +63,21 @@ class TestLogin:
         assert response.status_code == 403
         assert "User account is not active" in response.json()["detail"]
 
+    def test_login_disabled_user_fails(
+        self, client: TestClient, test_disabled_user: User
+    ) -> None:
+        """Test that DISABLED users cannot login."""
+        response = client.post(
+            "/token",
+            data={
+                "username": "disableduser",
+                "password": "disabledpass123",  # pragma: allowlist secret
+                "grant_type": "password",
+            },
+        )
+        assert response.status_code == 403
+        assert "User account is not active" in response.json()["detail"]
+
     def test_token_format(self, client: TestClient, test_user: User) -> None:
         """Test that returned token is in proper JWT format."""
         response = client.post(
