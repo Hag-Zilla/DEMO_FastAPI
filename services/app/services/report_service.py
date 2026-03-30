@@ -134,38 +134,58 @@ class ReportService:
         return ReportService.build_expense_report(db, user_id, start_date, end_date)
 
     @staticmethod
-    def get_all_users_stats(db: Session) -> Dict[str, Any]:
+    def get_all_users_report(db: Session) -> Dict[str, Any]:
         """
-        Get aggregate statistics across all users (admin only).
+        Get expense reports for all users with per-user breakdown (admin only).
 
         Args:
             db: Database session
 
         Returns:
-            Dict with total_users, total_expenses, average_per_user, etc.
+            Dict with report_type, total_across_users, total_expenses_count, by_user.
         """
         from app.database.models.user import User
 
-        # Total users
-        total_users = db.query(func.count(User.id)).scalar() or 0  # pylint: disable=not-callable
+        # Totals across all users
+        total_query = db.query(func.sum(Expense.amount)).scalar()  # pylint: disable=not-callable
+        total = float(total_query) if total_query else 0.0
 
-        # Total expenses
-        total_expenses_query = db.query(func.sum(Expense.amount)).scalar()  # pylint: disable=not-callable
-        total_expenses = float(total_expenses_query) if total_expenses_query else 0.0
+        count_query = db.query(func.count(Expense.id)).scalar()  # pylint: disable=not-callable
+        count = count_query or 0
 
-        # Average per user
-        average_per_user = (
-            round(total_expenses / total_users, 2) if total_users > 0 else 0.0
-        )
+        # Per-user breakdown
+        user_reports: Dict[str, Any] = {}
+        users_with_expenses = db.query(Expense.user_id).distinct().all()
 
-        # Number of expenses
-        total_expense_count = (
-            db.query(func.count(Expense.id)).scalar() or 0  # pylint: disable=not-callable
-        )
+        for (user_id,) in users_with_expenses:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                total_user_query = (
+                    db.query(func.sum(Expense.amount))  # pylint: disable=not-callable
+                    .filter(Expense.user_id == user_id)
+                    .scalar()
+                )
+                user_total = float(total_user_query) if total_user_query else 0.0
+
+                count_user_query = (
+                    db.query(func.count(Expense.id))  # pylint: disable=not-callable
+                    .filter(Expense.user_id == user_id)
+                    .scalar()
+                )
+                user_count = count_user_query or 0
+
+                user_reports[str(user.username)] = {
+                    "user_id": user_id,
+                    "total_expenses": user_total,
+                    "count": user_count,
+                    "average": round(user_total / user_count, 2)
+                    if user_count > 0
+                    else 0.0,
+                }
 
         return {
-            "total_users": total_users,
-            "total_expenses": total_expenses,
-            "total_expense_count": total_expense_count,
-            "average_per_user": average_per_user,
+            "report_type": "admin_all_users",
+            "total_across_users": total,
+            "total_expenses_count": count,
+            "by_user": user_reports,
         }

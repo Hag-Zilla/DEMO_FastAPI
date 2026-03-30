@@ -1,6 +1,6 @@
 """Alert service encapsulating budget monitoring and threshold logic."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 from sqlalchemy import func
@@ -35,12 +35,12 @@ class AlertService:
             - expenses_by_category: Breakdown by category
         """
         # Get current month boundaries
-        now = datetime.utcnow()
-        start_of_month = datetime(now.year, now.month, 1)
+        now = datetime.now(timezone.utc)
+        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
         start_of_next_month = (
-            datetime(now.year, now.month + 1, 1)
+            datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
             if now.month < 12
-            else datetime(now.year + 1, 1, 1)
+            else datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
         )
 
         # Query total expenses for current month
@@ -102,8 +102,8 @@ class AlertService:
             "total_spent": total_spent,
             "budget": budget,
             "status": status,
-            "remaining": abs(remaining),
-            "percentage": round(percentage, 2),
+            "remaining": remaining,
+            "percentage_used": round(percentage, 2),
             "expenses_by_category": expenses_by_category,
         }
 
@@ -126,13 +126,15 @@ class AlertService:
         Returns:
             Total amount spent in that month
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         year = year or now.year
         month = month or now.month
 
-        start_of_month = datetime(year, month, 1)
+        start_of_month = datetime(year, month, 1, tzinfo=timezone.utc)
         start_of_next_month = (
-            datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
+            datetime(year, month + 1, 1, tzinfo=timezone.utc)
+            if month < 12
+            else datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         )
 
         total = (
