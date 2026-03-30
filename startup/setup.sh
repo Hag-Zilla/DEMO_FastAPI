@@ -98,9 +98,10 @@ fi
 
 # Run admin bootstrap script as part of installation
 run_admin_bootstrap() {
-    if [ -f "project_spec.sh" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$SCRIPT_DIR/project_spec.sh" ]; then
         echo "Launching admin bootstrap (project_spec.sh)..."
-        bash project_spec.sh
+        bash "$SCRIPT_DIR/project_spec.sh"
     else
         echo "Warning: project_spec.sh not found. Skipping admin bootstrap."
     fi

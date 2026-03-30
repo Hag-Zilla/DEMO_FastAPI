@@ -7,7 +7,6 @@ This module provides:
 - Mock authentication
 """
 
-import os
 from typing import Generator
 
 import pytest
@@ -33,7 +32,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture(scope="session", autouse=True)
-def create_test_db() -> None:
+def create_test_db() -> Generator[None, None, None]:
     """Create test database tables."""
     Base.metadata.create_all(bind=engine)
     yield
@@ -45,11 +44,11 @@ def db() -> Generator[Session, None, None]:
     """Provide a clean database session for each test."""
     # Create fresh tables
     Base.metadata.create_all(bind=engine)
-    
+
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
-    
+
     def override_get_db():
         try:
             yield session
@@ -76,7 +75,9 @@ def test_user(db: Session) -> User:
     """Create a test user in the database."""
     user = User(
         username="testuser",
-        hashed_password=get_password_hash("testpassword123"),
+        hashed_password=get_password_hash(
+            "testpassword123"  # pragma: allowlist secret
+        ),
         budget=1000.0,
         role=UserRole.USER,
         status=UserStatus.ACTIVE,
@@ -92,7 +93,9 @@ def test_admin(db: Session) -> User:
     """Create a test admin user in the database."""
     admin = User(
         username="testadmin",
-        hashed_password=get_password_hash("adminpassword123"),
+        hashed_password=get_password_hash(
+            "adminpassword123"  # pragma: allowlist secret
+        ),
         budget=5000.0,
         role=UserRole.ADMIN,
         status=UserStatus.ACTIVE,
@@ -142,7 +145,10 @@ def auth_token(client: TestClient, test_user: User) -> str:
     """Obtain JWT token for test_user."""
     response = client.post(
         "/token",
-        data={"username": "testuser", "password": "testpassword123"},
+        data={
+            "username": "testuser",
+            "password": "testpassword123",  # pragma: allowlist secret
+        },
     )
     assert response.status_code == 200
     token = response.json()["access_token"]
@@ -154,7 +160,10 @@ def admin_auth_token(client: TestClient, test_admin: User) -> str:
     """Obtain JWT token for test_admin."""
     response = client.post(
         "/token",
-        data={"username": "testadmin", "password": "adminpassword123"},
+        data={
+            "username": "testadmin",
+            "password": "adminpassword123",  # pragma: allowlist secret
+        },
     )
     assert response.status_code == 200
     token = response.json()["access_token"]
@@ -202,5 +211,5 @@ def multiple_expenses(db: Session, test_user: User) -> list[Expense]:
     db.commit()
     for expense in expenses:
         db.refresh(expense)
-    
+
     return expenses

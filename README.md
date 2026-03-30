@@ -111,7 +111,7 @@ nano .env
 | `SECRET_KEY` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
 | `ALGORITHM` | JWT algorithm | `HS256` |
 | `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
-| `DATABASE_URL` | SQLite database path | `sqlite:///./data/expense_tracker.db` |
+| `DATABASE_URL` | SQLite database path | `sqlite:///./services/app/data/expense_tracker.db` |
 | `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
 
 Quick generation:
@@ -218,8 +218,9 @@ Environment variables & secrets
 Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
 
 - `DATABASE_URL` is the single source of truth for database connection.
-- For SQLite, the app auto-creates the parent folder (default: `data/`).
+- For SQLite, the app auto-creates the parent folder (default: `services/app/data/`).
 - `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
+- Run setup with: `bash startup/setup.sh`
 
 For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configuration in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#configuration).
 
@@ -227,9 +228,9 @@ For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configurati
 
 Logs are written to:
 - **Console**: For development feedback
-- **File**: `logs/app.log` for production monitoring
+- **File**: `services/app/logs/app.log` for production monitoring
 
-Configured via YAML in `logs/config/logging.yaml`, loaded by `app/core/logging.py`.
+Configured via YAML in `services/app/logs/config/logging.yaml`, loaded by `services/app/core/logging.py`.
 
 For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
 
@@ -304,9 +305,9 @@ Administrative scripts organized in the `scripts/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `setup.sh` | Environment initialization | `./scripts/setup.sh` |
-| `project_spec.sh` | Admin bootstrap & DB init | `./scripts/project_spec.sh` |
-| `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./scripts/firewall-rules.sh` |
+| `setup.sh` | Environment initialization | `./startup/setup.sh` |
+| `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
+| `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./startup/firewall-rules.sh` |
 
 See [scripts/ directory](scripts/) for detailed documentation.
 
@@ -316,81 +317,94 @@ See [scripts/ directory](scripts/) for detailed documentation.
 ```
 DEMO_FastAPI/
 │
-├── app/                         # Main application package
-│   ├── main.py                      # FastAPI application factory + exception handlers
+├── services/                       # Multi-service application architecture
+│   ├── app/                        # FastAPI microservice (Python package: 'app')
+│   │   ├── main.py                      # FastAPI application factory + exception handlers
+│   │   ├── Dockerfile                   # Docker image configuration (Python 3.14, uv)
+│   │   │
+│   │   ├── core/                        # Infrastructure & configuration
+│   │   │   ├── config.py               # Pydantic Settings (environment config)
+│   │   │   ├── security.py             # JWT, authentication, password hashing
+│   │   │   ├── exceptions.py           # Custom exception classes
+│   │   │   ├── enums.py                # UserRole, UserStatus, ExpenseCategory enums
+│   │   │   ├── logging.py              # Logging configuration (file + console)
+│   │   │   ├── middleware.py           # HTTP logging middleware
+│   │   │   └── branding.py             # Startup banner and log signature
+│   │   │
+│   │   ├── database/                    # Data layer
+│   │   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
+│   │   │   └── models/
+│   │   │       ├── user.py             # User ORM model (id, username, budget, role, status)
+│   │   │       └── expense.py          # Expense ORM model (id, amount, category, date)
+│   │   │
+│   │   ├── routers/                     # API endpoints (APIRouter pattern)
+│   │   │   ├── auth.py                 # POST /token (login)
+│   │   │   ├── users.py                # User CRUD + approval workflow endpoints
+│   │   │   ├── expenses.py             # Expense CRUD endpoints
+│   │   │   ├── alerts.py               # Budget alert endpoints
+│   │   │   ├── reports.py              # Report generation endpoints
+│   │   │   └── health.py               # Liveness, readiness, startup checks
+│   │   │
+│   │   ├── services/                    # Business logic layer
+│   │   │   ├── auth_service.py         # Authentication & token management
+│   │   │   ├── user_service.py         # User CRUD & admin operations
+│   │   │   ├── expense_service.py      # Expense management & filtering
+│   │   │   ├── alert_service.py        # Budget alerts & threshold monitoring
+│   │   │   └── report_service.py       # Analytics & reporting
+│   │   │
+│   │   ├── schemas/                     # Pydantic request/response models
+│   │   │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
+│   │   │   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
+│   │   │   └── common.py               # Token schema
+│   │   │
+│   │   ├── utils/                       # Generic utilities
+│   │   │   ├── dependencies.py          # get_admin_user(), get_current_user() dependencies
+│   │   │   ├── print_banner.py          # Banner rendering helper
+│   │   │   ├── static/
+│   │   │   │   └── favicon.svg
+│   │   │   └── branding/
+│   │   │       ├── startup.txt
+│   │   │       ├── completion.txt
+│   │   │       ├── setup.txt
+│   │   │       └── mammoth.txt
+│   │   │
+│   │   ├── tests/                       # Automated test suite (pytest)
+│   │   │   ├── conftest.py             # Pytest fixtures & configuration
+│   │   │   ├── test_auth.py            # Authentication tests
+│   │   │   ├── test_users.py           # User management tests
+│   │   │   └── test_expenses.py        # Expense CRUD tests
+│   │   │
+│   │   ├── data/                        # SQLite database (service-local, git-ignored)
+│   │   │   └── expense_tracker.db      # SQLite database (auto-created)
+│   │   │
+│   │   └── logs/                        # Application logs (service-local, git-ignored)
+│   │       ├── app.log                 # Text log file
+│   │       ├── app.jsonl               # Structured JSONL logs
+│   │       └── config/
+│   │           └── logging.yaml        # Logging configuration
 │   │
-│   ├── core/                        # Infrastructure & configuration
-│   │   ├── config.py               # Pydantic Settings (environment config)
-│   │   ├── security.py             # JWT, authentication, password hashing
-│   │   ├── exceptions.py           # Custom exception classes
-│   │   ├── enums.py                # UserRole, UserStatus, ExpenseCategory enums
-│   │   ├── logging.py              # Logging configuration (file + console)
-│   │   ├── middleware.py           # HTTP logging middleware
-│   │   └── branding.py             # Startup banner and log signature
+│   ├── nginx/                       # Reverse proxy service (Docker production)
+│   │   ├── nginx.conf               # Nginx config: SSL, rate limiting, routing
+│   │   └── ssl/                     # SSL certificates
 │   │
-│   ├── database/                    # Data layer
-│   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
-│   │   └── models/
-│   │       ├── user.py             # User ORM model (id, username, budget, role, status)
-│   │       └── expense.py          # Expense ORM model (id, amount, category, date)
-│   │
-│   ├── routers/                     # API endpoints (APIRouter pattern)
-│   │   ├── auth.py                 # POST /token (login)
-│   │   ├── users.py                # User CRUD + approval workflow endpoints
-│   │   ├── expenses.py             # Expense CRUD endpoints
-│   │   ├── alerts.py               # Budget alert endpoints
-│   │   ├── reports.py              # Report generation endpoints
-│   │   └── health.py               # Liveness, readiness, startup checks
-│   │
-│   ├── services/                    # Business logic layer
-│   │   ├── auth_service.py         # Authentication & token management
-│   │   ├── user_service.py         # User CRUD & admin operations
-│   │   ├── expense_service.py      # Expense management & filtering
-│   │   ├── alert_service.py        # Budget alerts & threshold monitoring
-│   │   └── report_service.py       # Analytics & reporting
-│   │
-│   ├── schemas/                     # Pydantic request/response models
-│   │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
-│   │   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
-│   │   └── common.py               # Token schema
-│   │
-│   └── utils/                       # Generic utilities
-│       ├── dependencies.py          # get_admin_user(), get_current_user() dependencies
-│       ├── print_banner.py          # Banner rendering helper
-│       ├── static/
-│       │   └── favicon.svg
-│       └── branding/
-│           ├── startup.txt
-│           ├── completion.txt
-│           ├── setup.txt
-│           └── mammoth.txt
+│   └── monitoring/                  # Monitoring services (Grafana + Prometheus)
+│       ├── config/
+│       │   ├── prometheus.yml       # Prometheus scrape configuration
+│       │   └── alert.rules.yml     # Alerting rules
+│       └── grafana/
+│           └── provisioning/        # Grafana datasources & dashboards
 │
 ├── doc/                            # Project documentation
 │   ├── DEPLOYMENT.md               # Production deployment, firewall, monitoring, scaling
+│   ├── DEVELOPMENT.md              # Development workflow, pre-commit, Makefile targets
+│   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
 │
-├── nginx/                          # Reverse proxy configuration (Docker production)
-│   └── nginx.conf                  # Nginx config: SSL, rate limiting, routing
-│
-├── logs/                           # Log output directory
-│   ├── app.log                     # Application log file
-│   ├── app.jsonl                   # Structured JSONL logs
-│   └── config/
-│       └── logging.yaml            # Logging configuration
-│
-├── data/                           # SQLite database directory
-│   └── expense_tracker.db          # SQLite database (auto-created)
-│
-├── scripts/                        # Administrative scripts
+├── startup/                        # Administrative startup scripts
 │   ├── setup.sh                    # Environment initialization
 │   ├── project_spec.sh             # Admin bootstrap & database init
 │   └── firewall-rules.sh           # DDoS protection (ufw/nftables)
 │
-├── tests/                          # Automated test suite (pytest)
-│   ├── conftest.py                 # Pytest fixtures & configuration
-│   ├── test_auth.py                # Authentication tests
-│   ├── test_users.py               # User management tests
-│   └── test_expenses.py            # Expense CRUD tests
 │
 ├── .github/                        # GitHub configuration
 │   └── workflows/
@@ -416,19 +430,18 @@ DEMO_FastAPI/
 ```
 
 **Key Directories:**
-- **`app/`** - FastAPI application (authentication, endpoints, data models)
-- **`doc/`** - Specialized documentation (deployment, rate limiting)
-- **`nginx/`** - Docker production reverse proxy configuration
-- **`logs/`** - Application logs (JSON and text formats)
-- **`data/`** - SQLite database location
+- **`services/`** - Multi-service microservices architecture
+  - **`services/app/`** - FastAPI application (code, tests, data, logs — self-contained)
+  - **`services/nginx/`** - Docker production reverse proxy configuration
+  - **`services/monitoring/`** - Grafana + Prometheus configuration
+- **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
+- **`startup/`** - Administrative startup scripts (initialization, bootstrap, firewall)
 
 **Configuration & Deployment:**
-- **`docker-compose.yml`** - Orchestrates FastAPI, Nginx, Redis containers
-- **`firewall-rules.sh`** - **MUST run before docker-compose** for DDoS protection
+- **`docker-compose.yml`** - Orchestrates multi-service stack (FastAPI, Nginx, Redis, Prometheus, Grafana)
+- **`startup/firewall-rules.sh`** - **MUST run before docker-compose** for DDoS protection
 - **`Makefile`** - Simplifies common development and deployment tasks
 - **`pyproject.toml` + `uv.lock`** - Pinned dependency management
-
-For Docker deployment details and firewall setup, see [Build and Run Services in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#build-and-run-services).
 
 ## 📊 Data Structures
 ---
@@ -487,7 +500,7 @@ class ExpenseCategory(str, Enum):
 | status | ENUM(UserStatus) | NOT NULL, default="pending" | Values: pending, active, disabled |
 | disabled | BOOLEAN | default=False | Legacy account status field |
 
-**ORM Model**: `app/database/models/user.py`
+**ORM Model**: `services/app/database/models/user.py`
 
 #### Expenses Table
 
@@ -500,7 +513,7 @@ class ExpenseCategory(str, Enum):
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
 | user_id | INTEGER | Foreign Key → users.id | Expense owner |
 
-**ORM Model**: `app/database/models/expense.py`
+**ORM Model**: `services/app/database/models/expense.py`
 
 ### API Request/Response Models
 

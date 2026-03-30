@@ -46,13 +46,13 @@ help:
 
 # Wrapper (interactive) for setup.sh (default: uv)
 init:
-	bash setup.sh
+	bash startup/setup.sh
 
 init-uv:
-	printf "uv\n" | bash setup.sh
+	printf "uv\n" | bash startup/setup.sh
 
 init-venv:
-	printf "venv\n" | bash setup.sh
+	printf "venv\n" | bash startup/setup.sh
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:

@@ -111,7 +111,7 @@ repos:
         types: [python]
         args:
           - --convention=google  # Your project uses Google-style docstrings
-          - --add-ignore=D100,D104  # Allow missing module/init docstrings in some cases
+          - --add-ignore=D100,D104,D212,D403  # Allow missing module/init, multi-line summary, first word capitalization
         stages: [commit]
 
   # ===== SHELL SCRIPT VALIDATION: ShellCheck =====

@@ -1,6 +1,6 @@
 """Authentication service encapsulating token and user verification logic."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 
 from sqlalchemy.orm import Session

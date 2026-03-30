@@ -13,7 +13,7 @@ from app.core.enums import UserRole, UserStatus
 from app.core.logging import get_logger
 from app.core.security import get_password_hash
 from app.database.models.user import User
-from app.schemas.user import UserCreate, UserSelfUpdate, UserUpdate, UserResponse
+from app.schemas.user import UserCreate, UserSelfUpdate, UserUpdate
 
 logger = get_logger(__name__)
 
@@ -112,9 +112,7 @@ class UserService:
         # Check username uniqueness (if changed)
         if user_update.username and user_update.username != user.username:
             existing_user = (
-                db.query(User)
-                .filter(User.username == user_update.username)
-                .first()
+                db.query(User).filter(User.username == user_update.username).first()
             )
             if existing_user:
                 logger.warning(
@@ -139,9 +137,7 @@ class UserService:
         return user
 
     @staticmethod
-    def update_user_admin(
-        db: Session, user_id: int, user_update: UserUpdate
-    ) -> User:
+    def update_user_admin(db: Session, user_id: int, user_update: UserUpdate) -> User:
         """
         Update any user fields by ID (admin only).
 
@@ -213,9 +209,7 @@ class UserService:
         """
         if admin_id == user_id:
             logger.warning("Admin %s attempted to delete own account", admin_id)
-            raise AuthorizationException(
-                "Admin users cannot delete their own account"
-            )
+            raise AuthorizationException("Admin users cannot delete their own account")
 
         user = db.query(User).filter(User.id == user_id).first()
         if not user:

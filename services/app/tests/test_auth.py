@@ -1,8 +1,6 @@
 """Authentication and login endpoint tests."""
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.database.models.user import User
 
@@ -14,7 +12,10 @@ class TestLogin:
         """Test successful login returns JWT token."""
         response = client.post(
             "/token",
-            data={"username": "testuser", "password": "testpassword123"},
+            data={
+                "username": "testuser",
+                "password": "testpassword123",  # pragma: allowlist secret
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -25,7 +26,10 @@ class TestLogin:
         """Test login with invalid password returns 401."""
         response = client.post(
             "/token",
-            data={"username": "testuser", "password": "wrongpassword"},
+            data={
+                "username": "testuser",
+                "password": "wrongpassword",  # pragma: allowlist secret
+            },
         )
         assert response.status_code == 401
         assert "Incorrect username or password" in response.json()["detail"]
@@ -34,15 +38,23 @@ class TestLogin:
         """Test login with nonexistent username returns 401."""
         response = client.post(
             "/token",
-            data={"username": "nonexistent", "password": "anypassword"},
+            data={
+                "username": "nonexistent",
+                "password": "anypassword",  # pragma: allowlist secret
+            },
         )
         assert response.status_code == 401
 
-    def test_login_pending_user_fails(self, client: TestClient, test_pending_user: User) -> None:
+    def test_login_pending_user_fails(
+        self, client: TestClient, test_pending_user: User
+    ) -> None:
         """Test that PENDING users cannot login."""
         response = client.post(
             "/token",
-            data={"username": "pendinguser", "password": "pendingpass123"},
+            data={
+                "username": "pendinguser",
+                "password": "pendingpass123",  # pragma: allowlist secret
+            },
         )
         assert response.status_code == 403
         assert "User account is not active" in response.json()["detail"]
@@ -51,7 +63,10 @@ class TestLogin:
         """Test that returned token is in proper JWT format."""
         response = client.post(
             "/token",
-            data={"username": "testuser", "password": "testpassword123"},
+            data={
+                "username": "testuser",
+                "password": "testpassword123",  # pragma: allowlist secret
+            },
         )
         token = response.json()["access_token"]
         # JWT tokens have 3 parts separated by dots

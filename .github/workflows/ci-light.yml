@@ -27,39 +27,39 @@ jobs:
             # If main doesn't exist, use last commit
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
           fi
-          
+
           # Parse which services changed
           SERVICES=""
           echo "Changed files:"
           echo "$CHANGED_FILES"
-          
+
           # Check for core changes
-          if echo "$CHANGED_FILES" | grep -E "^app/core/|^app/database/"; then
+          if echo "$CHANGED_FILES" | grep -E "^services/app/core/|^services/app/database/"; then
             SERVICES="all"
           fi
-          
+
           # Check service changes
-          if echo "$CHANGED_FILES" | grep "^app/routers/auth\|^app/services/auth"; then
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/auth\|^services/app/services/auth"; then
             SERVICES="${SERVICES} auth"
           fi
-          if echo "$CHANGED_FILES" | grep "^app/routers/users\|^app/services/user"; then
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/users\|^services/app/services/user"; then
             SERVICES="${SERVICES} users"
           fi
-          if echo "$CHANGED_FILES" | grep "^app/routers/expenses\|^app/services/expense"; then
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/expenses\|^services/app/services/expense"; then
             SERVICES="${SERVICES} expenses"
           fi
-          if echo "$CHANGED_FILES" | grep "^app/routers/alerts\|^app/services/alert"; then
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/alerts\|^services/app/services/alert"; then
             SERVICES="${SERVICES} alerts"
           fi
-          if echo "$CHANGED_FILES" | grep "^app/routers/reports\|^app/services/report"; then
+          if echo "$CHANGED_FILES" | grep "^services/app/routers/reports\|^services/app/services/report"; then
             SERVICES="${SERVICES} reports"
           fi
-          
+
           # If no specific service, run all tests
           if [ -z "$SERVICES" ] || [ "$SERVICES" = " " ]; then
             SERVICES="all"
           fi
-          
+
           echo "modified=$SERVICES" >> $GITHUB_OUTPUT
           echo "has-changes=true" >> $GITHUB_OUTPUT
 
@@ -68,11 +68,11 @@ jobs:
     needs: detect-changes
     runs-on: ubuntu-latest
     if: needs.detect-changes.outputs.has-changes == 'true'
-    
+
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -91,30 +91,30 @@ jobs:
       - name: Lint with Ruff
         run: |
           pip install ruff
-          ruff check app tests --select E,W,F
+          ruff check services/app services/app/tests --select E,W,F
         continue-on-error: true
 
       - name: Type check with mypy
         run: |
           pip install mypy sqlalchemy-stubs types-all
-          mypy app --ignore-missing-imports
+          mypy services/app --ignore-missing-imports
         continue-on-error: true
 
       - name: Run unit tests (modified services)
         run: |
           SERVICES="${{ needs.detect-changes.outputs.modified-services }}"
-          
+
           if [ "$SERVICES" = "all" ]; then
-            pytest tests/ -v --tb=short
+            pytest services/app/tests/ -v --tb=short
           else
             # Run selective tests based on modified services
-            pytest tests/ -v --tb=short -k "$SERVICES"
+            pytest services/app/tests/ -v --tb=short -k "$SERVICES"
           fi
 
   security-check:
     name: Security & Dependencies Audit
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -140,7 +140,7 @@ jobs:
   pre-commit:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -152,14 +152,14 @@ jobs:
           python-version: "3.11"
 
       - name: Run pre-commit
-        uses: pre-commit/action@v3
+        uses: pre-commit/action@v4
 
   summary:
     name: CI Light Summary
     needs: [detect-changes, unit-tests, security-check, pre-commit]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Check jobs status
         run: |
@@ -168,7 +168,7 @@ jobs:
           echo "Unit tests: ${{ needs.unit-tests.result }}"
           echo "Security check: ${{ needs.security-check.result }}"
           echo "Pre-commit: ${{ needs.pre-commit.result }}"
-          
+
           # Fail if any required job failed
           if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
             echo "❌ Unit tests failed"
@@ -178,5 +178,5 @@ jobs:
             echo "❌ Pre-commit checks failed"
             exit 1
           fi
-          
+
           echo "✅ CI Light passed"

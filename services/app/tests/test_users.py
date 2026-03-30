@@ -1,6 +1,5 @@
 """User management endpoint tests."""
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -17,7 +16,7 @@ class TestCreateUser:
             "/users/create",
             json={
                 "username": "newuser",
-                "password": "NewPassword123!",
+                "password": "NewPassword123!",  # pragma: allowlist secret
                 "budget": 1500.0,
             },
         )
@@ -41,7 +40,7 @@ class TestCreateUser:
             "/users/create",
             json={
                 "username": "testuser",  # Already exists
-                "password": "AnotherPassword123!",
+                "password": "AnotherPassword123!",  # pragma: allowlist secret
                 "budget": 1000.0,
             },
         )
@@ -54,7 +53,7 @@ class TestCreateUser:
             "/users/create",
             json={
                 "username": "weakpass",
-                "password": "weak",  # Too short
+                "password": "weak",  # pragma: allowlist secret
                 "budget": 500.0,
             },
         )
@@ -67,21 +66,20 @@ class TestCreateUser:
             "/users/create",
             json={
                 "username": "pendingcheck",
-                "password": "SafePassword123!",
+                "password": "SafePassword123!",  # pragma: allowlist secret
                 "budget": 1000.0,
             },
         )
         assert response.status_code == 201
         user = db.query(User).filter(User.username == "pendingcheck").first()
+        assert user is not None
         assert user.status == UserStatus.PENDING
 
 
 class TestAdminUserOperations:
     """Test cases for admin user management endpoints."""
 
-    def test_list_users_by_status(
-        self, admin_client: TestClient, db: Session
-    ) -> None:
+    def test_list_users_by_status(self, admin_client: TestClient, db: Session) -> None:
         """Test listing users filtered by status."""
         # Create users with different statuses
         db.query(User).delete()
@@ -89,14 +87,14 @@ class TestAdminUserOperations:
 
         active_user = User(
             username="active1",
-            hashed_password="hashed",
+            hashed_password="hashed",  # pragma: allowlist secret
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
             budget=1000.0,
         )
         pending_user = User(
             username="pending1",
-            hashed_password="hashed",
+            hashed_password="hashed",  # pragma: allowlist secret
             role=UserRole.USER,
             status=UserStatus.PENDING,
             budget=1000.0,
@@ -130,9 +128,7 @@ class TestAdminUserOperations:
         response = admin_client.post("/users/99999/approve")
         assert response.status_code == 404
 
-    def test_admin_update_user(
-        self, admin_client: TestClient, test_user: User
-    ) -> None:
+    def test_admin_update_user(self, admin_client: TestClient, test_user: User) -> None:
         """Test admin updating user fields."""
         response = admin_client.put(
             f"/users/update/{test_user.id}/",
@@ -153,7 +149,7 @@ class TestAdminUserOperations:
         # Create a user to delete
         user_to_delete = User(
             username="todelete",
-            hashed_password="hashed",
+            hashed_password="hashed",  # pragma: allowlist secret
             role=UserRole.USER,
             status=UserStatus.ACTIVE,
             budget=500.0,
@@ -198,13 +194,16 @@ class TestUserSelfOperations:
             json={
                 "username": None,
                 "budget": None,
-                "password": "NewPassword123!",
+                "password": "NewPassword123!",  # pragma: allowlist secret
             },
         )
         assert response.status_code == 200
         # Old password should no longer work
         login_response = authenticated_client.post(
             "/token",
-            data={"username": "testuser", "password": "testpassword123"},
+            data={
+                "username": "testuser",
+                "password": "testpassword123",  # pragma: allowlist secret
+            },
         )
         assert login_response.status_code == 401

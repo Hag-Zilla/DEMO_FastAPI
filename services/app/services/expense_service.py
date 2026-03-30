@@ -9,7 +9,6 @@ from app.core.enums import ExpenseCategory, UserRole
 from app.core.exceptions import ResourceNotFoundException, AuthorizationException
 from app.core.logging import get_logger
 from app.database.models.expense import Expense
-from app.database.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate
 
 logger = get_logger(__name__)

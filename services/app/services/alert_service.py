@@ -132,9 +132,7 @@ class AlertService:
 
         start_of_month = datetime(year, month, 1)
         start_of_next_month = (
-            datetime(year, month + 1, 1)
-            if month < 12
-            else datetime(year + 1, 1, 1)
+            datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
         )
 
         total = (
@@ -161,5 +159,5 @@ class AlertService:
         Returns:
             True if spending exceeds budget, False otherwise
         """
-        total_spent = AlertService.get_month_spending(db, user.id)
-        return total_spent > user.budget
+        total_spent = AlertService.get_month_spending(db, user.id)  # type: ignore[arg-type]
+        return total_spent > user.budget  # type: ignore[return-value]

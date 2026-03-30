@@ -20,6 +20,9 @@ from app.core.config import settings
 # CONFIGURATION / CONSTANTS
 # ============================================================================
 
+# Base directory of this service (services/app/)
+_SERVICE_DIR = Path(__file__).resolve().parent.parent
+
 _URL_CREDENTIALS_RE = re.compile(r"([a-zA-Z][a-zA-Z0-9+.-]*://)([^:/\s]+):([^@/\s]+)@")
 _SECRET_PAIR_RE = re.compile(
     r"(?i)\b(SECRET_KEY|PASSWORD|TOKEN|API_KEY|AUTHORIZATION)\b\s*([=:])\s*([^\s,;]+)"
@@ -152,7 +155,7 @@ def _default_logging_config(log_level: str) -> dict:
                 "class": "logging.handlers.RotatingFileHandler",
                 "level": log_level,
                 "formatter": "standard",
-                "filename": "logs/app.log",
+                "filename": str(_SERVICE_DIR / "logs" / "app.log"),
                 "maxBytes": 5 * 1024 * 1024,
                 "backupCount": 5,
                 "encoding": "utf-8",
@@ -172,16 +175,23 @@ def configure_logging() -> None:
     if root_logger.handlers:
         return
 
-    logs_dir = Path("logs")
+    logs_dir = _SERVICE_DIR / "logs"
     logs_dir.mkdir(exist_ok=True)
 
     log_level = "DEBUG" if settings.DEBUG else "INFO"
-    # prefer project-level logs/config/logging.yaml
-    config_path = Path("logs/config/logging.yaml")
+    # prefer service-level logs/config/logging.yaml
+    config_path = _SERVICE_DIR / "logs" / "config" / "logging.yaml"
 
     if config_path.exists():
         with config_path.open("r", encoding="utf-8") as config_file:
             logging_config = yaml.safe_load(config_file)
+        # Rewrite any relative log file paths to absolute paths under _SERVICE_DIR/logs/
+        for handler in logging_config.get("handlers", {}).values():
+            if "filename" in handler:
+                fname = handler["filename"]
+                # Replace leading 'logs/' with absolute service logs dir
+                if not Path(fname).is_absolute():
+                    handler["filename"] = str(_SERVICE_DIR / fname)
     else:
         logging_config = _default_logging_config(log_level)
 

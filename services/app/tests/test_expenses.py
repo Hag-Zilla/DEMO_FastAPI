@@ -1,6 +1,5 @@
 """Expense management endpoint tests."""
 
-import pytest
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -203,6 +202,7 @@ class TestUpdateDeleteExpense:
         # This is actually the current user's expense, so should work
         # Instead, create expense for another user
         from app.database.models.expense import Expense
+
         other_expense = Expense(
             description="Secret expense",
             amount=999.0,

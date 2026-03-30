@@ -1,6 +1,6 @@
 # 🚀 Refactoring Summary - Restructuration & Tests & CI/CD
 
-**Date**: March 29, 2026  
+**Date**: March 29, 2026
 **Status**: ✅ Complete
 
 ---
@@ -130,8 +130,8 @@ pytest tests/test_auth.py::TestLogin -v
 ```
 
 ### CI Light Workflow (Dev Branch) 🟢
-**Trigger**: Push to `dev` branch  
-**Duration**: ~2-3 minutes  
+**Trigger**: Push to `dev` branch
+**Duration**: ~2-3 minutes
 **Pattern**: Selective testing based on changes
 
 #### Jobs
@@ -147,8 +147,8 @@ Automatically detects which services changed and runs relevant tests:
 - Similar for users, expenses, alerts, reports
 
 ### CI Full Workflow (Main Branch) 🔴
-**Trigger**: Push to `main` branch  
-**Duration**: ~8-10 minutes  
+**Trigger**: Push to `main` branch
+**Duration**: ~8-10 minutes
 **Pattern**: Comprehensive validation before merge
 
 #### Jobs
