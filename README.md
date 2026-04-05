@@ -252,29 +252,52 @@ make help     # Show all available targets
 
 ### Running Tests
 
-Comprehensive pytest framework with 20+ tests covering authentication, user management, and expenses:
+Comprehensive test suite covering unit, integration, contract, and load testing:
+
+**Unit & Integration Tests**
+
+Run the pytest suite:
 
 ```bash
 # Run all tests
-pytest
+make test
 
 # Run with coverage report
-pytest --cov=app --cov-report=html
+pytest --cov=services/api --cov-report=html
 
 # Run specific test file
-pytest tests/test_auth.py -v
+pytest services/api/tests/test_auth.py -v
 
 # Run specific test class
-pytest tests/test_users.py::TestAdminUserOperations -v
+pytest services/api/tests/test_users.py::TestAdminUserOperations -v
 ```
 
-**Test Structure:**
-- `tests/conftest.py` - Pytest fixtures (database, authentication, test data)
-- `tests/test_auth.py` - Authentication & token tests
-- `tests/test_users.py` - User management & admin operations
-- `tests/test_expenses.py` - Expense CRUD & filtering tests
+**Contract Testing (Schemathesis)**
 
-For detailed testing guide, see [tests/README.md](tests/README.md).
+Auto-generated property tests against OpenAPI schema:
+
+```bash
+make contract-test
+```
+
+Tests verify that all endpoints:
+- Accept documented request formats
+- Return documented response status codes
+- Never crash with 5xx errors
+
+**Load Testing (Locust)**
+
+Test API performance under concurrent user load:
+
+```bash
+# Interactive mode (opens web UI at http://localhost:3389)
+make load-test
+
+# Headless CI mode (20 users, 60 seconds)
+make load-test-headless
+```
+
+Load test scenarios are defined in [services/api/tests/load_tests/locustfile.py](services/api/tests/load_tests/locustfile.py). Uses realistic user workflows (expenses, reports, alerts) to identify performance bottlenecks.
 
 ### CI/CD & Automation
 

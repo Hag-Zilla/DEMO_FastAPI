@@ -18,6 +18,7 @@ dependencies = [
     "slowapi>=0.1.9,<2.0",
     "redis>=5.0,<6.0",
     "prometheus-client>=0.20,<1.0",
+    "fastapi-cache2[redis]>=0.1.8",
 ]
 
 [project.optional-dependencies]
@@ -41,3 +42,9 @@ package = false
 
 [tool.uv.pip]
 strict = true
+
+[dependency-groups]
+dev = [
+    "locust>=2.43.3",
+    "schemathesis>=4.10.2",
+]
