@@ -12,9 +12,9 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 ## 📑 Table of Contents
 
-- [About](#about)
-- [Features](#features)
-- [Quick Start](#quick-start)
+- [📖 About](#about)
+- [✨ Features](#features)
+- [🚀 Quick Start](#quick-start)
   - [Clone and Setup Environment](#clone-and-setup-environment)
     - [Essential Configuration Variables](#essential-configuration-variables)
     - [Build and Run Services](#build-and-run-services)
@@ -27,16 +27,14 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Running Tests](#running-tests)
   - [CI/CD & Automation](#cicd--automation)
   - [Scripts Management](#scripts-management)
-- [Architecture](#architecture)
-  - [Services Layer](#services-layer)
-- [Project Structure](#project-structure)
-- [Data Structures](#data-structures)
+- [📁 Project Structure](#project-structure)
+- [📊 Data Structures](#data-structures)
   - [Enums](#enums)
   - [ORM Models & Database Schema](#orm-models--database-schema)
   - [API Request/Response Models](#api-requestresponse-models)
   - [Managing the Database](#managing-the-database)
   - [Database Migration](#database-migration)
-- [API Endpoints](#api-endpoints)
+- [🔌 API Endpoints](#api-endpoints)
   - [Role-Based Access Control](#role-based-access-control)
   - [Authentication](#authentication)
   - [User Management](#user-management)
@@ -44,20 +42,16 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Reports](#reports)
   - [Alerts](#alerts)
   - [Health](#health)
-- [Authentication & Authorization](#authentication--authorization)
+- [🔐 Authentication & Authorization](#authentication--authorization)
   - [User Status Workflow](#user-status-workflow)
   - [Role Hierarchy](#role-hierarchy)
   - [Access Control Details](#access-control-details)
-- [Exception Handling](#exception-handling)
-- [🛠️ Code Quality & Development Standards](#-code-quality--development-standards)
-- [📖 Extra documentation](#-extra-documentation)
-  - [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)
-  - [doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)
-  - [doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)
-  - [doc/STANDARDS.md](doc/STANDARDS.md)
-- [📚 Resources](#-resources)
-- [🤝 Contributing](#-contributing)
-- [💬 Support](#-support)
+- [⚠️ Exception Handling](#exception-handling)
+- [🛠️ Code Quality & Development Standards](#code-quality--development-standards)
+- [📖 Extra documentation](#extra-documentation)
+- [📚 Resources](#resources)
+- [🤝 Contributing](#contributing)
+- [💬 Support](#support)
 - [📜 License](#-license)
 
 ---
@@ -694,21 +688,9 @@ All exceptions are caught by global exception handlers in `app/main.py` and retu
 ## 🛠️ Code Quality & Development Standards
 ---
 
-This project maintains strict code quality standards enforced through automated tools:
+This project maintains strict code quality standards enforced through pre-commit hooks (10+ checks), type hints, Google-style docstrings, and Makefile automation.
 
-- **Pre-commit Hooks**: 10+ automated checks (detect-secrets, ruff, mypy, pydocstyle, shellcheck, etc.)
-- **Code Standards**: Strict naming conventions, Google-style docstrings, type hints, and organization
-- **Type Checking**: Full static type checking with mypy
-- **Formatting**: Auto-formatting with ruff
-- **Development Workflow**: Makefile automation for common tasks
-
-**Quick Setup:**
-```bash
-make install-hooks   # Install pre-commit hooks
-make run-hooks       # Test all hooks on all files
-```
-
-**For detailed information:**
+**For details:**
 - **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
 - **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
 
@@ -739,20 +721,13 @@ For specialized topics and detailed guides:
 ## 🤝 Contributing
 ---
 
-Contributions are welcome! If you have scripts, tools, or improvements to share:
+Contributions are welcome! For detailed guidelines on how to contribute, including:
+- Development setup and environment
+- Code quality standards and style guides
+- Pre-commit hooks and testing requirements
+- Commit message guidelines and PR process
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-tool`)
-3. Commit your changes (`git commit -m 'Add some amazing tool'`)
-4. Push to the branch (`git push origin feature/amazing-tool`)
-5. Open a Pull Request
-
-Please ensure your scripts include:
-- Clear documentation
-- Error handling
-- Usage instructions
-- Comments in English
-
+Please see [**CONTRIBUTING.md**](CONTRIBUTING.md) for complete instructions.
 
 ## 💬 Support
 ---
