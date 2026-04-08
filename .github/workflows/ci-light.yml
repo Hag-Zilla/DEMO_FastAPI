@@ -34,24 +34,24 @@ jobs:
           echo "$CHANGED_FILES"
 
           # Check for core changes
-          if echo "$CHANGED_FILES" | grep -E "^services/app/core/|^services/app/database/"; then
+          if echo "$CHANGED_FILES" | grep -E "^services/api/core/|^services/api/database/"; then
             SERVICES="all"
           fi
 
           # Check service changes
-          if echo "$CHANGED_FILES" | grep "^services/app/routers/auth\|^services/app/services/auth"; then
+          if echo "$CHANGED_FILES" | grep "^services/api/routers/auth\|^services/api/services/auth"; then
             SERVICES="${SERVICES} auth"
           fi
-          if echo "$CHANGED_FILES" | grep "^services/app/routers/users\|^services/app/services/user"; then
+          if echo "$CHANGED_FILES" | grep "^services/api/routers/users\|^services/api/services/user"; then
             SERVICES="${SERVICES} users"
           fi
-          if echo "$CHANGED_FILES" | grep "^services/app/routers/expenses\|^services/app/services/expense"; then
+          if echo "$CHANGED_FILES" | grep "^services/api/routers/expenses\|^services/api/services/expense"; then
             SERVICES="${SERVICES} expenses"
           fi
-          if echo "$CHANGED_FILES" | grep "^services/app/routers/alerts\|^services/app/services/alert"; then
+          if echo "$CHANGED_FILES" | grep "^services/api/routers/alerts\|^services/api/services/alert"; then
             SERVICES="${SERVICES} alerts"
           fi
-          if echo "$CHANGED_FILES" | grep "^services/app/routers/reports\|^services/app/services/report"; then
+          if echo "$CHANGED_FILES" | grep "^services/api/routers/reports\|^services/api/services/report"; then
             SERVICES="${SERVICES} reports"
           fi
 
@@ -91,13 +91,13 @@ jobs:
       - name: Lint with Ruff
         run: |
           pip install ruff
-          ruff check services/app services/app/tests --select E,W,F
+          ruff check services/api services/api/tests --select E,W,F
         continue-on-error: true
 
       - name: Type check with mypy
         run: |
           pip install mypy sqlalchemy-stubs types-all
-          mypy services/app --ignore-missing-imports
+          mypy services/api --ignore-missing-imports
         continue-on-error: true
 
       - name: Run unit tests (modified services)
@@ -105,10 +105,10 @@ jobs:
           SERVICES="${{ needs.detect-changes.outputs.modified-services }}"
 
           if [ "$SERVICES" = "all" ]; then
-            pytest services/app/tests/ -v --tb=short
+            pytest services/api/tests/ -v --tb=short
           else
             # Run selective tests based on modified services
-            pytest services/app/tests/ -v --tb=short -k "$SERVICES"
+            pytest services/api/tests/ -v --tb=short -k "$SERVICES"
           fi
 
   security-check:

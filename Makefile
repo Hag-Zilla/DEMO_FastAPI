@@ -124,7 +124,7 @@ run:
 	$(PYTHON) -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
-	pytest -q
+	pytest --tb=short -W default
 
 lint:
 	$(PYTHON) -m ruff check services/api
