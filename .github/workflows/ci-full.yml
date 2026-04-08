@@ -1,0 +1,298 @@
+name: CI Full (Main Branch)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  unit-tests:
+    name: Unit Tests (All)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run unit tests with coverage
+        run: |
+          pytest services/api/tests/ -v --cov=services/api --cov-report=xml --cov-report=html --tb=short
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Archive coverage reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-report-3.14
+          path: htmlcov
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      sqlite:
+        image: busybox
+        options: --name sqlite
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Run integration tests
+        run: |
+          pytest services/api/tests/ -v -m "integration" --tb=short
+        continue-on-error: true
+
+  lint-and-format:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Install linting tools
+        run: |
+          pip install ruff pylint flake8 black isort
+
+      - name: Check code formatting with Black
+        run: |
+          black --check services/api services/api/tests
+        continue-on-error: true
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only services/api services/api/tests
+        continue-on-error: true
+
+      - name: Lint with Ruff
+        run: |
+          ruff check services/api services/api/tests
+        continue-on-error: true
+
+      - name: Lint with Flake8
+        run: |
+          flake8 services/api services/api/tests --max-line-length=100 --extend-ignore=E203,W503
+        continue-on-error: true
+
+  type-checking:
+    name: Type Checking (mypy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install mypy sqlalchemy-stubs types-all
+
+      - name: Run type checker
+        run: |
+          mypy services/api --ignore-missing-imports --junit-xml=type-results.xml
+        continue-on-error: true
+
+      - name: Upload type results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mypy-results
+          path: type-results.xml
+
+  security-audit:
+    name: Security & Dependency Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Install security tools
+        run: |
+          pip install safety bandit
+
+      - name: Run safety check on dependencies
+        run: |
+          safety check --json > safety-report.json
+        continue-on-error: true
+
+      - name: Run bandit security check
+        run: |
+          bandit -r services/api -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+
+      - name: Secret scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+        continue-on-error: true
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: services/api/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        continue-on-error: true
+
+  pre-commit:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Run pre-commit hooks
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
+  api-documentation:
+    name: API Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Check API schema generation
+        run: |
+          python -c "import sys; sys.path.insert(0, 'services'); from app.main import app; import json; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
+        continue-on-error: true
+
+  final-status:
+    name: CI Full Status
+    needs: [unit-tests, integration-tests, lint-and-format, type-checking, security-audit, docker-build, pre-commit, api-documentation]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Determine job status
+        run: |
+          echo "=== CI FULL SUMMARY ==="
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
+          echo "Type Checking: ${{ needs.type-checking.result }}"
+          echo "Security Audit: ${{ needs.security-audit.result }}"
+          echo "Docker Build: ${{ needs.docker-build.result }}"
+          echo "Pre-commit: ${{ needs.pre-commit.result }}"
+          echo "API Docs: ${{ needs.api-documentation.result }}"
+
+          # Fail if critical jobs failed
+          if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
+            echo "❌ Unit tests failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.pre-commit.result }}" = "failure" ]; then
+            echo "❌ Pre-commit checks failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.type-checking.result }}" = "failure" ]; then
+            echo "⚠️  Type checking failed - review recommended"
+          fi
+
+          echo "✅ CI Full passed - ready for merge"
+
+  notify:
+    name: Notify Completion
+    needs: [final-status]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: CI Completion Status
+        run: |
+          if [ "${{ needs.final-status.result }}" = "success" ]; then
+            echo "✅ All CI checks passed!"
+          else
+            echo "❌ CI checks failed"
+            exit 1
+          fi

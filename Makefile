@@ -11,8 +11,8 @@ help:
 	@echo "  make sync             Install/sync dependencies from uv.lock"
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
-	@echo "  make lint             Run flake8 linting"
-	@echo "  make format           Format code with black"
+	@echo "  make lint             Run ruff linting"
+	@echo "  make format           Format code with ruff"
 	@echo ""
 	@echo "=== DEPENDENCY MANAGEMENT ==="
 	@echo "  make lock             Refresh uv.lock"
@@ -31,6 +31,9 @@ help:
 	@echo "  make prometheus       Open Prometheus UI (http://localhost:9090)"
 	@echo "  make grafana          Open Grafana UI (http://localhost:3000)"
 	@echo "  make metrics          View raw metrics endpoint (http://localhost:8000/metrics)"
+	@echo "  make contract-test    Run Schemathesis contract / property tests"
+	@echo "  make load-test        Start Locust load test (interactive, needs running API)"
+	@echo "  make load-test-headless Run Locust headless (CI mode, 20u/60s)"
 	@echo ""
 	@echo "=== CODE QUALITY & GIT HOOKS ==="
 	@echo "  make install-hooks    Install pre-commit hooks"
@@ -46,13 +49,13 @@ help:
 
 # Wrapper (interactive) for setup.sh (default: uv)
 init:
-	bash setup.sh
+	bash startup/setup.sh
 
 init-uv:
-	printf "uv\n" | bash setup.sh
+	printf "uv\n" | bash startup/setup.sh
 
 init-venv:
-	printf "venv\n" | bash setup.sh
+	printf "venv\n" | bash startup/setup.sh
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:
@@ -118,16 +121,16 @@ export-reqs: lock
 
 # Run in development mode (auto-reload)
 run:
-	$(PYTHON) -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+	$(PYTHON) -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
 	pytest -q
 
 lint:
-	flake8 app
+	$(PYTHON) -m ruff check services/api
 
 format:
-	black app
+	$(PYTHON) -m ruff format services/api
 
 # Admin bootstrap (interactive)
 bootstrap-admin:
@@ -202,6 +205,22 @@ metrics:
 	@echo "Fetching raw metrics from FastAPI..."
 	curl -s http://localhost:8000/metrics | head -50
 	@echo "\n\n(Showing first 50 lines. For all metrics: curl http://localhost:8000/metrics)"
+
+# Contract testing (Schemathesis — requires no running server, tests via ASGI)
+contract-test:
+	@echo "Running Schemathesis contract tests..."
+	pytest services/api/tests/test_contract.py -v
+
+# Load testing (Locust — requires a running API server)
+load-test:
+	@echo "Starting Locust load test against http://localhost:8000 ..."
+	@echo "  Use --users / --spawn-rate / --run-time --headless for CI mode."
+	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000
+
+# Headless load test (CI-friendly, 20 users, 60 s)
+load-test-headless:
+	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000 \
+		--users 20 --spawn-rate 5 --run-time 60s --headless
 
 # ============================================================================
 # Code Quality & Git Hooks

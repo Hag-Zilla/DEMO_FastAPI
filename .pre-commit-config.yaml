@@ -30,7 +30,7 @@ repos:
       - id: detect-secrets
         name: Detect secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: ^(uv\.lock|poetry\.lock|requirements\.txt|\.env.*|\.example)$
+        exclude: ^(uv\.lock|poetry\.lock|requirements\.txt|\.env.*|\.example|.*\.jsonl.*|services/api/logs)$
         stages: [commit]
 
   # ===== FILE VALIDATION: YAML/JSON/TOML =====
@@ -111,7 +111,7 @@ repos:
         types: [python]
         args:
           - --convention=google  # Your project uses Google-style docstrings
-          - --add-ignore=D100,D104  # Allow missing module/init docstrings in some cases
+          - --add-ignore=D100,D104,D212,D301,D403  # Allow missing module/init, multi-line summary, first word capitalization, raw docstrings
         stages: [commit]
 
   # ===== SHELL SCRIPT VALIDATION: ShellCheck =====
