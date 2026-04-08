@@ -31,7 +31,7 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          pytest services/app/tests/ -v --cov=services/app --cov-report=xml --cov-report=html --tb=short
+          pytest services/api/tests/ -v --cov=services/api --cov-report=xml --cov-report=html --tb=short
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -74,7 +74,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          pytest services/app/tests/ -v -m "integration" --tb=short
+          pytest services/api/tests/ -v -m "integration" --tb=short
         continue-on-error: true
 
   lint-and-format:
@@ -95,22 +95,22 @@ jobs:
 
       - name: Check code formatting with Black
         run: |
-          black --check services/app services/app/tests
+          black --check services/api services/api/tests
         continue-on-error: true
 
       - name: Check import sorting with isort
         run: |
-          isort --check-only services/app services/app/tests
+          isort --check-only services/api services/api/tests
         continue-on-error: true
 
       - name: Lint with Ruff
         run: |
-          ruff check services/app services/app/tests
+          ruff check services/api services/api/tests
         continue-on-error: true
 
       - name: Lint with Flake8
         run: |
-          flake8 services/app services/app/tests --max-line-length=100 --extend-ignore=E203,W503
+          flake8 services/api services/api/tests --max-line-length=100 --extend-ignore=E203,W503
         continue-on-error: true
 
   type-checking:
@@ -132,7 +132,7 @@ jobs:
 
       - name: Run type checker
         run: |
-          mypy services/app --ignore-missing-imports --junit-xml=type-results.xml
+          mypy services/api --ignore-missing-imports --junit-xml=type-results.xml
         continue-on-error: true
 
       - name: Upload type results
@@ -165,7 +165,7 @@ jobs:
 
       - name: Run bandit security check
         run: |
-          bandit -r services/app -f json -o bandit-report.json
+          bandit -r services/api -f json -o bandit-report.json
         continue-on-error: true
 
       - name: Upload security reports
@@ -199,7 +199,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: services/app/Dockerfile
+          file: services/api/Dockerfile
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

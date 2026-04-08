@@ -151,8 +151,8 @@ services/data/
 # Project-specific directories and files
 followup.txt
 .admin_bootstrap_done
-services/app/logs/*.log
-services/app/logs/*.jsonl
+services/api/logs/*.log
+services/api/logs/*.jsonl
 
 # Environment files (actual files - never commit, use templates)
 # Templates (.example) ARE committed as documentation

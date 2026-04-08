@@ -372,6 +372,56 @@ git push origin feat/my-feature
 
 ---
 
+## Testing
+
+### Unit & Integration Tests
+
+Run the pytest suite:
+
+```bash
+make test
+```
+
+For coverage report:
+
+```bash
+pytest --cov=services/api --cov-report=html
+```
+
+Tests use an in-memory SQLite database with transaction rollback per test for blazing-fast execution.
+
+### Contract Testing (Schemathesis)
+
+Auto-generated property tests against OpenAPI schema:
+
+```bash
+make contract-test
+```
+
+Tests verify that all endpoints:
+- Accept documented request formats
+- Return documented response status codes
+- Never crash with 5xx errors
+
+### Load Testing (Locust)
+
+Test API performance under concurrent load:
+
+```bash
+make load-test              # Interactive web UI (http://localhost:3389)
+make load-test-headless     # CI mode (20 users, 60s)
+```
+
+Scenarios run realistic user workflows — see [services/api/tests/load_tests/locustfile.py](../../services/api/tests/load_tests/locustfile.py).
+
+**Typical use cases:**
+- Identify slow endpoints
+- Verify caching effectiveness (alerts, reports should be fast)
+- Measure max RPS before degradation
+- Validate response time SLAs
+
+---
+
 ## Troubleshooting
 
 ### Commit fails due to hooks
