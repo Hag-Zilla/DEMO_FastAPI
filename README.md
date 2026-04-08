@@ -111,10 +111,7 @@ nano .env
 Quick generation:
 ```bash
 # Generate SECRET_KEY
-ossl rand -hex 32
-
-# For Docker, also set REDIS_PASSWORD
-openssl rand -hex 16
+openssl rand -hex 32
 ```
 
 > **For Docker development and production**, see [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#environment-configuration) for environment-specific configuration files (`.env.docker.dev`, `.env.docker.prod`) and detailed setup instructions.

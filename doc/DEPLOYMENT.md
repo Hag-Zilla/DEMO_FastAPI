@@ -55,6 +55,10 @@ make init-env
 # 1. Configure development environment
 nano .env.docker.dev
 
+# Settings to update:
+# - SECRET_KEY (min 32 random chars - use: openssl rand -hex 32)
+# - REDIS_PASSWORD (use: openssl rand -hex 16)
+
 # 2. Build and start services (firewall optional in dev)
 make docker-build
 make docker-up
