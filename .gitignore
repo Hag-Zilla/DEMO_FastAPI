@@ -152,6 +152,7 @@ services/data/
 followup.txt
 .admin_bootstrap_done
 services/api/logs/*.log
+services/api/logs/*.log.*
 services/api/logs/*.jsonl
 
 # Environment files (actual files - never commit, use templates)
