@@ -242,7 +242,7 @@ jobs:
 
       - name: Check API schema generation
         run: |
-          python -c "import sys; sys.path.insert(0, 'services'); from app.main import app; import json; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
+          python -c "import sys; sys.path.insert(0, 'services'); from api.main import api; import json; schema = api.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
         continue-on-error: true
 
   final-status:
