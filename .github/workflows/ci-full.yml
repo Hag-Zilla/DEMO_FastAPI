@@ -42,7 +42,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Archive coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report-3.14
@@ -136,7 +136,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload type results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mypy-results
@@ -156,11 +156,11 @@ jobs:
 
       - name: Install security tools
         run: |
-          pip install safety bandit
+          pip install pip-audit bandit
 
-      - name: Run safety check on dependencies
+      - name: Run pip-audit check on dependencies
         run: |
-          safety check --json > safety-report.json
+          pip-audit --desc > pip-audit-report.json
         continue-on-error: true
 
       - name: Run bandit security check
@@ -169,12 +169,12 @@ jobs:
         continue-on-error: true
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-reports
           path: |
-            safety-report.json
+            pip-audit-report.json
             bandit-report.json
 
       - name: Secret scanning
