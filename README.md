@@ -19,7 +19,6 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
     - [Essential Configuration Variables](#essential-configuration-variables)
     - [Build and Run Services](#build-and-run-services)
     - [Verify Installation](#verify-installation)
-  - [Advanced Workflows](#advanced-workflows)
   - [Configuration](#configuration)
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
@@ -180,36 +179,6 @@ curl -X POST "http://localhost:8000/api/v1/users/create-active" \
   -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
 
-
-### Advanced Workflows
-
-#### Contributor (use committed lock)
-
-If `uv.lock` or `requirements.txt` is committed:
-
-```bash
-make init        # Install exact versions from lock
-make test
-make run
-```
-
-#### Maintainer (update dependencies)
-
-To update dependencies and produce new lock:
-
-```bash
-# Update pyproject.toml as needed
-make lock                 # generates/refreshes uv.lock
-make export-reqs          # export pinned requirements.txt from uv.lock
-git add pyproject.toml uv.lock requirements.txt
-git commit -m "Update deps: refresh uv.lock and requirements.txt"
-git push
-```
-
-**Notes:**
-- If `uv.lock` is committed, contributors do NOT need to run `make lock`
-- If `requirements.txt` is present, venv users can install directly without uv
-# Generate lock on CI or platform matching production: `uv lock --python 3.14`
 
 ### Configuration
 
