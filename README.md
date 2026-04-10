@@ -127,38 +127,55 @@ make init
 # Activate virtual environment
 source .venv/bin/activate  # or ./venv/bin/activate
 
+# Install development dependencies (pre-commit, pytest, ruff, mypy, etc.)
+make sync-dev
+
+# Setup pre-commit hooks
+make install-hooks
+
 # Start the API
 make run
 ```
+
+**Notes:**
+- `make init` installs runtime dependencies only
+- `make sync-dev` adds development tools (pre-commit, testing, linting)
+- `make install-hooks` configures git pre-commit hooks for code quality checks
 
 For **Docker development** and **Docker production** setup, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
 
 ### Verify Installation
 
-**Check if services are running:**
+**Check if the API is running:**
 
 ```bash
-# Local development
 curl http://localhost:8000/health
-
-# Docker
-docker-compose ps
-curl http://localhost/health
 ```
 
-**Access the API:**
+**Access the interactive API documentation:**
 
-- **Interactive Docs (Swagger)**: http://localhost:8000/docs
-- **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
-- **Health Checks**:
-  - Liveness: http://localhost:8000/health/live
-  - Readiness: http://localhost:8000/health/ready
-  - Startup: http://localhost:8000/health/startup
+- **Swagger UI (Interactive)**: http://localhost:8000/docs
+- **ReDoc (Alternative)**: http://localhost:8000/redoc
 
-**Example request:**
+**Available health check endpoints:**
 
 ```bash
-curl -X POST "http://localhost:8000/users/create" \
+# Liveness check
+curl http://localhost:8000/health/live
+
+# Readiness check (includes database ping)
+curl http://localhost:8000/health/ready
+
+# Startup phase check
+curl http://localhost:8000/health/startup
+```
+
+> **For Docker setup and verification**, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
+
+**Example API request:**
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/users/create-active" \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
@@ -192,7 +209,7 @@ git push
 **Notes:**
 - If `uv.lock` is committed, contributors do NOT need to run `make lock`
 - If `requirements.txt` is present, venv users can install directly without uv
-- Generate lock on CI or platform matching production: `uv lock --python 3.14`
+# Generate lock on CI or platform matching production: `uv lock --python 3.14`
 
 ### Configuration
 

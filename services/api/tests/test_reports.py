@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from api.core.enums import ExpenseCategory, UserRole, UserStatus
-from api.core.security import get_password_hash
-from api.database.models.expense import Expense
-from api.database.models.user import User
+from services.api.core.enums import ExpenseCategory, UserRole, UserStatus
+from services.api.core.security import get_password_hash
+from services.api.database.models.expense import Expense
+from services.api.database.models.user import User
 
 
 class TestMonthlyReport:

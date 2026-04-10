@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 
-from api.core.config import settings
+from services.api.core.config import settings
 
 
 # ============================================================================

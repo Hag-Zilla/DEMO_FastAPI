@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Numeric, Enum
 from sqlalchemy.orm import relationship
 
 from ..session import Base
-from api.core.enums import UserRole, UserStatus
+from services.api.core.enums import UserRole, UserStatus
 
 
 class User(Base):

@@ -2,7 +2,7 @@
 
 from fastapi.testclient import TestClient
 
-from api.database.models.user import User
+from services.api.database.models.user import User
 
 
 class TestLogin:

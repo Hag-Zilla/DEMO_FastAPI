@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, DateTime, E
 from sqlalchemy.orm import relationship
 
 from ..session import Base
-from api.core.enums import ExpenseCategory
+from services.api.core.enums import ExpenseCategory
 
 
 class Expense(Base):

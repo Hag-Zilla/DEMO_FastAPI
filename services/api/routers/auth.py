@@ -4,6 +4,6 @@ All real implementation lives in api.auth.router.
 This module is kept for import-path backward compatibility.
 """
 
-from api.auth.router import router  # noqa: F401
+from services.api.auth.router import router  # noqa: F401
 
 __all__ = ["router"]

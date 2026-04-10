@@ -3,8 +3,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from api.database.models.user import User
-from api.core.enums import UserRole, UserStatus
+from services.api.database.models.user import User
+from services.api.core.enums import UserRole, UserStatus
 
 
 class TestCreateUser:

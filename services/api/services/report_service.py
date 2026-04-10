@@ -6,8 +6,8 @@ from typing import Dict, Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from api.core.logging import get_logger
-from api.database.models.expense import Expense
+from services.api.core.logging import get_logger
+from services.api.database.models.expense import Expense
 
 logger = get_logger(__name__)
 
@@ -144,7 +144,7 @@ class ReportService:
         Returns:
             Dict with report_type, total_across_users, total_expenses_count, by_user.
         """
-        from api.database.models.user import User
+        from services.api.database.models.user import User
 
         # Totals across all users
         total_query = db.query(func.sum(Expense.amount)).scalar()  # pylint: disable=not-callable

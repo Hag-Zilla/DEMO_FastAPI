@@ -4,16 +4,16 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from api.core.exceptions import (
+from services.api.core.exceptions import (
     AuthorizationException,
     ConflictException,
     ResourceNotFoundException,
 )
-from api.core.enums import UserRole, UserStatus
-from api.core.logging import get_logger
-from api.core.security import get_password_hash
-from api.database.models.user import User
-from api.schemas.user import UserCreate, UserSelfUpdate, UserUpdate
+from services.api.core.enums import UserRole, UserStatus
+from services.api.core.logging import get_logger
+from services.api.core.security import get_password_hash
+from services.api.database.models.user import User
+from services.api.schemas.user import UserCreate, UserSelfUpdate, UserUpdate
 
 logger = get_logger(__name__)
 
@@ -56,6 +56,46 @@ class UserService:
         db.commit()
         db.refresh(db_user)
         logger.info("User created with PENDING status: %s", user.username)
+        return db_user
+
+    @staticmethod
+    def create_user_active(db: Session, user: UserCreate) -> User:
+        """
+        Create a new standard user account with ACTIVE status (development/testing only).
+
+        This bypasses the normal approval workflow. Useful for dev/test environments where
+        you want immediate login capability without admin approval.
+
+        Args:
+            db: Database session
+            user: UserCreate schema with username, password, budget
+
+        Returns:
+            Newly created User model instance
+
+        Raises:
+            ConflictException: If username already exists
+        """
+        # Check if username already exists
+        existing_user = db.query(User).filter(User.username == user.username).first()
+        if existing_user:
+            logger.warning(
+                "Attempt to create user with existing username: %s", user.username
+            )
+            raise ConflictException(f"Username '{user.username}' already taken")
+
+        hashed_password = get_password_hash(user.password)
+        db_user = User(
+            username=user.username,
+            hashed_password=hashed_password,
+            budget=user.budget,
+            role=UserRole.USER,  # Force role to 'user' regardless of input
+            status=UserStatus.ACTIVE,  # Directly ACTIVE (dev/test only)
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        logger.info("User created with ACTIVE status (dev/test): %s", user.username)
         return db_user
 
     @staticmethod

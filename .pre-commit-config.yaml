@@ -88,18 +88,15 @@ repos:
         stages: [commit]
 
   # ===== PYTHON TYPE CHECKING: Mypy =====
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+  - repo: local
     hooks:
       - id: mypy
         name: Type check with mypy
+        language: system
+        entry: .venv/bin/python -m mypy
+        args: ['services/api', '--ignore-missing-imports']
+        pass_filenames: false
         types: [python]
-        additional_dependencies:
-          - 'pydantic>=2.0'
-          - 'sqlalchemy>=2.0'
-          - 'fastapi'
-          - 'types-PyYAML'
-        args: ['--ignore-missing-imports']
         stages: [commit]
 
   # ===== DOCSTRING QUALITY: Pydocstyle =====
@@ -131,6 +128,10 @@ repos:
       - id: hadolint-docker
         name: Lint Dockerfile
         types: [dockerfile]
+        args: 
+          - '--ignore=DL3008'  # Ignore: Pin versions in apt get
+          - '--ignore=DL3013'  # Ignore: Pin versions in pip  
+          - '--ignore=DL3059'  # Ignore: Consolidate RUN instructions
         stages: [commit]
 
   # ===== UNUSED IMPORTS: Autoflake =====

@@ -10,12 +10,12 @@ from jwt import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from api.core.config import settings
-from api.core.exceptions import AuthenticationException, AuthorizationException
-from api.core.enums import UserRole, UserStatus
-from api.core.logging import get_logger
-from api.database.session import get_db
-from api.database.models.user import User as UserModel
+from services.api.core.config import settings
+from services.api.core.exceptions import AuthenticationException, AuthorizationException
+from services.api.core.enums import UserRole, UserStatus
+from services.api.core.logging import get_logger
+from services.api.database.session import get_db
+from services.api.database.models.user import User as UserModel
 
 logger = get_logger(__name__)
 
@@ -39,11 +39,7 @@ def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
         # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to PyJWT
-        secret = (
-            settings.SECRET_KEY.get_secret_value()
-            if hasattr(settings.SECRET_KEY, "get_secret_value")
-            else settings.SECRET_KEY
-        )
+        secret: str = settings.SECRET_KEY.get_secret_value()
         payload = jwt.decode(
             token,
             secret,
@@ -140,11 +136,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
             minutes=settings.JWT_EXPIRATION_MINUTES
         )
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    secret = (
-        settings.SECRET_KEY.get_secret_value()
-        if hasattr(settings.SECRET_KEY, "get_secret_value")
-        else settings.SECRET_KEY
-    )
+    secret: str = settings.SECRET_KEY.get_secret_value()
     encoded_jwt = jwt.encode(
         to_encode,
         secret,
