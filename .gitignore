@@ -154,6 +154,7 @@ followup.txt
 services/api/logs/*.log
 services/api/logs/*.log.*
 services/api/logs/*.jsonl
+services/api/logs/*.jsonl.*
 
 # Environment files (actual files - never commit, use templates)
 # Templates (.example) ARE committed as documentation
