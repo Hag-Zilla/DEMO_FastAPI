@@ -291,8 +291,10 @@ Two-tier GitHub Actions pipelines for automated quality assurance:
 - Full unit + integration tests
 - Type checking (mypy)
 - Code quality (Black, isort, Ruff, Flake8)
-- Security scanning (bandit, safety, TruffleHog)
+- Security scanning (bandit, pip-audit, TruffleHog)
 - Docker build validation
+- Pre-commit hooks validation
+- API schema generation check
 - Coverage reporting (Codecov)
 
 Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.yml`
@@ -427,8 +429,11 @@ DEMO_FastAPI/
 │   ├── Makefile                    # Build, run, and deployment automation
 │   ├── pyproject.toml              # uv project config + dependency constraints
 │   ├── pytest.ini                  # Pytest configuration
+│   ├── mypy.ini                    # mypy type checker configuration
 │   ├── requirements.txt            # Python dependencies (exported from uv.lock)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
+│   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
+│   ├── .python-version             # Python version pin for pyenv (3.14)
 │   ├── .env.example                # Dev environment variables template
 │   ├── .env.docker.dev.example     # Docker dev environment template
 │   ├── .env.docker.prod.example    # Docker production environment template
