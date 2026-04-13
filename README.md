@@ -40,6 +40,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Expenses](#expenses)
   - [Reports](#reports)
   - [Alerts](#alerts)
+  - [Analytics](#analytics)
   - [Health](#health)
 - [🔐 Authentication & Authorization](#authentication--authorization)
   - [User Status Workflow](#user-status-workflow)
@@ -511,10 +512,9 @@ class ExpenseCategory(str, Enum):
 | id | INTEGER | Primary Key | Auto-increment |
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
-| budget | FLOAT | NOT NULL | Monthly budget limit |
+| budget | NUMERIC(12,2) | NOT NULL | Monthly budget limit |
 | role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, moderator, user |
 | status | ENUM(UserStatus) | NOT NULL, default="pending" | Values: pending, active, disabled |
-| disabled | BOOLEAN | default=False | Legacy account status field |
 
 **ORM Model**: `services/api/database/models/user.py`
 
@@ -524,7 +524,7 @@ class ExpenseCategory(str, Enum):
 |--------|------|-------------|-------|
 | id | INTEGER | Primary Key | Auto-increment |
 | description | STRING | NOT NULL | Expense description |
-| amount | FLOAT | NOT NULL | Amount > 0 |
+| amount | NUMERIC(12,2) | NOT NULL | Amount > 0 |
 | date | DATETIME | NOT NULL | When incurred (default=now) |
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
 | user_id | INTEGER | Foreign Key → users.id | Expense owner |
@@ -617,6 +617,12 @@ All endpoints have defined permission requirements:
 | Endpoint | Method | Role | Description |
 |----------|--------|------|-------------|
 | `/alerts/` | GET | 🔵 USER | Check for budget overruns |
+
+### Analytics
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, Prometheus counters) |
 
 ### Health
 
