@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from api.core.config import settings
+from services.api.core.config import settings
 
 
 # ============================================================================

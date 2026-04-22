@@ -3,8 +3,8 @@
 import pytest
 from datetime import timedelta
 
-from api.core.exceptions import AuthenticationException
-from api.core.security import (
+from services.api.core.exceptions import AuthenticationException
+from services.api.core.security import (
     create_access_token,
     decode_jwt_token,
     get_password_hash,

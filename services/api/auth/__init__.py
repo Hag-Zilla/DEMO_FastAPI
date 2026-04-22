@@ -7,8 +7,8 @@ This package owns:
 - Auth-specific Pydantic schemas (Token, TokenData)
 
 Usage from the rest of the codebase:
-    from api.auth import router      # mount in main.py
-    from api.auth import AuthService  # if needed in other services
+    from services.api.auth import router      # mount in main.py
+    from services.api.auth import AuthService  # if needed in other services
 """
 
 from .router import router

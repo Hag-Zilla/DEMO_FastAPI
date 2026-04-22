@@ -8,7 +8,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
-![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Docker](https://img.shields.io/badge/docker-✓-blue.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
+![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Docker](https://img.shields.io/badge/docker-✓-blue.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci-full.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
 
 ## 📑 Table of Contents
 
@@ -16,10 +16,9 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 - [✨ Features](#features)
 - [🚀 Quick Start](#quick-start)
   - [Clone and Setup Environment](#clone-and-setup-environment)
-    - [Essential Configuration Variables](#essential-configuration-variables)
-    - [Build and Run Services](#build-and-run-services)
-    - [Verify Installation](#verify-installation)
-  - [Advanced Workflows](#advanced-workflows)
+  - [Essential Configuration Variables](#essential-configuration-variables)
+  - [Build and Run Services](#build-and-run-services)
+  - [Verify Installation](#verify-installation)
   - [Configuration](#configuration)
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
@@ -41,6 +40,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Expenses](#expenses)
   - [Reports](#reports)
   - [Alerts](#alerts)
+  - [Analytics](#analytics)
   - [Health](#health)
 - [🔐 Authentication & Authorization](#authentication--authorization)
   - [User Status Workflow](#user-status-workflow)
@@ -127,72 +127,59 @@ make init
 # Activate virtual environment
 source .venv/bin/activate  # or ./venv/bin/activate
 
+# Install development dependencies (pre-commit, pytest, ruff, mypy, etc.)
+make sync-dev
+
+# Setup pre-commit hooks
+make install-hooks
+
 # Start the API
 make run
 ```
+
+**Notes:**
+- `make init` installs runtime dependencies only
+- `make sync-dev` adds development tools (pre-commit, testing, linting)
+- `make install-hooks` configures git pre-commit hooks for code quality checks
 
 For **Docker development** and **Docker production** setup, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
 
 ### Verify Installation
 
-**Check if services are running:**
+**Check if the API is running:**
 
 ```bash
-# Local development
 curl http://localhost:8000/health
-
-# Docker
-docker-compose ps
-curl http://localhost/health
 ```
 
-**Access the API:**
+**Access the interactive API documentation:**
 
-- **Interactive Docs (Swagger)**: http://localhost:8000/docs
-- **Alternative Docs (ReDoc)**: http://localhost:8000/redoc
-- **Health Checks**:
-  - Liveness: http://localhost:8000/health/live
-  - Readiness: http://localhost:8000/health/ready
-  - Startup: http://localhost:8000/health/startup
+- **Swagger UI (Interactive)**: http://localhost:8000/docs
+- **ReDoc (Alternative)**: http://localhost:8000/redoc
 
-**Example request:**
+**Available health check endpoints:**
 
 ```bash
-curl -X POST "http://localhost:8000/users/create" \
+# Liveness check
+curl http://localhost:8000/health/live
+
+# Readiness check (includes database ping)
+curl http://localhost:8000/health/ready
+
+# Startup phase check
+curl http://localhost:8000/health/startup
+```
+
+> **For Docker setup and verification**, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
+
+**Example API request:**
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/users/create-active" \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
 
-
-### Advanced Workflows
-
-#### Contributor (use committed lock)
-
-If `uv.lock` or `requirements.txt` is committed:
-
-```bash
-make init        # Install exact versions from lock
-make test
-make run
-```
-
-#### Maintainer (update dependencies)
-
-To update dependencies and produce new lock:
-
-```bash
-# Update pyproject.toml as needed
-make lock                 # generates/refreshes uv.lock
-make export-reqs          # export pinned requirements.txt from uv.lock
-git add pyproject.toml uv.lock requirements.txt
-git commit -m "Update deps: refresh uv.lock and requirements.txt"
-git push
-```
-
-**Notes:**
-- If `uv.lock` is committed, contributors do NOT need to run `make lock`
-- If `requirements.txt` is present, venv users can install directly without uv
-- Generate lock on CI or platform matching production: `uv lock --python 3.14`
 
 ### Configuration
 
@@ -206,12 +193,12 @@ Environment variables & secrets
 | `.env.docker.dev` | Dev Docker (full stack) |
 | `.env.docker.prod` | Production |
 
-Settings are loaded via **Pydantic Settings** (`app/core/config.py`) with validation at startup.
+Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) with validation at startup.
 
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
 - `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
-- Run setup with: `bash startup/setup.sh`
+- Run setup with: `make init`
 
 For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configuration in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#configuration).
 
@@ -219,9 +206,9 @@ For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configurati
 
 Logs are written to:
 - **Console**: For development feedback
-- **File**: `services/app/logs/app.log` for production monitoring
+- **File**: `services/api/logs/app.log`
 
-Configured via YAML in `services/app/logs/config/logging.yaml`, loaded by `services/app/core/logging.py`.
+Configured via YAML in `services/api/logs/config/logging.yaml`, loaded by `services/api/core/logging.py`.
 
 For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
 
@@ -234,12 +221,10 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 - `make run` — Start the dev server
 - `make test` — Run test suite
 - `make run-hooks` — Run code quality checks
+- `make help` — Show all available targets
 
 **For all available Makefile targets** (development, Docker, monitoring, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
 
-```bash
-make help     # Show all available targets
-```
 
 ### Running Tests
 
@@ -281,7 +266,7 @@ Tests verify that all endpoints:
 Test API performance under concurrent user load:
 
 ```bash
-# Interactive mode (opens web UI at http://localhost:3389)
+# Interactive mode (opens web UI at http://localhost:8089)
 make load-test
 
 # Headless CI mode (20 users, 60 seconds)
@@ -303,19 +288,21 @@ Two-tier GitHub Actions pipelines for automated quality assurance:
 
 **Full Pipeline (main branch - ~8-10 min):**
 - Triggered on push to `main`
-- Tests on Python 3.10, 3.11, 3.12
+- Tests on Python 3.14
 - Full unit + integration tests
 - Type checking (mypy)
 - Code quality (Black, isort, Ruff, Flake8)
-- Security scanning (bandit, safety, TruffleHog)
+- Security scanning (bandit, pip-audit, TruffleHog)
 - Docker build validation
+- Pre-commit hooks validation
+- API schema generation check
 - Coverage reporting (Codecov)
 
 Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.yml`
 
 ### Scripts Management
 
-Administrative scripts organized in the `scripts/` directory:
+Administrative scripts in the `startup/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
@@ -323,7 +310,7 @@ Administrative scripts organized in the `scripts/` directory:
 | `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
 | `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./startup/firewall-rules.sh` |
 
-See [scripts/ directory](scripts/) for detailed documentation.
+See [startup/](startup/) for the scripts.
 
 ## 📁 Project Structure
 ---
@@ -332,9 +319,14 @@ See [scripts/ directory](scripts/) for detailed documentation.
 DEMO_FastAPI/
 │
 ├── services/                       # Multi-service application architecture
-│   ├── app/                        # FastAPI microservice (Python package: 'app')
+│   ├── api/                        # FastAPI microservice (Python package: 'services.api')
 │   │   ├── main.py                      # FastAPI application factory + exception handlers
 │   │   ├── Dockerfile                   # Docker image configuration (Python 3.14, uv)
+│   │   │
+│   │   ├── auth/                        # Authentication module (JWT router + schemas)
+│   │   │   ├── router.py               # POST /token login endpoint
+│   │   │   ├── schemas.py              # Token Pydantic schemas
+│   │   │   └── service.py              # Auth business logic
 │   │   │
 │   │   ├── core/                        # Infrastructure & configuration
 │   │   │   ├── config.py               # Pydantic Settings (environment config)
@@ -343,6 +335,8 @@ DEMO_FastAPI/
 │   │   │   ├── enums.py                # UserRole, UserStatus, ExpenseCategory enums
 │   │   │   ├── logging.py              # Logging configuration (file + console)
 │   │   │   ├── middleware.py           # HTTP logging middleware
+│   │   │   ├── metrics.py              # Prometheus metrics
+│   │   │   ├── cache.py                # Cache utilities
 │   │   │   └── branding.py             # Startup banner and log signature
 │   │   │
 │   │   ├── database/                    # Data layer
@@ -357,6 +351,7 @@ DEMO_FastAPI/
 │   │   │   ├── expenses.py             # Expense CRUD endpoints
 │   │   │   ├── alerts.py               # Budget alert endpoints
 │   │   │   ├── reports.py              # Report generation endpoints
+│   │   │   ├── analytics.py            # Analytics endpoints
 │   │   │   └── health.py               # Liveness, readiness, startup checks
 │   │   │
 │   │   ├── services/                    # Business logic layer
@@ -369,11 +364,11 @@ DEMO_FastAPI/
 │   │   ├── schemas/                     # Pydantic request/response models
 │   │   │   ├── user.py                 # UserCreate, UserUpdate, UserResponse
 │   │   │   ├── expense.py              # ExpenseCreate, ExpenseUpdate, ExpenseResponse
-│   │   │   └── common.py               # Token schema
+│   │   │   └── common.py               # Shared schemas
 │   │   │
 │   │   ├── utils/                       # Generic utilities
-│   │   │   ├── dependencies.py          # get_admin_user(), get_current_user() dependencies
-│   │   │   ├── print_banner.py          # Banner rendering helper
+│   │   │   ├── dependencies.py         # get_admin_user(), get_current_user() dependencies
+│   │   │   ├── print_banner.py         # Banner rendering helper
 │   │   │   ├── static/
 │   │   │   │   └── favicon.svg
 │   │   │   └── branding/
@@ -382,31 +377,36 @@ DEMO_FastAPI/
 │   │   │       ├── setup.txt
 │   │   │       └── mammoth.txt
 │   │   │
-│   │   ├── tests/                       # Automated test suite (pytest)
-│   │   │   ├── conftest.py             # Pytest fixtures & configuration
-│   │   │   ├── test_auth.py            # Authentication tests
-│   │   │   ├── test_users.py           # User management tests
-│   │   │   └── test_expenses.py        # Expense CRUD tests
+│   │   ├── logs/                        # Application logs (git-ignored)
+│   │   │   ├── app.log                 # Text log file
+│   │   │   ├── app.jsonl               # Structured JSONL logs
+│   │   │   └── config/
+│   │   │       └── logging.yaml        # Logging configuration
+│   │   │
+│   │   └── tests/                       # Automated test suite (pytest)
+│   │       ├── conftest.py             # Pytest fixtures & configuration
+│   │       ├── test_auth.py            # Authentication tests
+│   │       ├── test_users.py           # User management tests
+│   │       ├── test_expenses.py        # Expense CRUD tests
+│   │       ├── test_alerts.py          # Alert tests
+│   │       ├── test_reports.py         # Report tests
+│   │       ├── test_security.py        # Security tests
+│   │       ├── test_contract.py        # Schemathesis contract tests
+│   │       └── load_tests/
+│   │           └── locustfile.py       # Locust load test scenarios
 │   │
-│   ├── data/                           # SQLite database (shared, git-ignored)
+│   ├── data/                           # SQLite database (git-ignored)
 │   │   └── expense_tracker.db          # SQLite database (auto-created)
 │   │
-│   ├── logs/                           # Application logs (service-local, git-ignored)
-│   │   ├── app.log                     # Text log file
-│   │   ├── app.jsonl                   # Structured JSONL logs
-│   │   └── config/
-│   │       └── logging.yaml            # Logging configuration
-│   │
 │   ├── nginx/                          # Reverse proxy service (Docker production)
-│   │   ├── nginx.conf                  # Nginx config: SSL, rate limiting, routing
-│   │   └── ssl/                     # SSL certificates
+│   │   └── nginx.conf                  # Nginx config: SSL, rate limiting, routing
 │   │
-│   └── monitoring/                  # Monitoring services (Grafana + Prometheus)
+│   └── monitoring/                     # Monitoring services (Grafana + Prometheus)
 │       ├── config/
-│       │   ├── prometheus.yml       # Prometheus scrape configuration
-│       │   └── alert.rules.yml     # Alerting rules
+│       │   ├── prometheus.yml          # Prometheus scrape configuration
+│       │   └── alert.rules.yml         # Alerting rules
 │       └── grafana/
-│           └── provisioning/        # Grafana datasources & dashboards
+│           └── provisioning/           # Grafana datasources & dashboards
 │
 ├── doc/                            # Project documentation
 │   ├── DEPLOYMENT.md               # Production deployment, firewall, monitoring, scaling
@@ -430,8 +430,11 @@ DEMO_FastAPI/
 │   ├── Makefile                    # Build, run, and deployment automation
 │   ├── pyproject.toml              # uv project config + dependency constraints
 │   ├── pytest.ini                  # Pytest configuration
+│   ├── mypy.ini                    # mypy type checker configuration
 │   ├── requirements.txt            # Python dependencies (exported from uv.lock)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
+│   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
+│   ├── .python-version             # Python version pin for pyenv (3.14)
 │   ├── .env.example                # Dev environment variables template
 │   ├── .env.docker.dev.example     # Docker dev environment template
 │   ├── .env.docker.prod.example    # Docker production environment template
@@ -445,7 +448,7 @@ DEMO_FastAPI/
 
 **Key Directories:**
 - **`services/`** - Multi-service microservices architecture
-  - **`services/app/`** - FastAPI application (code, tests, data, logs — self-contained)
+  - **`services/api/`** - FastAPI application (code, tests, logs — self-contained)
   - **`services/nginx/`** - Docker production reverse proxy configuration
   - **`services/monitoring/`** - Grafana + Prometheus configuration
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
@@ -462,7 +465,7 @@ DEMO_FastAPI/
 
 ### Enums
 
-Defined in `app/core/enums.py`, used throughout the application for type safety and validation:
+Defined in `services/api/core/enums.py`, used throughout the application for type safety and validation:
 
 **UserRole**
 ```python
@@ -509,12 +512,11 @@ class ExpenseCategory(str, Enum):
 | id | INTEGER | Primary Key | Auto-increment |
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
-| budget | FLOAT | NOT NULL | Monthly budget limit |
+| budget | NUMERIC(12,2) | NOT NULL | Monthly budget limit |
 | role | ENUM(UserRole) | NOT NULL, default="user" | Values: admin, moderator, user |
 | status | ENUM(UserStatus) | NOT NULL, default="pending" | Values: pending, active, disabled |
-| disabled | BOOLEAN | default=False | Legacy account status field |
 
-**ORM Model**: `services/app/database/models/user.py`
+**ORM Model**: `services/api/database/models/user.py`
 
 #### Expenses Table
 
@@ -522,16 +524,16 @@ class ExpenseCategory(str, Enum):
 |--------|------|-------------|-------|
 | id | INTEGER | Primary Key | Auto-increment |
 | description | STRING | NOT NULL | Expense description |
-| amount | FLOAT | NOT NULL | Amount > 0 |
+| amount | NUMERIC(12,2) | NOT NULL | Amount > 0 |
 | date | DATETIME | NOT NULL | When incurred (default=now) |
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
 | user_id | INTEGER | Foreign Key → users.id | Expense owner |
 
-**ORM Model**: `services/app/database/models/expense.py`
+**ORM Model**: `services/api/database/models/expense.py`
 
 ### API Request/Response Models
 
-Defined in `app/schemas/`, these Pydantic models validate and serialize API requests/responses:
+Defined in `services/api/schemas/`, these Pydantic models validate and serialize API requests/responses:
 
 **User Operations**
 - `UserCreate`: username, password (min 6 chars), budget (≥ 0, defaults to 0.0)
@@ -555,7 +557,7 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
 
 ```python
-# app/core/config.py
+# services/api/core/config.py
 # DATABASE_URL = "postgresql://user:password@localhost/expense_tracker"  # pragma: allowlist secret
 ```
 
@@ -581,6 +583,7 @@ All endpoints have defined permission requirements:
 | Endpoint | Method | Role | Description |
 |----------|--------|------|-------------|
 | `/users/create` | POST | 🟢 PUBLIC | Create new user account (starts with status: PENDING) |
+| `/users/create-active` | POST | 🟢 PUBLIC | Create user with ACTIVE status (dev/test only) |
 | `/users/me` | GET | 🔵 USER | Get authenticated user's profile |
 | `/users/` | GET | 🔴 ADMIN | List all users (filterable by status: pending/active/disabled) |
 | `/users/update/` | PUT | 🔵 USER | Update own profile (username, password, budget only) |
@@ -614,6 +617,12 @@ All endpoints have defined permission requirements:
 | Endpoint | Method | Role | Description |
 |----------|--------|------|-------------|
 | `/alerts/` | GET | 🔵 USER | Check for budget overruns |
+
+### Analytics
+
+| Endpoint | Method | Role | Description |
+|----------|--------|------|-------------|
+| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, Prometheus counters) |
 
 ### Health
 
@@ -678,7 +687,7 @@ Custom exceptions with proper HTTP status codes:
 | `ConflictException` | 409 | Resource conflict (duplicate) |
 | `InternalServerException` | 500 | Server errors |
 
-All exceptions are caught by global exception handlers in `app/main.py` and return JSON responses.
+All exceptions are caught by global exception handlers in `services/api/main.py` and return JSON responses.
 
 ---
 

@@ -6,7 +6,7 @@ service or router code to get business-level observability.
 
 Usage::
 
-    from api.core.metrics import EXPENSE_CREATED, LOGIN_SUCCESS, BUDGET_EXCEEDED
+    from services.api.core.metrics import EXPENSE_CREATED, LOGIN_SUCCESS, BUDGET_EXCEEDED
 
     EXPENSE_CREATED.labels(category="food").inc()
     LOGIN_SUCCESS.inc()

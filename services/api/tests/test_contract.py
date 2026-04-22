@@ -17,7 +17,7 @@ See: https://schemathesis.io/
 import schemathesis
 from hypothesis import HealthCheck, settings as hyp_settings
 
-from api.main import app
+from services.api.main import app
 
 
 # ---------------------------------------------------------------------------

@@ -40,9 +40,9 @@ fi
 # =============================================================================
 
 ADMIN_EXISTS=$(python <<'EOF'
-from app.database.models.expense import Expense  # noqa: F401
-from app.database.models.user import User
-from app.database.session import Base, SessionLocal, engine
+from services.api.database.models.expense import Expense  # noqa: F401
+from services.api.database.models.user import User
+from services.api.database.session import Base, SessionLocal, engine
 
 Base.metadata.create_all(bind=engine)
 
@@ -118,10 +118,10 @@ import os
 
 from passlib.context import CryptContext
 
-from app.core.enums import UserRole, UserStatus
-from app.database.models.expense import Expense  # noqa: F401
-from app.database.models.user import User
-from app.database.session import Base, SessionLocal, engine
+from services.api.core.enums import UserRole, UserStatus
+from services.api.database.models.expense import Expense  # noqa: F401
+from services.api.database.models.user import User
+from services.api.database.session import Base, SessionLocal, engine
 
 admin_password = os.getenv("ADM_SECRET_KEY")
 if not admin_password:

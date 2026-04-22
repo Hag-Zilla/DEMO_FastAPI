@@ -10,7 +10,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from prometheus_client import Counter, Histogram, Gauge
 
-from api.core.logging import get_logger
+from services.api.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ def get_limiter() -> Limiter:
     Uses Redis for distributed quota tracking across multiple instances.
     Falls back to in-memory storage if Redis is unavailable.
     """
-    from api.core.config import settings
+    from services.api.core.config import settings
 
     redis_url = settings.REDIS_URL
     if redis_url:
