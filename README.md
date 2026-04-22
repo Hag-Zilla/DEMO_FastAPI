@@ -19,6 +19,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Essential Configuration Variables](#essential-configuration-variables)
   - [Build and Run Services](#build-and-run-services)
   - [Verify Installation](#verify-installation)
+  - [Local Run Notes (No Docker)](#local-run-notes-no-docker)
   - [Configuration](#configuration)
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
@@ -173,6 +174,30 @@ curl -X POST "http://localhost:8000/api/v1/users/create-active" \
   -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
 
+### Local Run Notes (No Docker)
+
+This demo is designed to run locally without Docker.
+
+Default runtime stack:
+- FastAPI application
+- SQLite database
+- Redis (optional, recommended for shared cache/rate-limiting storage)
+
+Quick runtime checks:
+
+```bash
+curl -i http://127.0.0.1:8000/health
+curl -i http://127.0.0.1:8000/health/live
+curl -i http://127.0.0.1:8000/health/ready
+tail -f services/api/logs/app.log
+```
+
+If startup fails, validate `.env` first:
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `DEBUG`
+- `REDIS_URL` (if configured)
+
 
 ### Configuration
 
@@ -198,8 +223,6 @@ Logs are written to:
 - **File**: `services/api/logs/app.log`
 
 Configured via YAML in `services/api/logs/config/logging.yaml`, loaded by `services/api/core/logging.py`.
-
-For local logging and troubleshooting, see [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md).
 
 ### Makefile & Common Tasks
 
@@ -384,7 +407,6 @@ DEMO_FastAPI/
 │   │   └── expense_tracker.db          # SQLite database (auto-created)
 │
 ├── doc/                            # Project documentation
-│   ├── DEPLOYMENT.md               # Deployment and operations (FastAPI + Redis)
 │   ├── DEVELOPMENT.md              # Development workflow, pre-commit, Makefile targets
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
@@ -672,7 +694,6 @@ For specialized topics and detailed guides:
 
 | Document | Purpose |
 |----------|----------|
-| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
 | **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
 | **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
 | **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
