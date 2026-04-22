@@ -9,7 +9,9 @@ This guide covers development setup, code quality standards, and workflows for D
 1. [Pre-commit Hooks](#pre-commit-hooks)
 2. [Code Quality Standards](#code-quality-standards)
 3. [Development Workflow](#development-workflow)
-4. [Troubleshooting](#troubleshooting)
+4. [Testing](#testing)
+5. [Dependency Management](#dependency-management)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -32,8 +34,8 @@ This project uses **[pre-commit](https://pre-commit.com/)** to automate code qua
 Pre-commit is included in the `dev` dependencies. Install hooks with:
 
 ```bash
-# Install pre-commit into .venv (if not already done)
-uv sync --extra dev
+# Install all dev dependencies (pre-commit, pytest, ruff, mypy, etc.)
+make sync-dev
 
 # Register hooks with git
 make install-hooks
@@ -463,7 +465,7 @@ make run-hooks --all-files
 ```bash
 # Nuke old installation and reinstall
 make clean-hooks
-uv sync --extra dev
+make sync-dev
 make install-hooks
 ```
 
@@ -485,16 +487,50 @@ pre-commit install-hooks
 
 ---
 
+## Dependency Management
+
+### Contributor (use committed lock)
+
+If `uv.lock` is committed, install exact versions without regenerating:
+
+```bash
+make init        # Install runtime deps from uv.lock
+make sync-dev    # Add dev tools (pre-commit, pytest, ruff, mypy…)
+make test
+make run
+```
+
+### Maintainer (update dependencies)
+
+To update dependencies and produce a new lock:
+
+```bash
+# Edit pyproject.toml as needed, then:
+make lock           # Regenerate uv.lock
+make export-reqs    # Export pinned requirements.txt from uv.lock
+git add pyproject.toml uv.lock requirements.txt
+git commit -m "chore: update dependencies"
+```
+
+> For CI or cross-platform reproducibility: `uv lock --python 3.14`
+
+---
+
 ## Quick Reference
 
 ```bash
 # Development commands
 make help              # List all available commands
-make init              # Setup environment
+make init              # Setup environment (runtime deps)
+make sync-dev          # Install all dev dependencies
 make run               # Start dev server
 make test              # Run tests
 make lint              # Lint code
 make format            # Format code
+
+# Dependency management
+make lock              # Regenerate uv.lock
+make export-reqs       # Export requirements.txt
 
 # Pre-commit commands
 make install-hooks     # Install git hooks

@@ -5,13 +5,13 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from api.auth.schemas import Token
-from api.core.config import settings
-from api.core.enums import UserStatus
-from api.core.logging import get_logger
-from api.core.metrics import LOGIN_FAILURE, LOGIN_SUCCESS
-from api.core.security import authenticate_user, create_access_token
-from api.database.models.user import User
+from services.api.auth.schemas import Token
+from services.api.core.config import settings
+from services.api.core.enums import UserStatus
+from services.api.core.logging import get_logger
+from services.api.core.metrics import LOGIN_FAILURE, LOGIN_SUCCESS
+from services.api.core.security import authenticate_user, create_access_token
+from services.api.database.models.user import User
 
 logger = get_logger(__name__)
 

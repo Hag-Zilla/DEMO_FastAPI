@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from api.core.enums import ExpenseCategory
+from services.api.core.enums import ExpenseCategory
 
 
 class ExpenseBase(BaseModel):

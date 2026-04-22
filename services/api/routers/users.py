@@ -31,6 +31,21 @@ def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
     return UserService.create_user(db, user)
 
 
+@router.post(
+    "/create-active",
+    name="Create User (Active)",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_user_active(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
+    """Create a new standard user account with ACTIVE status (development/testing only).
+
+    This endpoint bypasses the normal approval workflow and is useful for
+    development and testing. In production, use POST /create followed by approval.
+    """
+    return UserService.create_user_active(db, user)
+
+
 @router.get("/me", name="Read Current User", response_model=UserResponse)
 def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
     """Return the authenticated user's profile data."""

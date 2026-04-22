@@ -15,12 +15,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from api.main import app
-from api.database.session import Base, get_db
-from api.database.models.user import User
-from api.database.models.expense import Expense
-from api.core.enums import UserRole, UserStatus, ExpenseCategory
-from api.core.security import get_password_hash
+from services.api.main import app
+from services.api.database.session import Base, get_db
+from services.api.database.models.user import User
+from services.api.database.models.expense import Expense
+from services.api.core.enums import UserRole, UserStatus, ExpenseCategory
+from services.api.core.security import get_password_hash
 from fastapi_cache.backends.inmemory import InMemoryBackend
 
 

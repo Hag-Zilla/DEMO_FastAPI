@@ -5,12 +5,12 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from api.core.enums import ExpenseCategory, UserRole
-from api.core.exceptions import ResourceNotFoundException
-from api.core.logging import get_logger
-from api.core.metrics import EXPENSE_CREATED, EXPENSE_DELETED
-from api.database.models.expense import Expense
-from api.schemas.expense import ExpenseCreate, ExpenseUpdate
+from services.api.core.enums import ExpenseCategory, UserRole
+from services.api.core.exceptions import ResourceNotFoundException
+from services.api.core.logging import get_logger
+from services.api.core.metrics import EXPENSE_CREATED, EXPENSE_DELETED
+from services.api.database.models.expense import Expense
+from services.api.schemas.expense import ExpenseCreate, ExpenseUpdate
 
 logger = get_logger(__name__)
 

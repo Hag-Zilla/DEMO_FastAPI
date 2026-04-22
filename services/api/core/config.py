@@ -39,4 +39,4 @@ class Settings(BaseSettings):
 # ============================================================================
 
 # Single instance of settings (typed to help static analyzers)
-settings: Settings = Settings()
+settings: Settings = Settings()  # type: ignore[call-arg]  # args loaded from env

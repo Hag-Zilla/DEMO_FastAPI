@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from api.core.enums import UserRole, UserStatus
+from services.api.core.enums import UserRole, UserStatus
 
 
 class UserBase(BaseModel):

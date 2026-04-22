@@ -9,6 +9,7 @@ help:
 	@echo "  make init-venv        Setup with venv (pip)"
 	@echo "  make init-env         Create .env files from templates (.example)"
 	@echo "  make sync             Install/sync dependencies from uv.lock"
+	@echo "  make sync-dev         Install all dependencies including dev tools (pre-commit, pytest, ruff, mypy)"
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
 	@echo "  make lint             Run ruff linting"
@@ -92,6 +93,10 @@ init-env:
 sync:
 	uv sync
 
+# Sync all dependencies including dev tools (pre-commit, pytest, ruff, mypy, etc.)
+sync-dev:
+	uv sync --extra dev --all-groups
+
 # Refresh uv lockfile
 lock:
 	uv lock
@@ -121,10 +126,10 @@ export-reqs: lock
 
 # Run in development mode (auto-reload)
 run:
-	$(PYTHON) -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
+	$(PYTHON) -m uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
-	pytest --tb=short -W default
+	pytest --tb=short -W ignore::ResourceWarning:anyio
 
 lint:
 	$(PYTHON) -m ruff check services/api
@@ -134,7 +139,7 @@ format:
 
 # Admin bootstrap (interactive)
 bootstrap-admin:
-	bash project_spec.sh
+	bash startup/project_spec.sh
 
 clean:
 	find . -type f -name "*.pyc" -delete
