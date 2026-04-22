@@ -1,12 +1,10 @@
-.PHONY: help init init-uv init-venv init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
+.PHONY: help init init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 
-PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
+PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; else echo python3; fi)
 
 help:
 	@echo "=== DEVELOPMENT (Local) ==="
-	@echo "  make init             Setup environment (interactive, defaults to uv)"
-	@echo "  make init-uv          Setup with uv"
-	@echo "  make init-venv        Setup with venv (pip)"
+	@echo "  make init             Setup uv environment (.venv + runtime deps)"
 	@echo "  make init-env         Create .env files from templates (.example)"
 	@echo "  make sync             Install/sync dependencies from uv.lock"
 	@echo "  make sync-dev         Install all dependencies including dev tools (pre-commit, pytest, ruff, mypy)"
@@ -34,15 +32,17 @@ help:
 	@echo "  make clean            Remove Python cache files"
 	@echo "  make help             Show this help message"
 
-# Wrapper (interactive) for setup.sh (default: uv)
+# uv-only environment setup (creates .venv if needed, then sync runtime deps)
 init:
-	bash startup/setup.sh
-
-init-uv:
-	printf "uv\n" | bash startup/setup.sh
-
-init-venv:
-	printf "venv\n" | bash startup/setup.sh
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo "Error: uv is required. Install it from https://docs.astral.sh/uv/"; \
+		exit 1; \
+	fi
+	@if [ ! -d .venv ]; then \
+		echo "Creating .venv with uv..."; \
+		uv venv; \
+	fi
+	uv sync
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:

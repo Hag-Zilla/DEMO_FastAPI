@@ -35,7 +35,7 @@ DEMO_FastAPI/
 │       ├── utils/                  # Dependencies, branding, static assets
 │       └── tests/                  # Pytest test suite + load tests
 ├── doc/                            # Project documentation
-├── startup/                        # setup.sh + project_spec.sh
+├── startup/                        # project_spec.sh (admin bootstrap)
 ├── pyproject.toml                  # Project metadata and dependencies
 ├── uv.lock                         # Locked dependency versions
 └── Makefile                        # Common local development commands

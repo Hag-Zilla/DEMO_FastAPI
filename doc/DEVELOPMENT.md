@@ -290,7 +290,7 @@ Hooks enforce:
 git clone <repo>
 cd DEMO_FastAPI
 
-# Setup environment (interactive, defaults to uv)
+# Setup uv environment (.venv + runtime dependencies)
 make init
 
 # Install pre-commit hooks

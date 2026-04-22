@@ -213,8 +213,7 @@ Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) wi
 
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
-- `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
-- Run setup with: `make init`
+- Install runtime dependencies with: `make init`
 
 #### Logging
 
@@ -313,11 +312,10 @@ Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.
 
 ### Scripts Management
 
-Administrative scripts in the `startup/` directory:
+Administrative script in the `startup/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `setup.sh` | Environment initialization | `./startup/setup.sh` |
 | `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
 
 See [startup/](startup/) for the scripts.
@@ -411,8 +409,7 @@ DEMO_FastAPI/
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
 │
-├── startup/                        # Administrative startup scripts
-│   ├── setup.sh                    # Environment initialization
+├── startup/                        # Administrative bootstrap script
 │   ├── project_spec.sh             # Admin bootstrap & database init
 │
 │
@@ -440,7 +437,7 @@ DEMO_FastAPI/
 - **`services/`** - Multi-service microservices architecture
   - **`services/api/`** - FastAPI application (code, tests, logs — self-contained)
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
-- **`startup/`** - Administrative startup scripts (initialization and bootstrap)
+- **`startup/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
 - **`Makefile`** - Simplifies common development and deployment tasks
