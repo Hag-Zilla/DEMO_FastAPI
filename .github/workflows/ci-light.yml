@@ -5,6 +5,13 @@ on:
     branches:
       - dev
 
+env:
+  SECRET_KEY: "ci-test-secret-key-should-be-at-least-32-chars" # pragma: allowlist secret
+  DATABASE_URL: "sqlite:///./ci.db"
+  APP_NAME: "DEMO_FastAPI"
+  APP_VERSION: "ci"
+  DEBUG: "false"
+
 jobs:
   detect-changes:
     name: Detect Modified Services
