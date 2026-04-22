@@ -65,8 +65,8 @@ git commit --no-verify
 | Hook | Purpose | Auto-fix | Stage |
 |------|---------|----------|-------|
 | **detect-secrets** | Find hardcoded secrets/API keys | No | commit |
-| **check-yaml** | Validate YAML syntax (config files, docker-compose) | No | commit |
-| **check-json** | Validate JSON syntax (Grafana dashboards, etc.) | No | commit |
+| **check-yaml** | Validate YAML syntax (config files) | No | commit |
+| **check-json** | Validate JSON syntax | No | commit |
 | **check-toml** | Validate TOML syntax (pyproject.toml) | No | commit |
 | **check-xml** | Validate XML syntax | No | commit |
 | **check-ast** | Check Python AST is valid | No | commit |

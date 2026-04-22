@@ -228,7 +228,7 @@ response = session.get('http://localhost:8000/api/v1/expenses')
 
 ```bash
 # Connect to Redis
-docker-compose exec redis redis-cli -a <REDIS_PASSWORD>
+redis-cli -h 127.0.0.1 -p 6379 -a <REDIS_PASSWORD>
 
 # Monitor rate limit keys
 MONITOR
@@ -248,23 +248,11 @@ GET slowapi:127.0.0.1:/api/v1/expenses
 
 ```bash
 # Watch for rate limit errors
-docker-compose logs -f app | grep "Rate limit"
+tail -f services/api/logs/app.log | grep "Rate limit"
 
 # Expected log entries:
 # WARNING Rate limit exceeded for /api/v1/login from 192.168.1.100
 # WARNING Rate limit exceeded for /api/v1/expenses/upload from 10.0.0.5
-```
-
-### Prometheus Metrics (Optional)
-
-If Prometheus is enabled, monitor:
-
-```
-# Requests that hit rate limits
-rate_limit_exceeded_total{endpoint="/api/v1/login"}
-
-# Average response time (should stay low)
-http_request_duration_seconds{endpoint="/api/v1/health"}
 ```
 
 ## 🔓 Disabling Rate Limits
@@ -344,7 +332,7 @@ async def generate_report():
 # Test authentication rate limit (5/min)
 for i in {1..10}; do
   echo "Request $i:"
-  curl -X POST http://localhost/api/v1/auth/token \
+    curl -X POST http://localhost:8000/api/v1/auth/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "username=test&password=wrong"
   echo ""
@@ -359,7 +347,7 @@ done
 ```python
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+from services.api.main import app
 
 client = TestClient(app)
 
@@ -407,10 +395,10 @@ def test_report_generation_limit():
 
 ```bash
 # Check Redis is running
-docker-compose ps redis
+redis-cli -h 127.0.0.1 -p 6379 ping
 
 # Verify connectivity
-docker-compose logs app | grep "limiter initialized"
+grep -i "limiter initialized" services/api/logs/app.log
 # Should see: "Rate limiter initialized with Redis storage"
 ```
 
@@ -418,8 +406,11 @@ docker-compose logs app | grep "limiter initialized"
 
 **Fix:**
 ```bash
-docker-compose restart redis
-docker-compose restart app
+# Restart local Redis service (if managed by systemd)
+sudo systemctl restart redis
+
+# Restart API process in your terminal session
+# (stop current process then run make run)
 ```
 
 ### Issue: All IPs Share the Same Quota
@@ -471,14 +462,13 @@ async def endpoint():
        env: REDIS_URL=redis://shared-redis:6379
    ```
 
-4. **DDoS Mitigation**: Combine with Nginx limits
-   - Nginx: 100 req/min general, 20 req/min auth
-   - App: More granular per-endpoint limits
-   - Firewall: Connection limits at OS level
+4. **DDoS Mitigation**: Combine app limits with host-level network controls
+    - App: Granular per-endpoint limits
+    - Redis: Shared quota storage for multi-instance setups
+    - Firewall: Connection limits at OS level
 
 ## 📚 References
 
 - [slowapi Documentation](https://github.com/laurenceisla/slowapi)
 - [Redis Documentation](https://redis.io/docs/)
 - [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)
-- [Nginx Rate Limiting](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html)
