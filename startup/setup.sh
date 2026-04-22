@@ -147,10 +147,8 @@ create_uv_env() {
     # Install dependencies into the uv environment
     if [ -f "pyproject.toml" ]; then
         run_command "uv sync"
-    elif [ -f "requirements.txt" ]; then
-        run_command "uv pip install -r requirements.txt"
     else
-        echo "Warning: no pyproject.toml or requirements.txt found. Skipping dependency install."
+        echo "Warning: no pyproject.toml found. Skipping dependency install."
     fi
 
     # Activate the created venv for subsequent interactive steps (project_spec.sh expects python)
@@ -244,31 +242,11 @@ create_venv_env() {
     # Upgrade pip
     run_command "pip install --upgrade pip"
 
-    # Install dependencies from requirements.txt (preferred) or generate it from uv.lock
-    if [ -f "requirements.txt" ]; then
-        run_command "pip install -r requirements.txt"
-    elif [ -f "uv.lock" ] && command -v uv &> /dev/null; then
-        echo "uv.lock found and uv available — attempting to export requirements.txt from lock"
-        # Try a couple of common uv export invocations
-        if uv export -f requirements.txt >/dev/null 2>&1; then
-            run_command "uv export -f requirements.txt"
-            run_command "pip install -r requirements.txt"
-        elif uv export --format=requirements.txt -o requirements.txt >/dev/null 2>&1; then
-            run_command "uv export --format=requirements.txt -o requirements.txt"
-            run_command "pip install -r requirements.txt"
-        else
-            echo "uv export to requirements.txt failed. Please run 'make export-reqs' or 'uv export' manually."
-            if [ -f "pyproject.toml" ]; then
-                echo "Falling back to editable install from pyproject.toml"
-                run_command "pip install -e ."
-            else
-                echo "Warning: no pyproject.toml found. Skipping dependency install."
-            fi
-        fi
-    elif [ -f "pyproject.toml" ]; then
-        run_command "pip install -e ."
+    # Install dependencies from pyproject.toml when using pip/venv workflow
+    if [ -f "pyproject.toml" ]; then
+        run_command "python -c \"import pathlib, subprocess, sys, tomllib; deps = tomllib.loads(pathlib.Path('pyproject.toml').read_text()).get('project', {}).get('dependencies', []); subprocess.check_call([sys.executable, '-m', 'pip', 'install', *deps])\""
     else
-        echo "Warning: no requirements.txt, uv.lock, or pyproject.toml found. Skipping dependency install."
+        echo "Warning: no pyproject.toml found. Skipping dependency install."
     fi
 
     run_admin_bootstrap

@@ -21,20 +21,21 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.14"
-          cache: 'pip'
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          uv sync --frozen --extra dev --all-groups
 
       - name: Run unit tests with coverage
         run: |
-          pytest services/api/tests/ -v --cov=services/api --cov-report=xml --cov-report=html --tb=short
+          uv run pytest services/api/tests/ -v --cov=services/api --cov-report=xml --cov-report=html --tb=short
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
           flags: unittests
@@ -52,11 +53,6 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
 
-    services:
-      sqlite:
-        image: busybox
-        options: --name sqlite
-
     steps:
       - uses: actions/checkout@v4
 
@@ -64,18 +60,18 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.14"
-          cache: 'pip'
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest httpx
+          uv sync --frozen --extra dev --all-groups
 
       - name: Run integration tests
         run: |
-          pytest services/api/tests/ -v -m "integration" --tb=short
-        continue-on-error: true
+          uv run pytest services/api/tests/ -v -m "integration" --tb=short
 
   lint-and-format:
     name: Lint & Code Quality
@@ -89,29 +85,29 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install linting tools
         run: |
-          pip install ruff pylint flake8 black isort
+          uv sync --frozen --extra dev --all-groups
+          python -m pip install black isort flake8
 
       - name: Check code formatting with Black
         run: |
-          black --check services/api services/api/tests
-        continue-on-error: true
+          uv run black --check services/api services/api/tests
 
       - name: Check import sorting with isort
         run: |
-          isort --check-only services/api services/api/tests
-        continue-on-error: true
+          uv run isort --check-only services/api services/api/tests
 
       - name: Lint with Ruff
         run: |
-          ruff check services/api services/api/tests
-        continue-on-error: true
+          uv run ruff check services/api services/api/tests
 
       - name: Lint with Flake8
         run: |
-          flake8 services/api services/api/tests --max-line-length=100 --extend-ignore=E203,W503
-        continue-on-error: true
+          uv run flake8 services/api services/api/tests --max-line-length=100 --extend-ignore=E203,W503
 
   type-checking:
     name: Type Checking (mypy)
@@ -125,14 +121,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install mypy sqlalchemy-stubs types-all
+          uv sync --frozen --extra dev --all-groups
 
       - name: Run type checker
         run: |
-          mypy services/api --ignore-missing-imports --junit-xml=type-results.xml
+          uv run mypy services/api --ignore-missing-imports --junit-xml=type-results.xml
         continue-on-error: true
 
       - name: Upload type results
@@ -154,18 +152,21 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install security tools
         run: |
-          pip install pip-audit bandit
+          uv sync --frozen --extra dev --all-groups
 
       - name: Run pip-audit check on dependencies
         run: |
-          pip-audit --desc > pip-audit-report.json
+          uv run pip-audit --desc > pip-audit-report.json
         continue-on-error: true
 
       - name: Run bandit security check
         run: |
-          bandit -r services/api -f json -o bandit-report.json
+          uv run bandit -r services/api -f json -o bandit-report.json
         continue-on-error: true
 
       - name: Upload security reports
@@ -199,10 +200,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev --all-groups
+
       - name: Run pre-commit hooks
         run: |
-          pip install pre-commit
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
   api-documentation:
     name: API Documentation
@@ -216,14 +223,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          uv sync --frozen --extra dev --all-groups
 
       - name: Check API schema generation
         run: |
-          python -c "import sys; sys.path.insert(0, 'services'); from api.main import api; import json; schema = api.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
-        continue-on-error: true
+          uv run python -c "from services.api.main import app; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
 
   final-status:
     name: CI Full Status
@@ -251,6 +260,16 @@ jobs:
 
           if [ "${{ needs.pre-commit.result }}" = "failure" ]; then
             echo "❌ Pre-commit checks failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.lint-and-format.result }}" = "failure" ]; then
+            echo "❌ Lint and formatting checks failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.api-documentation.result }}" = "failure" ]; then
+            echo "❌ API documentation schema generation failed - blocking merge"
             exit 1
           fi
 

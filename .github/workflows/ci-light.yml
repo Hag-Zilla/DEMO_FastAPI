@@ -80,24 +80,23 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.14"
-          cache: 'pip'
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          uv sync --frozen --extra dev --all-groups
 
       - name: Lint with Ruff
         run: |
-          pip install ruff
-          ruff check services/api services/api/tests --select E,W,F
+          uv run ruff check services/api services/api/tests --select E,W,F
         continue-on-error: true
 
       - name: Type check with mypy
         run: |
-          pip install mypy sqlalchemy-stubs types-all
-          mypy services/api --ignore-missing-imports
+          uv run mypy services/api --ignore-missing-imports
         continue-on-error: true
 
       - name: Run unit tests (modified services)
@@ -105,10 +104,10 @@ jobs:
           SERVICES="${{ needs.detect-changes.outputs.modified-services }}"
 
           if [ "$SERVICES" = "all" ]; then
-            pytest services/api/tests/ -v --tb=short
+            uv run pytest services/api/tests/ -v --tb=short
           else
             # Run selective tests based on modified services
-            pytest services/api/tests/ -v --tb=short -k "$SERVICES"
+            uv run pytest services/api/tests/ -v --tb=short -k "$SERVICES"
           fi
 
   security-check:
@@ -123,10 +122,21 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Run safety check
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install security tooling
         run: |
-          pip install safety
-          safety check --json
+          uv sync --frozen --extra dev --all-groups
+
+      - name: Run pip-audit
+        run: |
+          uv run pip-audit --desc
+        continue-on-error: true
+
+      - name: Run bandit
+        run: |
+          uv run bandit -r services/api
         continue-on-error: true
 
       - name: Check for secrets
@@ -151,10 +161,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --extra dev --all-groups
+
       - name: Run pre-commit
         run: |
-          pip install pre-commit
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
   summary:
     name: CI Light Summary

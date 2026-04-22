@@ -22,13 +22,13 @@ This guide explains how to add rate limiting to FastAPI endpoints using the slow
 The application uses a **4-layer rate limiting strategy**:
 
 1. **Host Firewall (ufw)** - Connection limits at OS level
-2. **Reverse Proxy (Nginx)** - Request rate limiting (100 req/min general, 20 req/min auth)
-3. **Application Layer (slowapi)** - Endpoint-specific limits with Redis tracking
+2. **Application Layer (slowapi)** - Endpoint-specific limits with Redis tracking
+3. **Redis Storage** - Shared quota tracking across instances
 4. **Database** - Query optimization to prevent resource exhaustion
 
 ## ⚙️ How slowapi Works
 
-The `limiter` object from `app.core.middleware` tracks requests per IP address and enforces configured limits. It stores quota information in Redis for distributed tracking across multiple app instances.
+The `limiter` object from `services.api.core.middleware` tracks requests per IP address and enforces configured limits. It stores quota information in Redis for distributed tracking across multiple app instances.
 
 ### Available Limits
 
@@ -51,7 +51,7 @@ Combining:
 
 ```python
 from fastapi import APIRouter
-from app.core.middleware import limiter
+from services.api.core.middleware import limiter
 
 router = APIRouter(tags=["Authentication"])
 

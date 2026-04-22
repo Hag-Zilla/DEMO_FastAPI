@@ -95,7 +95,7 @@ default_language_version:
 # Security: Detect common secrets
 detect-secrets:
   args: ['--baseline', '.secrets.baseline']
-  exclude: ^(uv.lock|requirements.txt|.env)$
+  exclude: ^(uv.lock|.env)$
 
 # Type checking with mypy
 mypy:
@@ -507,8 +507,7 @@ To update dependencies and produce a new lock:
 ```bash
 # Edit pyproject.toml as needed, then:
 make lock           # Regenerate uv.lock
-make export-reqs    # Export pinned requirements.txt from uv.lock
-git add pyproject.toml uv.lock requirements.txt
+git add pyproject.toml uv.lock
 git commit -m "chore: update dependencies"
 ```
 
@@ -530,7 +529,6 @@ make format            # Format code
 
 # Dependency management
 make lock              # Regenerate uv.lock
-make export-reqs       # Export requirements.txt
 
 # Pre-commit commands
 make install-hooks     # Install git hooks

@@ -118,7 +118,7 @@ openssl rand -hex 32
 **For local development:**
 
 ```bash
-# Install dependencies (uses committed uv.lock or requirements.txt)
+# Install dependencies (uses committed uv.lock)
 make init
 
 # Activate virtual environment
@@ -296,7 +296,6 @@ Administrative scripts in the `startup/` directory:
 |--------|---------|-------|
 | `setup.sh` | Environment initialization | `./startup/setup.sh` |
 | `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
-| `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./startup/firewall-rules.sh` |
 
 See [startup/](startup/) for the scripts.
 
@@ -393,7 +392,6 @@ DEMO_FastAPI/
 ├── startup/                        # Administrative startup scripts
 │   ├── setup.sh                    # Environment initialization
 │   ├── project_spec.sh             # Admin bootstrap & database init
-│   └── firewall-rules.sh           # DDoS protection (ufw/nftables)
 │
 │
 ├── .github/                        # GitHub configuration
@@ -406,7 +404,6 @@ DEMO_FastAPI/
 │   ├── pyproject.toml              # uv project config + dependency constraints
 │   ├── pytest.ini                  # Pytest configuration
 │   ├── mypy.ini                    # mypy type checker configuration
-│   ├── requirements.txt            # Python dependencies (exported from uv.lock)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
 │   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
 │   ├── .python-version             # Python version pin for pyenv (3.14)
@@ -421,10 +418,9 @@ DEMO_FastAPI/
 - **`services/`** - Multi-service microservices architecture
   - **`services/api/`** - FastAPI application (code, tests, logs — self-contained)
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
-- **`startup/`** - Administrative startup scripts (initialization, bootstrap, firewall)
+- **`startup/`** - Administrative startup scripts (initialization and bootstrap)
 
 **Configuration & Deployment:**
-- **`startup/firewall-rules.sh`** - Optional host hardening script (advanced use)
 - **`Makefile`** - Simplifies common development and deployment tasks
 - **`pyproject.toml` + `uv.lock`** - Pinned dependency management
 
@@ -590,7 +586,7 @@ All endpoints have defined permission requirements:
 
 | Endpoint | Method | Role | Description |
 |----------|--------|------|-------------|
-| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, Prometheus counters) |
+| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, in-memory counters) |
 
 ### Health
 

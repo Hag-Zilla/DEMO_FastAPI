@@ -145,9 +145,6 @@ services/data/
 # Database backups
 *.bak
 
-# VSCode settings
-.vscode
-
 # Project-specific directories and files
 followup.txt
 .admin_bootstrap_done
@@ -158,7 +155,6 @@ services/api/logs/*.jsonl.*
 
 # Environment files (actual files - never commit, use templates)
 # Templates (.example) ARE committed as documentation
-.env
 .env.*.local
 .env.*.prod
 
