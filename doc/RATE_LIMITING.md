@@ -19,16 +19,16 @@ This guide explains how to add rate limiting to FastAPI endpoints using the slow
 
 ## 🌍 Overview
 
-The application uses a **4-layer rate limiting strategy**:
+The application uses a practical layered strategy:
 
-1. **Host Firewall (ufw)** - Connection limits at OS level
-2. **Application Layer (slowapi)** - Endpoint-specific limits with Redis tracking
-3. **Redis Storage** - Shared quota tracking across instances
-4. **Database** - Query optimization to prevent resource exhaustion
+1. **Application Layer (slowapi)** - Endpoint-specific limits and 429 handling
+2. **Redis Storage** - Shared quota tracking across instances
+3. **Host-Level Controls (optional)** - OS/network connection controls
+4. **Database Layer** - Query optimization to prevent resource exhaustion
 
 ## ⚙️ How slowapi Works
 
-The `limiter` object from `services.api.core.middleware` tracks requests per IP address and enforces configured limits. It stores quota information in Redis for distributed tracking across multiple app instances.
+The `limiter` object from `services.api.core.middleware` tracks requests per IP address and enforces configured limits. It uses Redis for distributed tracking and can fall back to in-memory storage when Redis is unavailable.
 
 ### Available Limits
 
@@ -53,7 +53,7 @@ Combining:
 from fastapi import APIRouter
 from services.api.core.middleware import limiter
 
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 @router.post("/token")
 @limiter.limit("5/minute")  # Max 5 login attempts per minute
@@ -106,50 +106,50 @@ async def batch_import_expenses(
 ### Example 4: Multiple Limits (Time-Based Tiers)
 
 ```python
-@router.get("/api/v1/reports/annual")
+@router.get("/api/v1/reports/monthly/{year}/{month}")
 @limiter.limit("5/minute;50/hour;500/day")
-async def get_annual_report(
+async def get_monthly_report(
     year: int,
+    month: int,
     current_user: User = Depends(get_current_user)
 ):
-    """Generate annual report.
+    """Generate monthly report.
 
     Rate limits:
     - 5 requests per minute (burst traffic protection)
     - 50 requests per hour (sustained usage limit)
     - 500 requests per day (daily quota)
     """
-    return report_generator.generate_annual(current_user.id, year)
+    return report_generator.generate_monthly(current_user.id, year, month)
 ```
 
 ## 🎯 Recommended Limits by Endpoint Type
 
 ### Authentication Endpoints
 ```python
-- /auth/login       → 5/minute    (prevent brute-force)
-- /auth/register    → 3/minute    (prevent spam registration)
-- /auth/refresh     → 10/minute   (token refresh is frequent)
+- POST /api/v1/auth/token         → 5/minute
+- POST /api/v1/users/create       → 3/minute
+- POST /api/v1/users/create-active → 3/minute
 ```
 
 ### Read-Only Endpoints (Safe)
 ```python
-- GET /expenses      → 100/minute
-- GET /reports       → 50/minute
-- GET /budgets       → 100/minute
+- GET /api/v1/expenses/         → 100/minute
+- GET /api/v1/reports/period    → 50/minute
+- GET /api/v1/alerts/           → 60/minute
 ```
 
 ### Write Operations (Moderate)
 ```python
-- POST /expenses     → 20/minute  (prevent spam)
-- PATCH /expenses    → 20/minute
-- DELETE /expenses   → 10/minute  (destructive, stricter)
+- POST /api/v1/expenses/                  → 20/minute
+- PUT /api/v1/expenses/{expense_id}       → 20/minute
+- DELETE /api/v1/expenses/{expense_id}    → 10/minute
 ```
 
 ### Heavy Operations (Strict)
 ```python
-- /reports/export    → 5/minute   (CPU/memory intensive)
-- /batch-import      → 2/minute   (large file processing)
-- /generate-pdf      → 3/minute   (PDF generation)
+- GET /api/v1/reports/monthly/{year}/{month}  → 10/minute
+- GET /api/v1/reports/all                     → 5/minute
 ```
 
 ## ⚠️ Handling Rate Limit Exceeded (429 Errors)
@@ -372,16 +372,14 @@ def test_login_rate_limit():
 def test_report_generation_limit():
     """Test report generation is strictly limited."""
     response = client.get(
-        "/api/v1/reports/annual",
-        params={"year": 2024},
+        "/api/v1/reports/monthly/2024/1",
         headers={"Authorization": "Bearer valid_token"}
     )
     # First request should succeed
     assert response.status_code == 200
     # Subsequent requests quickly should fail
     response = client.get(
-        "/api/v1/reports/annual",
-        params={"year": 2024},
+        "/api/v1/reports/monthly/2024/1",
         headers={"Authorization": "Bearer valid_token"}
     )
     # (depends on configured limit)
@@ -402,9 +400,8 @@ grep -i "limiter initialized" services/api/logs/app.log
 # Should see: "Rate limiter initialized with Redis storage"
 ```
 
-## 🚀 Production Considerations
+### Quick Fix
 
-**Fix:**
 ```bash
 # Restart local Redis service (if managed by systemd)
 sudo systemctl restart redis

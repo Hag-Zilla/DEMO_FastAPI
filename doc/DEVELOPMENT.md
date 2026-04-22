@@ -120,7 +120,7 @@ The `detect-secrets` hook prevents accidental commits of:
 If a secret is detected:
 ```bash
 # 1. Option A: Don't commit the secret (recommended)
-git checkout app/file_with_secret.py
+git checkout services/api/file_with_secret.py
 
 # 2. Option B: Explicitly allow (only for non-sensitive test data)
 # Edit .secrets.baseline to allowlist the pattern
@@ -307,8 +307,8 @@ make run
 git checkout -b feat/my-feature
 
 # Edit files, write tests, update docs
-vim app/routers/my_router.py
-vim tests/test_my_router.py
+vim services/api/routers/my_router.py
+vim services/api/tests/test_my_router.py
 
 # Format and lint (optional - hooks will catch issues)
 make format
@@ -319,7 +319,7 @@ make lint
 
 ```bash
 # Stage changes
-git add app/routers/my_router.py tests/test_my_router.py
+git add services/api/routers/my_router.py services/api/tests/test_my_router.py
 
 # Commit (hooks run automatically)
 git commit -m "feat: add new endpoint for feature X
@@ -410,11 +410,11 @@ Tests verify that all endpoints:
 Test API performance under concurrent load:
 
 ```bash
-make load-test              # Interactive web UI (http://localhost:3389)
+make load-test              # Interactive web UI (http://localhost:8089)
 make load-test-headless     # CI mode (20 users, 60s)
 ```
 
-Scenarios run realistic user workflows — see [services/api/tests/load_tests/locustfile.py](../../services/api/tests/load_tests/locustfile.py).
+Scenarios run realistic user workflows — see [services/api/tests/load_tests/locustfile.py](../services/api/tests/load_tests/locustfile.py).
 
 **Typical use cases:**
 - Identify slow endpoints
@@ -442,8 +442,8 @@ git commit -m "..."
 
 # 3. For unfixable issues (docstring, type errors):
 #    Edit files to address errors
-vim app/file_with_error.py
-git add app/file_with_error.py
+vim services/api/file_with_error.py
+git add services/api/file_with_error.py
 git commit -m "..."
 
 # 4. If stuck, bypass (NOT RECOMMENDED):
@@ -457,7 +457,7 @@ git commit --no-verify
 make update-hooks
 
 # Test updated hooks
-make run-hooks --all-files
+make run-hooks
 ```
 
 ### Pre-commit installation issues
@@ -549,5 +549,5 @@ make clean-hooks       # Clear cache
 
 ---
 
-**Last Updated**: 2025-03-27
+**Last Updated**: 2026-04-22
 **Maintainer**: Development Team
