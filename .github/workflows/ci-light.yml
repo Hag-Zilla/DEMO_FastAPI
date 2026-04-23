@@ -103,7 +103,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          uv run mypy services/api --ignore-missing-imports
+          uv run mypy services/api
         continue-on-error: true
 
       - name: Run unit tests (modified services)

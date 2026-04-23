@@ -137,7 +137,7 @@ jobs:
 
       - name: Run type checker
         run: |
-          uv run mypy services/api --ignore-missing-imports --junit-xml=type-results.xml
+          uv run mypy services/api --junit-xml=type-results.xml
         continue-on-error: true
 
       - name: Upload type results

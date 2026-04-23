@@ -48,3 +48,69 @@ dev = [
     "locust>=2.43.3",
     "schemathesis>=4.10.2",
 ]
+
+[tool.mypy]
+python_version = "3.14"
+check_untyped_defs = false
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+warn_unused_ignores = false
+warn_redundant_casts = false
+warn_unused_configs = false
+
+[[tool.mypy.overrides]]
+module = ["services.api.*"]
+ignore_errors = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+pythonpath = ["services"]
+minversion = "7.0"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings",
+    "-ra",
+]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for multi-component interactions",
+    "slow: Slow running tests",
+    "auth: Authentication related tests",
+    "users: User management tests",
+    "expenses: Expense management tests",
+    "alerts: Budget alert tests",
+    "reports: Reporting tests",
+    "admin: Admin-only operation tests",
+]
+testpaths = ["services/api/tests"]
+
+[tool.coverage.run]
+source = ["services/api"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+precision = 2

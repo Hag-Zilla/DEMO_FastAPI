@@ -94,7 +94,7 @@ repos:
         name: Type check with mypy
         language: system
         entry: .venv/bin/python -m mypy
-        args: ['services/api', '--ignore-missing-imports']
+        args: ['services/api']
         pass_filenames: false
         types: [python]
         stages: [commit]

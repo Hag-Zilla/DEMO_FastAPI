@@ -420,9 +420,7 @@ DEMO_FastAPI/
 │
 ├── Root Configuration Files
 │   ├── Makefile                    # Build, run, and deployment automation
-│   ├── pyproject.toml              # uv project config + dependency constraints
-│   ├── pytest.ini                  # Pytest configuration
-│   ├── mypy.ini                    # mypy type checker configuration
+│   ├── pyproject.toml              # uv project config + dependencies + tool config (pytest/mypy/coverage)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
 │   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
 │   ├── .python-version             # Python version pin for pyenv (3.14)
