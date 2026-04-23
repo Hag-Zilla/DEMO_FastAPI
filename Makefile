@@ -115,24 +115,24 @@ load-test-headless:
 
 install-hooks:
 	@echo "Installing pre-commit hooks..."
-	uv run --package $(UV_PACKAGE) pre_commit install
-	uv run --package $(UV_PACKAGE) pre_commit install-hooks
+	uv run --package $(UV_PACKAGE) pre-commit install
+	uv run --package $(UV_PACKAGE) pre-commit install-hooks
 	@echo "✓ Pre-commit hooks installed"
 
 run-hooks:
 	@echo "Running pre-commit hooks on all files..."
-	uv run --package $(UV_PACKAGE) pre_commit run --all-files
+	uv run --package $(UV_PACKAGE) pre-commit run --all-files
 
 run-hooks-staged:
 	@echo "Running pre-commit hooks on staged files..."
-	uv run --package $(UV_PACKAGE) pre_commit run
+	uv run --package $(UV_PACKAGE) pre-commit run
 
 update-hooks:
 	@echo "Updating pre-commit hooks to latest versions..."
-	uv run --package $(UV_PACKAGE) pre_commit autoupdate
+	uv run --package $(UV_PACKAGE) pre-commit autoupdate
 	@echo "✓ Hooks updated. Review changes in .pre-commit-config.yaml"
 
 clean-hooks:
 	@echo "Cleaning pre-commit cache..."
-	uv run --package $(UV_PACKAGE) pre_commit clean
-	uv run --package $(UV_PACKAGE) pre_commit clean-files
+	uv run --package $(UV_PACKAGE) pre-commit clean
+	uv run --package $(UV_PACKAGE) pre-commit clean-files
