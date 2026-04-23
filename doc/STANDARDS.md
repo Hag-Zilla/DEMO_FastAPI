@@ -39,10 +39,13 @@ DEMO_FastAPI/
 ├── pyproject.toml                  # Workspace root (uv orchestration)
 ├── services/
 │   └── api/
-│       └── pyproject.toml          # API service metadata, deps, and tool config
+│       └── pyproject.toml          # API service metadata and dependencies
 ├── uv.lock                         # Locked dependency versions
 └── Makefile                        # Common local development commands
 ```
+
+Note: Quality/test tooling configuration (mypy, pytest, coverage) is centralized
+in the repository root `pyproject.toml`.
 
 ---
 
