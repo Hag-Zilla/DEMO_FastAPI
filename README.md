@@ -288,17 +288,10 @@ Load test scenarios are defined in [services/api/tests/load_tests/locustfile.py]
 
 ### CI/CD & Automation
 
-Two-tier GitHub Actions pipelines for automated quality assurance:
+Single GitHub Actions pipeline for automated quality assurance:
 
-**Light Pipeline (dev branch - ~2-3 min):**
-- Triggered on push to `dev`
-- Detects modified services
-- Runs selective unit tests
-- Security & pre-commit checks
-- Fast feedback loop
-
-**Full Pipeline (main branch - ~8-10 min):**
-- Triggered on push to `main`
+**Full Pipeline (~8-10 min):**
+- Triggered on every push and pull request
 - Tests on Python 3.14
 - Full unit + integration tests
 - Type checking (mypy)
@@ -308,7 +301,7 @@ Two-tier GitHub Actions pipelines for automated quality assurance:
 - API schema generation check
 - Coverage reporting (Codecov)
 
-Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.yml`
+Workflow file: `.github/workflows/ci-full.yml`
 
 ### Scripts Management
 
@@ -415,8 +408,7 @@ DEMO_FastAPI/
 │
 ├── .github/                        # GitHub configuration
 │   └── workflows/
-│       ├── ci-light.yml            # Dev branch: selective testing
-│       └── ci-full.yml             # Main branch: comprehensive validation
+│       └── ci-full.yml             # Full CI on each push and pull request
 │
 ├── Root Configuration Files
 │   ├── Makefile                    # Build, run, and deployment automation

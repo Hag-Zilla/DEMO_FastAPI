@@ -1,9 +1,12 @@
-name: CI Full (Main Branch)
+name: CI Full
 
 on:
   push:
     branches:
-      - main
+      - "**"
+  pull_request:
+    branches:
+      - "**"
 
 env:
   SECRET_KEY: "ci-test-secret-key-should-be-at-least-32-chars" # pragma: allowlist secret
@@ -39,7 +42,7 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          uv run pytest services/api/tests/ -v --cov=services/api --cov-report=xml --cov-report=html --tb=short
+          uv run pytest --cov=services/api --cov-report=xml --cov-report=html
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -78,7 +81,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          uv run pytest services/api/tests/ -v -m "integration" --tb=short
+          uv run pytest -m "integration"
 
   lint-and-format:
     name: Lint & Code Quality
