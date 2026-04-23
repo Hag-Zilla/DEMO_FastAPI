@@ -124,13 +124,16 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Ruff cache
+.ruff_cache/
+
 # Pyre type checker
 .pyre/
 
 # Database files
 *.db
 *.db-journal
-data/
+services/data/
 
 # Compiled Python files
 *.py[cod]
@@ -142,10 +145,18 @@ data/
 # Database backups
 *.bak
 
-# VSCode settings
-.vscode
-
 # Project-specific directories and files
 followup.txt
 .admin_bootstrap_done
-logs/*.jsonl
+services/api/logs/*.log
+services/api/logs/*.log.*
+services/api/logs/*.jsonl
+services/api/logs/*.jsonl.*
+
+# Environment files (actual files - never commit, use templates)
+# Templates (.example) ARE committed as documentation
+.env.*.local
+.env.*.prod
+
+# Pre-commit framework
+.pre-commit-framework/

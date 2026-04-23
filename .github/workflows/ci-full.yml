@@ -1,0 +1,309 @@
+name: CI Full
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+env:
+  SECRET_KEY: "ci-test-secret-key-should-be-at-least-32-chars" # pragma: allowlist secret
+  DATABASE_URL: "sqlite:///./ci.db"
+  APP_NAME: "DEMO_FastAPI"
+  APP_VERSION: "ci"
+  DEBUG: "false"
+
+jobs:
+  unit-tests:
+    name: Unit Tests (All)
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Run unit tests with coverage
+        run: |
+          uv run --package demo-fastapi-api pytest --cov=services/api --cov-report=xml --cov-report=html
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Archive coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-3.14
+          path: htmlcov
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Run integration tests
+        run: |
+          set +e
+          uv run --package demo-fastapi-api pytest -m "integration"
+          status=$?
+          set -e
+
+          if [ "$status" -eq 5 ]; then
+            echo "No integration tests were collected. Skipping integration suite."
+            exit 0
+          fi
+
+          exit "$status"
+
+  lint-and-format:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install linting tools
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Check formatting with Ruff
+        run: |
+          uv run --package demo-fastapi-api ruff format --check services/api services/api/tests
+
+      - name: Lint with Ruff
+        run: |
+          uv run --package demo-fastapi-api ruff check services/api services/api/tests
+
+  type-checking:
+    name: Type Checking (mypy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Run type checker
+        run: |
+          uv run --package demo-fastapi-api mypy services/api --junit-xml=type-results.xml
+        continue-on-error: true
+
+      - name: Upload type results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mypy-results
+          path: type-results.xml
+
+  security-audit:
+    name: Security & Dependency Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install security tools
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Run pip-audit check on dependencies
+        run: |
+          uv run --package demo-fastapi-api pip-audit --desc > pip-audit-report.json
+        continue-on-error: true
+
+      - name: Run bandit security check
+        run: |
+          uv run --package demo-fastapi-api bandit -r services/api -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            pip-audit-report.json
+            bandit-report.json
+
+      - name: Secret scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+        continue-on-error: true
+
+  pre-commit:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Run pre-commit hooks
+        run: |
+          uv run --package demo-fastapi-api pre-commit run --all-files
+
+  api-documentation:
+    name: API Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+
+      - name: Check API schema generation
+        run: |
+          uv run --package demo-fastapi-api python -c "from services.api.main import app; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
+
+  final-status:
+    name: CI Full Status
+    needs: [unit-tests, integration-tests, lint-and-format, type-checking, security-audit, pre-commit, api-documentation]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Determine job status
+        run: |
+          echo "=== CI FULL SUMMARY ==="
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
+          echo "Type Checking: ${{ needs.type-checking.result }}"
+          echo "Security Audit: ${{ needs.security-audit.result }}"
+          echo "Pre-commit: ${{ needs.pre-commit.result }}"
+          echo "API Docs: ${{ needs.api-documentation.result }}"
+
+          # Fail if critical jobs failed
+          if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
+            echo "❌ Unit tests failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.pre-commit.result }}" = "failure" ]; then
+            echo "❌ Pre-commit checks failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.lint-and-format.result }}" = "failure" ]; then
+            echo "❌ Lint and formatting checks failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.api-documentation.result }}" = "failure" ]; then
+            echo "❌ API documentation schema generation failed - blocking merge"
+            exit 1
+          fi
+
+          if [ "${{ needs.type-checking.result }}" = "failure" ]; then
+            echo "⚠️  Type checking failed - review recommended"
+          fi
+
+          echo "✅ CI Full passed - ready for merge"
+
+  notify:
+    name: Notify Completion
+    needs: [final-status]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: CI Completion Status
+        run: |
+          if [ "${{ needs.final-status.result }}" = "success" ]; then
+            echo "✅ All CI checks passed!"
+          else
+            echo "❌ CI checks failed"
+            exit 1
+          fi
