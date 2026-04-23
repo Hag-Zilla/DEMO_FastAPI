@@ -1,12 +1,10 @@
-.PHONY: help init init-uv init-venv init-env sync lock export-reqs run test lint format bootstrap-admin clean docker-build docker-up docker-down docker-logs docker-test docker-shell docker-clean prometheus grafana metrics install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
+.PHONY: help init init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 
-PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; elif [ -x venv/bin/python ]; then echo venv/bin/python; else echo python3; fi)
+UV_PACKAGE := demo-fastapi-api
 
 help:
 	@echo "=== DEVELOPMENT (Local) ==="
-	@echo "  make init             Setup environment (interactive, defaults to uv)"
-	@echo "  make init-uv          Setup with uv"
-	@echo "  make init-venv        Setup with venv (pip)"
+	@echo "  make init             Setup uv environment for the API service (.venv + runtime deps)"
 	@echo "  make init-env         Create .env files from templates (.example)"
 	@echo "  make sync             Install/sync dependencies from uv.lock"
 	@echo "  make sync-dev         Install all dependencies including dev tools (pre-commit, pytest, ruff, mypy)"
@@ -17,21 +15,7 @@ help:
 	@echo ""
 	@echo "=== DEPENDENCY MANAGEMENT ==="
 	@echo "  make lock             Refresh uv.lock"
-	@echo "  make export-reqs      Export requirements.txt from uv.lock"
 	@echo ""
-	@echo "=== DOCKER (Production) ==="
-	@echo "  make docker-build     Build Docker images"
-	@echo "  make docker-up        Start containers (docker-compose up -d)"
-	@echo "  make docker-down      Stop containers (docker-compose down)"
-	@echo "  make docker-logs      View container logs (follow mode)"
-	@echo "  make docker-test      Run tests inside containers"
-	@echo "  make docker-shell     Open bash shell in app container"
-	@echo "  make docker-clean     Cleanup Docker artifacts"
-	@echo ""
-	@echo "=== MONITORING ==="
-	@echo "  make prometheus       Open Prometheus UI (http://localhost:9090)"
-	@echo "  make grafana          Open Grafana UI (http://localhost:3000)"
-	@echo "  make metrics          View raw metrics endpoint (http://localhost:8000/metrics)"
 	@echo "  make contract-test    Run Schemathesis contract / property tests"
 	@echo "  make load-test        Start Locust load test (interactive, needs running API)"
 	@echo "  make load-test-headless Run Locust headless (CI mode, 20u/60s)"
@@ -48,15 +32,17 @@ help:
 	@echo "  make clean            Remove Python cache files"
 	@echo "  make help             Show this help message"
 
-# Wrapper (interactive) for setup.sh (default: uv)
+# uv-only environment setup (creates .venv if needed, then sync runtime deps)
 init:
-	bash startup/setup.sh
-
-init-uv:
-	printf "uv\n" | bash startup/setup.sh
-
-init-venv:
-	printf "venv\n" | bash startup/setup.sh
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo "Error: uv is required. Install it from https://docs.astral.sh/uv/"; \
+		exit 1; \
+	fi
+	@if [ ! -d .venv ]; then \
+		echo "Creating .venv with uv..."; \
+		uv venv; \
+	fi
+	uv sync --package $(UV_PACKAGE)
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:
@@ -68,163 +54,59 @@ init-env:
 	else \
 		echo "✗ .env already exists (skipping)"; \
 	fi
-	@if [ ! -f .env.docker.dev ]; then \
-		cp .env.docker.dev.example .env.docker.dev; \
-		echo "✓ Created .env.docker.dev from .env.docker.dev.example"; \
-	else \
-		echo "✗ .env.docker.dev already exists (skipping)"; \
-	fi
-	@if [ ! -f .env.docker.prod ]; then \
-		cp .env.docker.prod.example .env.docker.prod; \
-		echo "✓ Created .env.docker.prod from .env.docker.prod.example"; \
-		echo "⚠️  WARNING: Edit .env.docker.prod with real secrets before deploying!"; \
-	else \
-		echo "✗ .env.docker.prod already exists (skipping)"; \
-	fi
 	@echo ""
 	@echo "Next steps:"; \
 	echo "  1. Edit your .env files with actual values"; \
-	echo "  2. For dev local: nano .env"; \
-	echo "  3. For dev docker: nano .env.docker.dev"; \
-	echo "  4. For production: nano .env.docker.prod"; \
+	echo "  2. For local dev: nano .env"; \
 	echo ""
 
 # Sync dependencies from pyproject.toml/uv.lock
 sync:
-	uv sync
+	uv sync --package $(UV_PACKAGE)
 
 # Sync all dependencies including dev tools (pre-commit, pytest, ruff, mypy, etc.)
 sync-dev:
-	uv sync --extra dev --all-groups
+	uv sync --package $(UV_PACKAGE) --extra dev --all-groups
 
 # Refresh uv lockfile
 lock:
 	uv lock
 
-# Export a pinned requirements.txt from uv.lock (uv must be installed).
-# Tries a couple of common uv export invocations and prints guidance if none work.
-export-reqs: lock
-	@echo "Exporting pinned requirements.txt from uv.lock"
-	@if command -v uv >/dev/null 2>&1; then \
-		(set -e; \
-		 uv lock || true; \
-		 if uv export -f requirements.txt >/dev/null 2>&1; then \
-			 uv export -f requirements.txt; \
-		 elif uv export --format=requirements.txt -o requirements.txt >/dev/null 2>&1; then \
-			 uv export --format=requirements.txt -o requirements.txt; \
-		 else \
-			 echo "uv does not support a direct 'export requirements' subcommand on this version."; \
-			 echo "Please run 'uv export' manually or generate requirements.txt from the lock using uv's documented syntax."; \
-			 exit 1; \
-		 fi); \
-		echo "wrote requirements.txt from uv.lock"; \
-	else \
-		echo "uv is not installed; cannot export requirements.txt from uv.lock"; \
-		echo "Install uv or create a pinned requirements.txt manually."; \
-		exit 1; \
-	fi
-
 # Run in development mode (auto-reload)
 run:
-	$(PYTHON) -m uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
+	uv run --package $(UV_PACKAGE) uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
-	pytest --tb=short -W ignore::ResourceWarning:anyio
+	uv run --package $(UV_PACKAGE) pytest -W ignore::ResourceWarning:anyio
 
 lint:
-	$(PYTHON) -m ruff check services/api
+	uv run --package $(UV_PACKAGE) ruff check services/api
 
 format:
-	$(PYTHON) -m ruff format services/api
+	uv run --package $(UV_PACKAGE) ruff format services/api
 
 # Admin bootstrap (interactive)
 bootstrap-admin:
-	bash startup/project_spec.sh
+	uv run --package $(UV_PACKAGE) bash startup/project_spec.sh
 
 clean:
 	find . -type f -name "*.pyc" -delete
 	rm -rf __pycache__ .pytest_cache .mypy_cache build dist
 
-# ============================================================================
-# Docker targets (Production/Deployment)
-# ============================================================================
-
-docker-build:
-	@echo "Building Docker images..."
-	docker-compose build
-
-docker-up:
-	@echo "Starting Docker containers..."
-	docker-compose up -d
-	@echo ""
-	@echo "✓ Services started. Check status with: make docker-logs"
-	@echo "  - Nginx (reverse proxy): http://localhost"
-	@echo "  - FastAPI (app): http://localhost/docs"
-	@echo "  - Redis (internal): 6379"
-
-docker-down:
-	@echo "Stopping Docker containers..."
-	docker-compose down
-
-docker-logs:
-	docker-compose logs -f app
-
-docker-test:
-	@echo "Running tests inside app container..."
-	docker-compose exec app pytest -q
-
-docker-clean:
-	@echo "Cleaning up Docker artifacts..."
-	docker-compose down --volumes
-	docker system prune -f
-	@echo "✓ Docker cleanup complete"
-
-docker-shell:
-	docker-compose exec app /bin/bash
-
-# ============================================================================
-# Monitoring & Observability
-# ============================================================================
-
-prometheus:
-	@echo "Opening Prometheus UI..."
-	@if command -v xdg-open >/dev/null 2>&1; then \
-		xdg-open http://localhost:9090; \
-	elif command -v open >/dev/null 2>&1; then \
-		open http://localhost:9090; \
-	else \
-		echo "Prometheus UI: http://localhost:9090"; \
-	fi
-
-grafana:
-	@echo "Opening Grafana UI..."
-	@if command -v xdg-open >/dev/null 2>&1; then \
-		xdg-open http://localhost:3000; \
-	elif command -v open >/dev/null 2>&1; then \
-		open http://localhost:3000; \
-	else \
-		echo "Grafana UI: http://localhost:3000"; \
-	fi
-
-metrics:
-	@echo "Fetching raw metrics from FastAPI..."
-	curl -s http://localhost:8000/metrics | head -50
-	@echo "\n\n(Showing first 50 lines. For all metrics: curl http://localhost:8000/metrics)"
-
 # Contract testing (Schemathesis — requires no running server, tests via ASGI)
 contract-test:
 	@echo "Running Schemathesis contract tests..."
-	pytest services/api/tests/test_contract.py -v
+	uv run --package $(UV_PACKAGE) pytest services/api/tests/test_contract.py -v
 
 # Load testing (Locust — requires a running API server)
 load-test:
 	@echo "Starting Locust load test against http://localhost:8000 ..."
 	@echo "  Use --users / --spawn-rate / --run-time --headless for CI mode."
-	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000
+	uv run --package $(UV_PACKAGE) locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000
 
 # Headless load test (CI-friendly, 20 users, 60 s)
 load-test-headless:
-	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000 \
+	uv run --package $(UV_PACKAGE) locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000 \
 		--users 20 --spawn-rate 5 --run-time 60s --headless
 
 # ============================================================================
@@ -233,24 +115,24 @@ load-test-headless:
 
 install-hooks:
 	@echo "Installing pre-commit hooks..."
-	$(PYTHON) -m pre_commit install
-	$(PYTHON) -m pre_commit install-hooks
+	uv run --package $(UV_PACKAGE) pre-commit install
+	uv run --package $(UV_PACKAGE) pre-commit install-hooks
 	@echo "✓ Pre-commit hooks installed"
 
 run-hooks:
 	@echo "Running pre-commit hooks on all files..."
-	$(PYTHON) -m pre_commit run --all-files
+	uv run --package $(UV_PACKAGE) pre-commit run --all-files
 
 run-hooks-staged:
 	@echo "Running pre-commit hooks on staged files..."
-	$(PYTHON) -m pre_commit run
+	uv run --package $(UV_PACKAGE) pre-commit run
 
 update-hooks:
 	@echo "Updating pre-commit hooks to latest versions..."
-	$(PYTHON) -m pre_commit autoupdate
+	uv run --package $(UV_PACKAGE) pre-commit autoupdate
 	@echo "✓ Hooks updated. Review changes in .pre-commit-config.yaml"
 
 clean-hooks:
 	@echo "Cleaning pre-commit cache..."
-	$(PYTHON) -m pre_commit clean
-	$(PYTHON) -m pre_commit clean-files
+	uv run --package $(UV_PACKAGE) pre-commit clean
+	uv run --package $(UV_PACKAGE) pre-commit clean-files

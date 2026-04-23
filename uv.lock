@@ -6,6 +6,12 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[manifest]
+members = [
+    "demo-fastapi-api",
+    "demo-fastapi-workspace",
+]
+
 [[package]]
 name = "aioredis"
 version = "2.0.1"
@@ -520,15 +526,14 @@ wheels = [
 ]
 
 [[package]]
-name = "demo-fastapi"
+name = "demo-fastapi-api"
 version = "1.0.0"
-source = { virtual = "." }
+source = { virtual = "services/api" }
 dependencies = [
     { name = "argon2-cffi" },
     { name = "fastapi" },
     { name = "fastapi-cache2", extra = ["redis"] },
     { name = "passlib", extra = ["argon2"] },
-    { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -575,7 +580,6 @@ requires-dist = [
     { name = "passlib", extras = ["argon2"], specifier = ">=1.7.4,<2.0" },
     { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.6,<3.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5,<4.0" },
-    { name = "prometheus-client", specifier = ">=0.20,<1.0" },
     { name = "pydantic", specifier = ">=2.7,<3.0" },
     { name = "pydantic-settings", specifier = ">=2.3,<3.0" },
     { name = "pydocstyle", marker = "extra == 'dev'", specifier = ">=6.3,<7.0" },
@@ -600,6 +604,11 @@ dev = [
     { name = "locust", specifier = ">=2.43.3" },
     { name = "schemathesis", specifier = ">=4.10.2" },
 ]
+
+[[package]]
+name = "demo-fastapi-workspace"
+version = "1.0.0"
+source = { virtual = "." }
 
 [[package]]
 name = "deprecated"
@@ -1511,15 +1520,6 @@ wheels = [
 ]
 
 [[package]]
-name = "prometheus-client"
-version = "0.24.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f0/58/a794d23feb6b00fc0c72787d7e87d872a6730dd9ed7c7b3e954637d8f280/prometheus_client-0.24.1.tar.gz", hash = "sha256:7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9", size = 85616, upload-time = "2026-01-14T15:26:26.965Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/c3/24a2f845e3917201628ecaba4f18bab4d18a337834c1df2a159ee9d22a42/prometheus_client-0.24.1-py3-none-any.whl", hash = "sha256:150db128af71a5c2482b36e588fc8a6b95e498750da4b17065947c16070f4055", size = 64057, upload-time = "2026-01-14T15:26:24.42Z" },
-]
-
-[[package]]
 name = "psutil"
 version = "7.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1664,11 +1664,11 @@ wheels = [
 
 [[package]]
 name = "pyflakes"
-version = "3.1.0"
+version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8b/fb/7251eaec19a055ec6aafb3d1395db7622348130d1b9b763f78567b2aab32/pyflakes-3.1.0.tar.gz", hash = "sha256:a0aae034c444db0071aa077972ba4768d40c830d9539fd45bf4cd3f8f6992efc", size = 63636, upload-time = "2023-07-29T17:00:41.482Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/dc/fd034dc20b4b264b3d015808458391acbf9df40b1e54750ef175d39180b1/pyflakes-3.4.0.tar.gz", hash = "sha256:b24f96fafb7d2ab0ec5075b7350b3d2d2218eab42003821c06344973d3ea2f58", size = 64669, upload-time = "2025-06-20T18:45:27.834Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/e9/1e1fd7fae559bfd07704991e9a59dd1349b72423c904256c073ce88a9940/pyflakes-3.1.0-py2.py3-none-any.whl", hash = "sha256:4132f6d49cb4dae6819e5379898f2b8cce3c5f23994194c24b77d5da2e36f774", size = 62616, upload-time = "2023-07-29T17:00:40.344Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl", hash = "sha256:f742a7dbd0d9cb9ea41e9a24a918996e8170c799fa528688d40dd582c8265f4f", size = 63551, upload-time = "2025-06-20T18:45:26.937Z" },
 ]
 
 [[package]]

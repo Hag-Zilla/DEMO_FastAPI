@@ -8,42 +8,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from prometheus_client import Counter, Histogram, Gauge
 
 from services.api.core.logging import get_logger
 
 logger = get_logger(__name__)
-
-# ==================== Prometheus Metrics ====================
-# HTTP Request metrics
-http_requests_total = Counter(
-    "http_requests_total",
-    "Total HTTP requests",
-    ["method", "endpoint", "status"],
-)
-http_request_duration_seconds = Histogram(
-    "http_request_duration_seconds",
-    "HTTP request latency in seconds",
-    ["method", "endpoint"],
-    buckets=(0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-)
-
-# Rate limiting metrics
-rate_limit_hits_total = Counter(
-    "rate_limit_hits_total",
-    "Total rate limit rejections",
-    ["zone", "client_ip"],
-)
-
-# Redis connectivity metrics
-redis_connection_errors_total = Counter(
-    "redis_connection_errors_total",
-    "Total Redis connection errors",
-)
-redis_connected = Gauge(
-    "redis_connected",
-    "Redis connection status (1=connected, 0=disconnected)",
-)
 
 
 # Initialize limiter with Redis storage for distributed rate limiting
@@ -89,9 +57,7 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
         """Process request and log HTTP activity."""
         start_time = time.time()
 
-        # Resolve client IP: use direct connection IP (safe), log the forwarded header for context.
-        # X-Forwarded-For is for logging only; rate limiting relies on get_remote_address
-        # which should be configured with trusted proxies in production.
+        # Resolve client IP from the direct client connection.
         client_ip = request.client.host if request.client else "unknown"
         forwarded_for = request.headers.get("X-Forwarded-For")
 
@@ -137,17 +103,5 @@ class HTTPLoggingMiddleware(BaseHTTPMiddleware):
             client_ip,
             extra=log_extra,
         )
-
-        # Record Prometheus metrics
-        endpoint = request.url.path
-        http_requests_total.labels(
-            method=request.method,
-            endpoint=endpoint,
-            status=response.status_code,
-        ).inc()
-        http_request_duration_seconds.labels(
-            method=request.method,
-            endpoint=endpoint,
-        ).observe(duration)
 
         return response

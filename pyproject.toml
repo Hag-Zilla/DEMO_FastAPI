@@ -1,51 +1,96 @@
+# ============================================================================
+# Workspace root
+# ============================================================================
+
 [project]
-name = "demo-fastapi"
+name = "demo-fastapi-workspace"
 version = "1.0.0"
-description = "Personal Expense Tracking API"
+description = "Workspace root for DEMO_FastAPI services"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
-    "fastapi>=0.115,<1.0",
-    "pydantic>=2.7,<3.0",
-    "pydantic-settings>=2.3,<3.0",
-    "uvicorn[standard]>=0.30,<1.0",
-    "sqlalchemy>=2.0,<3.0",
-    "passlib[argon2]>=1.7.4,<2.0",
-    "argon2-cffi>=23.1,<26.0",
-    "PyJWT>=2.10,<3.0",
-    "PyYAML>=6.0,<7.0",
-    "python-multipart>=0.0.9,<1.0",
-    "slowapi>=0.1.9,<2.0",
-    "redis>=5.0,<6.0",
-    "prometheus-client>=0.20,<1.0",
-    "fastapi-cache2[redis]>=0.1.8",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pre-commit>=3.5,<4.0",
-    "pytest>=8.0,<9.0",
-    "pytest-cov>=4.1,<6.0",
-    "pytest-asyncio>=0.23,<1.0",
-    "httpx>=0.25,<1.0",
-    "ruff>=0.3,<1.0",
-    "mypy>=1.8,<2.0",
-    "pydocstyle>=6.3,<7.0",
-    "autoflake>=2.0,<3.0",
-    "types-PyYAML>=6.0,<7.0",
-    "types-redis>=4.6,<5.0",
-    "bandit>=1.7,<2.0",
-    "pip-audit>=2.6,<3.0",
-]
+dependencies = []
 
 [tool.uv]
+# The repository root orchestrates services but is not itself a publishable package.
 package = false
 
 [tool.uv.pip]
 strict = true
 
-[dependency-groups]
-dev = [
-    "locust>=2.43.3",
-    "schemathesis>=4.10.2",
+[tool.uv.workspace]
+# Root workspace member + explicit API service member.
+members = [".", "services/api"]
+
+# ============================================================================
+# Quality and test tooling configuration
+# ============================================================================
+
+# Tooling stays at the repository root so all commands launched from the root
+# share a single source of truth, even when they target a specific workspace
+# member.
+
+[tool.mypy]
+python_version = "3.14"
+check_untyped_defs = false
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+warn_unused_ignores = false
+warn_redundant_casts = false
+warn_unused_configs = false
+
+[[tool.mypy.overrides]]
+module = ["services.api.*"]
+ignore_errors = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+pythonpath = ["services"]
+minversion = "7.0"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+testpaths = ["services/api/tests"]
+addopts = [
+	"-v",
+	"--strict-markers",
+	"--tb=short",
+	"--disable-warnings",
+	"-ra",
 ]
+markers = [
+	"unit: Unit tests for individual components",
+	"integration: Integration tests for multi-component interactions",
+	"slow: Slow running tests",
+	"auth: Authentication related tests",
+	"users: User management tests",
+	"expenses: Expense management tests",
+	"alerts: Budget alert tests",
+	"reports: Reporting tests",
+	"admin: Admin-only operation tests",
+]
+
+[tool.coverage.run]
+source = ["services/api"]
+omit = [
+	"*/tests/*",
+	"*/migrations/*",
+	"*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+	"pragma: no cover",
+	"def __repr__",
+	"raise AssertionError",
+	"raise NotImplementedError",
+	"if __name__ == .__main__.:",
+	"if TYPE_CHECKING:",
+	"@abstractmethod",
+	"@abc.abstractmethod",
+]
+precision = 2

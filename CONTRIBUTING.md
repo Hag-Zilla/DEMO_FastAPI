@@ -47,13 +47,22 @@ Use descriptive branch names like:
 ### 2. Set Up Development Environment
 
 ```bash
-# Interactive setup (creates venv, installs dependencies, pre-commit hooks)
+# Create local env file from template (one-time)
+make init-env
+
+# Setup uv environment (.venv + runtime dependencies)
 make init
+
+# Install development dependencies (pytest, ruff, mypy, pre-commit, ...)
+make sync-dev
+
+# Install pre-commit hooks
+make install-hooks
 ```
 
 This will:
-- Create a Python virtual environment
-- Install all dependencies (including dev tools)
+- Create a `.venv` Python environment with `uv` (if missing)
+- Install runtime and development dependencies
 - Install pre-commit hooks for automatic code quality checks
 
 ### 3. Make Your Changes

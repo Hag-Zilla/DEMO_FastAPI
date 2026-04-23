@@ -94,7 +94,7 @@ repos:
         name: Type check with mypy
         language: system
         entry: .venv/bin/python -m mypy
-        args: ['services/api', '--ignore-missing-imports']
+        args: ['services/api']
         pass_filenames: false
         types: [python]
         stages: [commit]
@@ -119,19 +119,6 @@ repos:
         name: Check shell scripts
         types: [shell]
         args: ['--severity=warning']
-        stages: [commit]
-
-  # ===== DOCKERFILE VALIDATION: Hadolint =====
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-      - id: hadolint-docker
-        name: Lint Dockerfile
-        types: [dockerfile]
-        args: 
-          - '--ignore=DL3008'  # Ignore: Pin versions in apt get
-          - '--ignore=DL3013'  # Ignore: Pin versions in pip  
-          - '--ignore=DL3059'  # Ignore: Consolidate RUN instructions
         stages: [commit]
 
   # ===== UNUSED IMPORTS: Autoflake =====

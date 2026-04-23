@@ -8,7 +8,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 
 </div>
 
-![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Docker](https://img.shields.io/badge/docker-✓-blue.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci-full.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
+![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![FastAPI](https://img.shields.io/badge/framework-FastAPI-green.svg) ![Makefile](https://img.shields.io/badge/Makefile-✓-orange.svg) [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Hag-Zilla/DEMO_FastAPI)](https://github.com/Hag-Zilla/DEMO_FastAPI/releases) [![CI](https://github.com/Hag-Zilla/DEMO_FastAPI/actions/workflows/ci-full.yml/badge.svg)](https://github.com/Hag-Zilla/DEMO_FastAPI/actions) [![codecov](https://img.shields.io/codecov/c/gh/Hag-Zilla/DEMO_FastAPI.svg)](https://codecov.io/gh/Hag-Zilla/DEMO_FastAPI)
 
 ## 📑 Table of Contents
 
@@ -19,6 +19,7 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
   - [Essential Configuration Variables](#essential-configuration-variables)
   - [Build and Run Services](#build-and-run-services)
   - [Verify Installation](#verify-installation)
+  - [Local Run Notes (No Docker)](#local-run-notes-no-docker)
   - [Configuration](#configuration)
     - [Environment Variables](#environment-variables)
     - [Logging](#logging)
@@ -71,11 +72,10 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 - **Alerts**: Real-time detection of budget overruns
 - **Reports**: Generate monthly and custom-period expense reports by category
 - **Admin & Moderator Interface**: System-wide user and expense management with moderation capabilities
-- **DDoS Protection**: 4-layer defense system (firewall, reverse proxy, application-level rate limiting, distributed quota storage)
+- **DDoS Protection**: App-level rate limiting with Redis-backed quota storage
 - **Rate Limiting**: Distributed request rate limiting with slowapi and Redis
 - **Error Handling**: Custom exception classes with proper HTTP status codes
 - **Logging**: Console and file-based logging for monitoring
-- **Monitoring**: Prometheus metrics collection + Grafana dashboards with built-in alerts
 - **Type Validation**: Pydantic v2 with enums for categories and roles
 - **Code Quality**: Pre-commit hooks, automated linting, type checking, and code standards enforcement
 
@@ -114,14 +114,12 @@ Quick generation:
 openssl rand -hex 32
 ```
 
-> **For Docker development and production**, see [doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#environment-configuration) for environment-specific configuration files (`.env.docker.dev`, `.env.docker.prod`) and detailed setup instructions.
-
 ### Build and Run Services
 
 **For local development:**
 
 ```bash
-# Install dependencies (uses committed uv.lock or requirements.txt)
+# Install dependencies (uses committed uv.lock)
 make init
 
 # Activate virtual environment
@@ -141,8 +139,6 @@ make run
 - `make init` installs runtime dependencies only
 - `make sync-dev` adds development tools (pre-commit, testing, linting)
 - `make install-hooks` configures git pre-commit hooks for code quality checks
-
-For **Docker development** and **Docker production** setup, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
 
 ### Verify Installation
 
@@ -170,8 +166,6 @@ curl http://localhost:8000/health/ready
 curl http://localhost:8000/health/startup
 ```
 
-> **For Docker setup and verification**, see [Build and Run Services](doc/DEPLOYMENT.md#build-and-run-services) in the deployment guide.
-
 **Example API request:**
 
 ```bash
@@ -179,6 +173,30 @@ curl -X POST "http://localhost:8000/api/v1/users/create-active" \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "secure123", "budget": 1000}'  # pragma: allowlist secret
 ```
+
+### Local Run Notes (No Docker)
+
+This demo is designed to run locally without Docker.
+
+Default runtime stack:
+- FastAPI application
+- SQLite database
+- Redis (optional, recommended for shared cache/rate-limiting storage)
+
+Quick runtime checks:
+
+```bash
+curl -i http://127.0.0.1:8000/health
+curl -i http://127.0.0.1:8000/health/live
+curl -i http://127.0.0.1:8000/health/ready
+tail -f services/api/logs/app.log
+```
+
+If startup fails, validate `.env` first:
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `DEBUG`
+- `REDIS_URL` (if configured)
 
 
 ### Configuration
@@ -190,17 +208,12 @@ Environment variables & secrets
 | File | Purpose |
 |------|---------|
 | `.env` | Dev local (FastAPI only) |
-| `.env.docker.dev` | Dev Docker (full stack) |
-| `.env.docker.prod` | Production |
 
 Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) with validation at startup.
 
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
-- `setup.sh` does not overwrite `DATABASE_URL`; your `.env` value is preserved.
-- Run setup with: `make init`
-
-For detailed setup of `.env.docker.dev` and `.env.docker.prod`, see [Configuration in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#configuration).
+- Install runtime dependencies with: `make init`
 
 #### Logging
 
@@ -209,8 +222,6 @@ Logs are written to:
 - **File**: `services/api/logs/app.log`
 
 Configured via YAML in `services/api/logs/config/logging.yaml`, loaded by `services/api/core/logging.py`.
-
-For production logging configuration, monitoring setup, and log aggregation, see [Monitoring & Health Checks in doc/DEPLOYMENT.md](doc/DEPLOYMENT.md#monitoring).
 
 ### Makefile & Common Tasks
 
@@ -223,7 +234,7 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 - `make run-hooks` — Run code quality checks
 - `make help` — Show all available targets
 
-**For all available Makefile targets** (development, Docker, monitoring, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
+**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
 
 
 ### Running Tests
@@ -277,38 +288,28 @@ Load test scenarios are defined in [services/api/tests/load_tests/locustfile.py]
 
 ### CI/CD & Automation
 
-Two-tier GitHub Actions pipelines for automated quality assurance:
+Single GitHub Actions pipeline for automated quality assurance:
 
-**Light Pipeline (dev branch - ~2-3 min):**
-- Triggered on push to `dev`
-- Detects modified services
-- Runs selective unit tests
-- Security & pre-commit checks
-- Fast feedback loop
-
-**Full Pipeline (main branch - ~8-10 min):**
-- Triggered on push to `main`
+**Full Pipeline (~8-10 min):**
+- Triggered on every push and pull request
 - Tests on Python 3.14
 - Full unit + integration tests
 - Type checking (mypy)
-- Code quality (Black, isort, Ruff, Flake8)
+- Code quality (Ruff lint + Ruff format)
 - Security scanning (bandit, pip-audit, TruffleHog)
-- Docker build validation
 - Pre-commit hooks validation
 - API schema generation check
 - Coverage reporting (Codecov)
 
-Workflow files: `.github/workflows/ci-light.yml` and `.github/workflows/ci-full.yml`
+Workflow file: `.github/workflows/ci-full.yml`
 
 ### Scripts Management
 
-Administrative scripts in the `startup/` directory:
+Administrative script in the `startup/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `setup.sh` | Environment initialization | `./startup/setup.sh` |
 | `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
-| `firewall-rules.sh` | DDoS protection (ufw/nftables) | `sudo ./startup/firewall-rules.sh` |
 
 See [startup/](startup/) for the scripts.
 
@@ -321,8 +322,6 @@ DEMO_FastAPI/
 ├── services/                       # Multi-service application architecture
 │   ├── api/                        # FastAPI microservice (Python package: 'services.api')
 │   │   ├── main.py                      # FastAPI application factory + exception handlers
-│   │   ├── Dockerfile                   # Docker image configuration (Python 3.14, uv)
-│   │   │
 │   │   ├── auth/                        # Authentication module (JWT router + schemas)
 │   │   │   ├── router.py               # POST /token login endpoint
 │   │   │   ├── schemas.py              # Token Pydantic schemas
@@ -335,7 +334,7 @@ DEMO_FastAPI/
 │   │   │   ├── enums.py                # UserRole, UserStatus, ExpenseCategory enums
 │   │   │   ├── logging.py              # Logging configuration (file + console)
 │   │   │   ├── middleware.py           # HTTP logging middleware
-│   │   │   ├── metrics.py              # Prometheus metrics
+│   │   │   ├── metrics.py              # In-memory business metrics
 │   │   │   ├── cache.py                # Cache utilities
 │   │   │   └── branding.py             # Startup banner and log signature
 │   │   │
@@ -397,68 +396,43 @@ DEMO_FastAPI/
 │   │
 │   ├── data/                           # SQLite database (git-ignored)
 │   │   └── expense_tracker.db          # SQLite database (auto-created)
-│   │
-│   ├── nginx/                          # Reverse proxy service (Docker production)
-│   │   └── nginx.conf                  # Nginx config: SSL, rate limiting, routing
-│   │
-│   └── monitoring/                     # Monitoring services (Grafana + Prometheus)
-│       ├── config/
-│       │   ├── prometheus.yml          # Prometheus scrape configuration
-│       │   └── alert.rules.yml         # Alerting rules
-│       └── grafana/
-│           └── provisioning/           # Grafana datasources & dashboards
 │
 ├── doc/                            # Project documentation
-│   ├── DEPLOYMENT.md               # Production deployment, firewall, monitoring, scaling
 │   ├── DEVELOPMENT.md              # Development workflow, pre-commit, Makefile targets
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
 │
-├── startup/                        # Administrative startup scripts
-│   ├── setup.sh                    # Environment initialization
+├── startup/                        # Administrative bootstrap script
 │   ├── project_spec.sh             # Admin bootstrap & database init
-│   └── firewall-rules.sh           # DDoS protection (ufw/nftables)
 │
 │
 ├── .github/                        # GitHub configuration
 │   └── workflows/
-│       ├── ci-light.yml            # Dev branch: selective testing
-│       └── ci-full.yml             # Main branch: comprehensive validation
+│       └── ci-full.yml             # Full CI on each push and pull request
 │
 ├── Root Configuration Files
-│   ├── docker-compose.yml          # Multi-service orchestration (FastAPI, Nginx, Redis)
 │   ├── Makefile                    # Build, run, and deployment automation
-│   ├── pyproject.toml              # uv project config + dependency constraints
-│   ├── pytest.ini                  # Pytest configuration
-│   ├── mypy.ini                    # mypy type checker configuration
-│   ├── requirements.txt            # Python dependencies (exported from uv.lock)
+│   ├── pyproject.toml              # Workspace root for uv (services are managed from here)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
 │   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
 │   ├── .python-version             # Python version pin for pyenv (3.14)
 │   ├── .env.example                # Dev environment variables template
-│   ├── .env.docker.dev.example     # Docker dev environment template
-│   ├── .env.docker.prod.example    # Docker production environment template
 │   └── LICENSE                     # CC BY-NC 4.0
 
 ├── .env                            # Dev local (git-ignored, created by make init-env)
-├── .env.docker.dev                 # Docker dev (git-ignored, created by make init-env)
-├── .env.docker.prod                # Docker prod (git-ignored, created by make init-env)
 └── .gitignore                      # Git ignore rules
 ```
 
 **Key Directories:**
 - **`services/`** - Multi-service microservices architecture
-  - **`services/api/`** - FastAPI application (code, tests, logs — self-contained)
-  - **`services/nginx/`** - Docker production reverse proxy configuration
-  - **`services/monitoring/`** - Grafana + Prometheus configuration
+  - **`services/api/`** - FastAPI service with its own `pyproject.toml` (code, tests, logs — self-contained)
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
-- **`startup/`** - Administrative startup scripts (initialization, bootstrap, firewall)
+- **`startup/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
-- **`docker-compose.yml`** - Orchestrates multi-service stack (FastAPI, Nginx, Redis, Prometheus, Grafana)
-- **`startup/firewall-rules.sh`** - **MUST run before docker-compose** for DDoS protection
 - **`Makefile`** - Simplifies common development and deployment tasks
-- **`pyproject.toml` + `uv.lock`** - Pinned dependency management
+- **Root `pyproject.toml` + `uv.lock`** - Workspace orchestration and shared lockfile
+- **`services/api/pyproject.toml`** - API service dependencies and tool configuration
 
 ## 📊 Data Structures
 ---
@@ -622,7 +596,7 @@ All endpoints have defined permission requirements:
 
 | Endpoint | Method | Role | Description |
 |----------|--------|------|-------------|
-| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, Prometheus counters) |
+| `/analytics/` | GET | 🔴 ADMIN | Business KPIs snapshot (user counts, expense totals, in-memory counters) |
 
 ### Health
 
@@ -708,7 +682,6 @@ For specialized topics and detailed guides:
 
 | Document | Purpose |
 |----------|----------|
-| **[doc/DEPLOYMENT.md](doc/DEPLOYMENT.md)** | Production deployment, scaling, monitoring, troubleshooting |
 | **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
 | **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
 | **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |

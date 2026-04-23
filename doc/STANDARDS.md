@@ -22,48 +22,30 @@ This document outlines the coding standards and conventions for DEMO_FastAPI.
 ### Directory Structure
 
 ```
-app/
-├── __init__.py                    # Package marker
-├── main.py                         # FastAPI application factory
-├── core/                           # Core infrastructure
-│   ├── __init__.py
-│   ├── config.py                  # Settings & environment config
-│   ├── security.py                # Authentication & authorization
-│   ├── exceptions.py              # Custom exception classes
-│   ├── middleware.py              # HTTP middleware (logging, metrics)
-│   ├── logging.py                 # Logging configuration
-│   ├── branding.py                # App branding & metadata
-│   └── enums.py                   # Enum definitions (UserRole, UserStatus)
-├── database/                       # Database & ORM
-│   ├── __init__.py
-│   ├── session.py                 # SQLAlchemy setup & dependency
-│   └── models/                    # SQLAlchemy ORM models
-│       ├── __init__.py
-│       ├── user.py                # User model
-│       └── expense.py             # Expense model
-├── schemas/                        # Pydantic request/response schemas
-│   ├── __init__.py
-│   ├── common.py                  # Shared schemas
-│   ├── user.py                    # User DTOs
-│   └── expense.py                 # Expense DTOs
-├── routers/                        # API route handlers
-│   ├── __init__.py
-│   ├── auth.py                    # Authentication endpoints
-│   ├── users.py                   # User management endpoints
-│   ├── expenses.py                # Expense endpoints
-│   ├── reports.py                 # Report generation endpoints
-│   ├── alerts.py                  # Alert endpoints
-│   └── health.py                  # Health check endpoints
-└── utils/                          # Shared utilities & helpers
-    ├── __init__.py
-    ├── dependencies.py            # FastAPI dependency injections
-    ├── print_banner.py            # Banner printing utility
-    └── branding/                  # Branded text files
-        ├── mammoth.txt
-        ├── setup.txt
-        ├── startup.txt
-        └── completion.txt
+DEMO_FastAPI/
+├── services/
+│   └── api/                        # FastAPI package (services.api)
+│       ├── main.py                 # FastAPI application instance
+│       ├── auth/                   # Auth module (router/schemas/service)
+│       ├── core/                   # Config, security, exceptions, middleware
+│       ├── database/               # SQLAlchemy session + ORM models
+│       ├── routers/                # API routers (users, expenses, reports, ...)
+│       ├── schemas/                # Pydantic schemas
+│       ├── services/               # Business logic layer
+│       ├── utils/                  # Dependencies, branding, static assets
+│       └── tests/                  # Pytest test suite + load tests
+├── doc/                            # Project documentation
+├── startup/                        # project_spec.sh (admin bootstrap)
+├── pyproject.toml                  # Workspace root (uv orchestration)
+├── services/
+│   └── api/
+│       └── pyproject.toml          # API service metadata and dependencies
+├── uv.lock                         # Locked dependency versions
+└── Makefile                        # Common local development commands
 ```
+
+Note: Quality/test tooling configuration (mypy, pytest, coverage) is centralized
+in the repository root `pyproject.toml`.
 
 ---
 
@@ -100,17 +82,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-# Local imports (relative, alphabetical)
-from ..core.config import settings
-from ..core.security import get_current_user
-from ..database.models import User
-from ..schemas import UserSchema
+# Local imports (absolute, alphabetical)
+from services.api.core.config import settings
+from services.api.core.security import get_current_user
+from services.api.database.models.user import User
+from services.api.schemas.user import UserResponse
 ```
 
 **Rules**:
 - Organize: stdlib → third-party → local
 - Alphabetical within each group
-- Use absolute imports for local packages
+- Prefer absolute imports for cross-package references (`services.api...`)
+- Relative imports are acceptable inside the same package when they improve readability
 - Import specific names, not entire modules (except `import json`)
 - Group related imports together
 
@@ -302,7 +285,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "app.main:app",
+        "services.api.main:app",
         host="127.0.0.1",
         port=8000,
         reload=True,
@@ -478,7 +461,7 @@ This module handles:
 - Dependency injection for FastAPI
 
 Example:
-    >>> from app.core.security import get_current_user
+    >>> from services.api.core.security import get_current_user
     >>> from fastapi import Depends
     >>>
     >>> @app.get("/profile")
@@ -619,7 +602,7 @@ Pre-commit hooks automatically fix common issues:
 
 ```bash
 # Run import sorting
-ruff check --fix app/
+ruff check --fix services/api
 
 # Or let pre-commit handle it
 make run-hooks
@@ -632,7 +615,7 @@ make run-hooks
 ### Define Custom Exceptions
 
 ```python
-# In app/core/exceptions.py
+# In services/api/core/exceptions.py
 
 class APIError(Exception):
     """Base exception for API errors."""
@@ -703,12 +686,18 @@ async def get_user(user_id: int) -> UserResponse:
 ### Test File Structure
 
 ```
-tests/
+services/api/tests/
 ├── __init__.py
-├── test_auth.py          # Tests for auth.py
-├── test_users.py         # Tests for users.py
-├── test_expenses.py      # Tests for expenses.py
-└── conftest.py           # Shared fixtures
+├── conftest.py             # Shared fixtures
+├── test_auth.py            # Authentication tests
+├── test_users.py           # User management tests
+├── test_expenses.py        # Expense tests
+├── test_alerts.py          # Alert tests
+├── test_reports.py         # Report tests
+├── test_security.py        # Security tests
+├── test_contract.py        # OpenAPI contract tests
+└── load_tests/
+    └── locustfile.py       # Locust scenarios
 ```
 
 ### Naming Convention
@@ -746,8 +735,8 @@ class TestUserService:
 import pytest
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.database.session import SessionLocal, Base, engine
+from services.api.core.config import settings
+from services.api.database.session import SessionLocal, Base, engine
 
 
 @pytest.fixture
@@ -763,7 +752,7 @@ def db():
 @pytest.fixture
 def test_user(db: Session):
     """Create test user."""
-    from app.database.models import User
+    from services.api.database.models import User
     user = User(username="testuser", hashed_password="...")
     db.add(user)
     db.commit()
@@ -803,5 +792,5 @@ Before committing Python code:
 
 ---
 
-**Last Updated**: 2025-03-27
-**Version**: 1.0
+**Last Updated**: 2026-04-22
+**Version**: 1.1
