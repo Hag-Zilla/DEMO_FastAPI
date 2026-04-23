@@ -83,7 +83,17 @@ jobs:
 
       - name: Run integration tests
         run: |
+          set +e
           uv run --package demo-fastapi-api pytest -m "integration"
+          status=$?
+          set -e
+
+          if [ "$status" -eq 5 ]; then
+            echo "No integration tests were collected. Skipping integration suite."
+            exit 0
+          fi
+
+          exit "$status"
 
   lint-and-format:
     name: Lint & Code Quality
