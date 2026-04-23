@@ -505,9 +505,9 @@ make run
 To update dependencies and produce a new lock:
 
 ```bash
-# Edit pyproject.toml as needed, then:
+# Edit services/api/pyproject.toml as needed, then:
 make lock           # Regenerate uv.lock
-git add pyproject.toml uv.lock
+git add pyproject.toml services/api/pyproject.toml uv.lock
 git commit -m "chore: update dependencies"
 ```
 

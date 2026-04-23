@@ -36,7 +36,10 @@ DEMO_FastAPI/
 │       └── tests/                  # Pytest test suite + load tests
 ├── doc/                            # Project documentation
 ├── startup/                        # project_spec.sh (admin bootstrap)
-├── pyproject.toml                  # Project metadata and dependencies
+├── pyproject.toml                  # Workspace root (uv orchestration)
+├── services/
+│   └── api/
+│       └── pyproject.toml          # API service metadata, deps, and tool config
 ├── uv.lock                         # Locked dependency versions
 └── Makefile                        # Common local development commands
 ```

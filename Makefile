@@ -1,10 +1,10 @@
 .PHONY: help init init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 
-PYTHON := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; else echo python3; fi)
+UV_PACKAGE := demo-fastapi-api
 
 help:
 	@echo "=== DEVELOPMENT (Local) ==="
-	@echo "  make init             Setup uv environment (.venv + runtime deps)"
+	@echo "  make init             Setup uv environment for the API service (.venv + runtime deps)"
 	@echo "  make init-env         Create .env files from templates (.example)"
 	@echo "  make sync             Install/sync dependencies from uv.lock"
 	@echo "  make sync-dev         Install all dependencies including dev tools (pre-commit, pytest, ruff, mypy)"
@@ -42,7 +42,7 @@ init:
 		echo "Creating .venv with uv..."; \
 		uv venv; \
 	fi
-	uv sync
+	uv sync --package $(UV_PACKAGE)
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:
@@ -62,11 +62,11 @@ init-env:
 
 # Sync dependencies from pyproject.toml/uv.lock
 sync:
-	uv sync
+	uv sync --package $(UV_PACKAGE)
 
 # Sync all dependencies including dev tools (pre-commit, pytest, ruff, mypy, etc.)
 sync-dev:
-	uv sync --extra dev --all-groups
+	uv sync --package $(UV_PACKAGE) --extra dev --all-groups
 
 # Refresh uv lockfile
 lock:
@@ -74,20 +74,20 @@ lock:
 
 # Run in development mode (auto-reload)
 run:
-	$(PYTHON) -m uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
+	uv run --package $(UV_PACKAGE) uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
-	pytest --tb=short -W ignore::ResourceWarning:anyio
+	uv run --package $(UV_PACKAGE) pytest -W ignore::ResourceWarning:anyio
 
 lint:
-	$(PYTHON) -m ruff check services/api
+	uv run --package $(UV_PACKAGE) ruff check services/api
 
 format:
-	$(PYTHON) -m ruff format services/api
+	uv run --package $(UV_PACKAGE) ruff format services/api
 
 # Admin bootstrap (interactive)
 bootstrap-admin:
-	bash startup/project_spec.sh
+	uv run --package $(UV_PACKAGE) bash startup/project_spec.sh
 
 clean:
 	find . -type f -name "*.pyc" -delete
@@ -96,17 +96,17 @@ clean:
 # Contract testing (Schemathesis — requires no running server, tests via ASGI)
 contract-test:
 	@echo "Running Schemathesis contract tests..."
-	pytest services/api/tests/test_contract.py -v
+	uv run --package $(UV_PACKAGE) pytest services/api/tests/test_contract.py -v
 
 # Load testing (Locust — requires a running API server)
 load-test:
 	@echo "Starting Locust load test against http://localhost:8000 ..."
 	@echo "  Use --users / --spawn-rate / --run-time --headless for CI mode."
-	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000
+	uv run --package $(UV_PACKAGE) locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000
 
 # Headless load test (CI-friendly, 20 users, 60 s)
 load-test-headless:
-	locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000 \
+	uv run --package $(UV_PACKAGE) locust -f services/api/tests/load_tests/locustfile.py --host http://localhost:8000 \
 		--users 20 --spawn-rate 5 --run-time 60s --headless
 
 # ============================================================================
@@ -115,24 +115,24 @@ load-test-headless:
 
 install-hooks:
 	@echo "Installing pre-commit hooks..."
-	$(PYTHON) -m pre_commit install
-	$(PYTHON) -m pre_commit install-hooks
+	uv run --package $(UV_PACKAGE) pre_commit install
+	uv run --package $(UV_PACKAGE) pre_commit install-hooks
 	@echo "✓ Pre-commit hooks installed"
 
 run-hooks:
 	@echo "Running pre-commit hooks on all files..."
-	$(PYTHON) -m pre_commit run --all-files
+	uv run --package $(UV_PACKAGE) pre_commit run --all-files
 
 run-hooks-staged:
 	@echo "Running pre-commit hooks on staged files..."
-	$(PYTHON) -m pre_commit run
+	uv run --package $(UV_PACKAGE) pre_commit run
 
 update-hooks:
 	@echo "Updating pre-commit hooks to latest versions..."
-	$(PYTHON) -m pre_commit autoupdate
+	uv run --package $(UV_PACKAGE) pre_commit autoupdate
 	@echo "✓ Hooks updated. Review changes in .pre-commit-config.yaml"
 
 clean-hooks:
 	@echo "Cleaning pre-commit cache..."
-	$(PYTHON) -m pre_commit clean
-	$(PYTHON) -m pre_commit clean-files
+	uv run --package $(UV_PACKAGE) pre_commit clean
+	uv run --package $(UV_PACKAGE) pre_commit clean-files

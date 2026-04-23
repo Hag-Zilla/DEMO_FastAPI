@@ -40,11 +40,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Run unit tests with coverage
         run: |
-          uv run pytest --cov=services/api --cov-report=xml --cov-report=html
+          uv run --package demo-fastapi-api pytest --cov=services/api --cov-report=xml --cov-report=html
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -79,11 +79,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Run integration tests
         run: |
-          uv run pytest -m "integration"
+          uv run --package demo-fastapi-api pytest -m "integration"
 
   lint-and-format:
     name: Lint & Code Quality
@@ -102,15 +102,15 @@ jobs:
 
       - name: Install linting tools
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Check formatting with Ruff
         run: |
-          uv run ruff format --check services/api services/api/tests
+          uv run --package demo-fastapi-api ruff format --check services/api services/api/tests
 
       - name: Lint with Ruff
         run: |
-          uv run ruff check services/api services/api/tests
+          uv run --package demo-fastapi-api ruff check services/api services/api/tests
 
   type-checking:
     name: Type Checking (mypy)
@@ -129,11 +129,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Run type checker
         run: |
-          uv run mypy services/api --junit-xml=type-results.xml
+          uv run --package demo-fastapi-api mypy services/api --junit-xml=type-results.xml
         continue-on-error: true
 
       - name: Upload type results
@@ -160,16 +160,16 @@ jobs:
 
       - name: Install security tools
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Run pip-audit check on dependencies
         run: |
-          uv run pip-audit --desc > pip-audit-report.json
+          uv run --package demo-fastapi-api pip-audit --desc > pip-audit-report.json
         continue-on-error: true
 
       - name: Run bandit security check
         run: |
-          uv run bandit -r services/api -f json -o bandit-report.json
+          uv run --package demo-fastapi-api bandit -r services/api -f json -o bandit-report.json
         continue-on-error: true
 
       - name: Upload security reports
@@ -208,11 +208,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Run pre-commit hooks
         run: |
-          uv run pre-commit run --all-files
+          uv run --package demo-fastapi-api pre-commit run --all-files
 
   api-documentation:
     name: API Documentation
@@ -231,11 +231,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --extra dev --all-groups
+          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
 
       - name: Check API schema generation
         run: |
-          uv run python -c "from services.api.main import app; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
+          uv run --package demo-fastapi-api python -c "from services.api.main import app; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
 
   final-status:
     name: CI Full Status

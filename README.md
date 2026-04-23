@@ -412,7 +412,7 @@ DEMO_FastAPI/
 │
 ├── Root Configuration Files
 │   ├── Makefile                    # Build, run, and deployment automation
-│   ├── pyproject.toml              # uv project config + dependencies + tool config (pytest/mypy/coverage)
+│   ├── pyproject.toml              # Workspace root for uv (services are managed from here)
 │   ├── uv.lock                     # Locked dependency versions (commit this)
 │   ├── .pre-commit-config.yaml     # Pre-commit hooks configuration (13 checks)
 │   ├── .python-version             # Python version pin for pyenv (3.14)
@@ -425,13 +425,14 @@ DEMO_FastAPI/
 
 **Key Directories:**
 - **`services/`** - Multi-service microservices architecture
-  - **`services/api/`** - FastAPI application (code, tests, logs — self-contained)
+  - **`services/api/`** - FastAPI service with its own `pyproject.toml` (code, tests, logs — self-contained)
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
 - **`startup/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
 - **`Makefile`** - Simplifies common development and deployment tasks
-- **`pyproject.toml` + `uv.lock`** - Pinned dependency management
+- **Root `pyproject.toml` + `uv.lock`** - Workspace orchestration and shared lockfile
+- **`services/api/pyproject.toml`** - API service dependencies and tool configuration
 
 ## 📊 Data Structures
 ---

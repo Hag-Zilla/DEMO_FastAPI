@@ -6,6 +6,12 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[manifest]
+members = [
+    "demo-fastapi-api",
+    "demo-fastapi-workspace",
+]
+
 [[package]]
 name = "aioredis"
 version = "2.0.1"
@@ -520,9 +526,9 @@ wheels = [
 ]
 
 [[package]]
-name = "demo-fastapi"
+name = "demo-fastapi-api"
 version = "1.0.0"
-source = { virtual = "." }
+source = { virtual = "services/api" }
 dependencies = [
     { name = "argon2-cffi" },
     { name = "fastapi" },
@@ -598,6 +604,11 @@ dev = [
     { name = "locust", specifier = ">=2.43.3" },
     { name = "schemathesis", specifier = ">=4.10.2" },
 ]
+
+[[package]]
+name = "demo-fastapi-workspace"
+version = "1.0.0"
+source = { virtual = "." }
 
 [[package]]
 name = "deprecated"
