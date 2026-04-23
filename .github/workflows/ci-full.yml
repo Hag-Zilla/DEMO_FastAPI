@@ -101,23 +101,14 @@ jobs:
       - name: Install linting tools
         run: |
           uv sync --frozen --extra dev --all-groups
-          python -m pip install black isort flake8
 
-      - name: Check code formatting with Black
+      - name: Check formatting with Ruff
         run: |
-          uv run black --check services/api services/api/tests
-
-      - name: Check import sorting with isort
-        run: |
-          uv run isort --check-only services/api services/api/tests
+          uv run ruff format --check services/api services/api/tests
 
       - name: Lint with Ruff
         run: |
           uv run ruff check services/api services/api/tests
-
-      - name: Lint with Flake8
-        run: |
-          uv run flake8 services/api services/api/tests --max-line-length=100 --extend-ignore=E203,W503
 
   type-checking:
     name: Type Checking (mypy)

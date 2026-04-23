@@ -295,7 +295,7 @@ Single GitHub Actions pipeline for automated quality assurance:
 - Tests on Python 3.14
 - Full unit + integration tests
 - Type checking (mypy)
-- Code quality (Black, isort, Ruff, Flake8)
+- Code quality (Ruff lint + Ruff format)
 - Security scanning (bandit, pip-audit, TruffleHog)
 - Pre-commit hooks validation
 - API schema generation check
