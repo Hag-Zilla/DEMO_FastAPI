@@ -2,9 +2,8 @@
 # Workspace root
 # ============================================================================
 # Install with:
-#   A – tools only (no runtime deps):  uv sync --only-group tools
-#   B – one service's runtime deps:    uv sync --package <service-name>
-#   C – all services' runtime deps:    uv sync --no-group tools
+#   A – one service's runtime deps:    uv sync --package <service-name>
+#   B – all services' runtime deps:    uv sync --no-group tools
 
 [project]
 name = "demo-fastapi-workspace"

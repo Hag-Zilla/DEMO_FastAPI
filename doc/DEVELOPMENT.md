@@ -31,15 +31,12 @@ This project uses **[pre-commit](https://pre-commit.com/)** to automate code qua
 
 ### Installation
 
-Pre-commit is included in the `dev` dependencies. Install hooks with:
+Pre-commit is part of the shared `tools` dependency group. Install hooks with:
 
 ```bash
-# Install all dev dependencies (pre-commit, pytest, ruff, mypy, etc.)
-make sync-dev
-
 # Register hooks with git
 make install-hooks
-# or manually: pre-commit install
+# or manually: uv run --only-group tools pre-commit install
 ```
 
 ### Running Hooks
@@ -50,15 +47,17 @@ git commit -m "Your message"
 
 # Run all hooks on all files
 make run-hooks
-# or: pre-commit run --all-files
+# or: uv run --only-group tools pre-commit run --all-files
 
 # Run hooks on only staged files
 make run-hooks-staged
-# or: pre-commit run
+# or: uv run --only-group tools pre-commit run
 
 # Bypass hooks if absolutely necessary
 git commit --no-verify
 ```
+
+`uvx pre-commit ...` is fine for one-off manual runs, but it is not the default workflow here because `pre-commit` is already versioned in the repository's `tools` group. `uv run --only-group tools ...` stays aligned with the project's declared and locked toolchain.
 
 ### Available Hooks
 
@@ -136,7 +135,7 @@ Hooks are pinned to specific versions in `.pre-commit-config.yaml`. Update them:
 ```bash
 # Check for new versions and update config
 make update-hooks
-# or: pre-commit autoupdate
+# or: uv run --only-group tools pre-commit autoupdate
 
 # Review changes
 git diff .pre-commit-config.yaml
@@ -290,7 +289,7 @@ Hooks enforce:
 git clone <repo>
 cd DEMO_FastAPI
 
-# Setup uv environment (.venv + runtime dependencies)
+# Setup uv environment (.venv + runtime dependencies for all services)
 make init
 
 # Install pre-commit hooks
@@ -465,7 +464,6 @@ make run-hooks
 ```bash
 # Nuke old installation and reinstall
 make clean-hooks
-make sync-dev
 make install-hooks
 ```
 
@@ -482,7 +480,7 @@ Edit `.pre-commit-config.yaml` to adjust:
 
 Then reinstall:
 ```bash
-pre-commit install-hooks
+uv run --only-group tools pre-commit install-hooks
 ```
 
 ---
@@ -494,8 +492,8 @@ pre-commit install-hooks
 If `uv.lock` is committed, install exact versions without regenerating:
 
 ```bash
-make init        # Install runtime deps from uv.lock
-make sync-dev    # Add dev tools (pre-commit, pytest, ruff, mypy…)
+make init        # Install runtime deps for all services from uv.lock
+make sync-api    # Or install only the API service runtime deps
 make test
 make run
 ```
@@ -520,8 +518,10 @@ git commit -m "chore: update dependencies"
 ```bash
 # Development commands
 make help              # List all available commands
-make init              # Setup environment (runtime deps)
-make sync-dev          # Install all dev dependencies
+make init              # Setup environment (.venv + runtime deps for all services)
+make sync              # Install runtime deps for all services
+make sync-api          # Install runtime deps for the API service only
+make sync-all          # Alias of make sync
 make run               # Start dev server
 make test              # Run tests
 make lint              # Lint code

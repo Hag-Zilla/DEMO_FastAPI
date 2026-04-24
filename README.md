@@ -119,14 +119,11 @@ openssl rand -hex 32
 **For local development:**
 
 ```bash
-# Install dependencies (uses committed uv.lock)
+# Create .venv and install runtime dependencies for all services (A)
 make init
 
 # Activate virtual environment
 source .venv/bin/activate  # or ./venv/bin/activate
-
-# Install development dependencies (pre-commit, pytest, ruff, mypy, etc.)
-make sync-dev
 
 # Setup pre-commit hooks
 make install-hooks
@@ -136,9 +133,19 @@ make run
 ```
 
 **Notes:**
-- `make init` installs runtime dependencies only
-- `make sync-dev` adds development tools (pre-commit, testing, linting)
+- `make init`, `make sync`, and `make sync-all` install the runtime dependencies for all workspace services
+- `make sync-api` installs the runtime dependencies for the API service only
 - `make install-hooks` configures git pre-commit hooks for code quality checks
+
+**Dependency installation modes:**
+
+```bash
+# A — runtime deps for all services in services/
+uv sync --no-group tools
+
+# B — runtime deps for one service
+uv sync --package demo-fastapi-api
+```
 
 ### Verify Installation
 
@@ -213,7 +220,8 @@ Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) wi
 
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
-- Install runtime dependencies with: `make init`
+- Use `make init` or `make sync` for all workspace services.
+- Use `make sync-api` when you want the API service only.
 
 #### Logging
 
@@ -228,7 +236,9 @@ Configured via YAML in `services/api/logs/config/logging.yaml`, loaded by `servi
 The project provides a comprehensive `Makefile` to simplify common workflows:
 
 **Quick Commands:**
-- `make init` — Setup environment and install dependencies
+- `make init` — Create `.venv` and install runtime dependencies for all services
+- `make sync` — Install runtime dependencies for all services
+- `make sync-api` — Install runtime dependencies for the API service only
 - `make run` — Start the dev server
 - `make test` — Run test suite
 - `make run-hooks` — Run code quality checks
@@ -430,9 +440,9 @@ DEMO_FastAPI/
 - **`startup/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
-- **`Makefile`** - Simplifies common development and deployment tasks
+- **`Makefile`** - Simplifies common development and dependency-management tasks
 - **Root `pyproject.toml` + `uv.lock`** - Workspace orchestration and shared lockfile
-- **`services/api/pyproject.toml`** - API service dependencies and tool configuration
+- **`services/api/pyproject.toml`** - API service runtime dependencies only
 
 ## 📊 Data Structures
 ---

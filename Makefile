@@ -1,14 +1,13 @@
-.PHONY: help init init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
-.PHONY: help init init-env sync sync-tools sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
+.PHONY: help init init-env sync sync-api sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 UV_PACKAGE := demo-fastapi-api
 
 help:
 	@echo "=== DEVELOPMENT (Local) ==="
-	@echo "  make init             Setup .venv and install runtime deps for the API service"
+	@echo "  make init             Setup .venv and install runtime deps for all services"
 	@echo "  make init-env         Create .env files from templates (.example)"
-	@echo "  make sync             B – runtime deps of the API service only"
-	@echo "  make sync-tools       A – dev/quality tools only (ruff, mypy, pytest, …)"
-	@echo "  make sync-all         C – runtime deps of ALL services (no tools)"
+	@echo "  make sync             A – runtime deps of ALL services"
+	@echo "  make sync-api         B – runtime deps of the API service only"
+	@echo "  make sync-all         Alias of make sync"
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
 	@echo "  make lint             Run ruff linting"
@@ -43,7 +42,7 @@ init:
 		echo "Creating .venv with uv..."; \
 		uv venv; \
 	fi
-	uv sync --package $(UV_PACKAGE)
+	$(MAKE) sync
 
 # Create .env files from .example templates (safe, won't overwrite existing)
 init-env:
@@ -61,17 +60,17 @@ init-env:
 	echo "  2. For local dev: nano .env"; \
 	echo ""
 
-# Sync dependencies from pyproject.toml/uv.lock
+# Sync runtime dependencies for all workspace services from pyproject.toml/uv.lock
 sync:
+	uv sync --no-group tools
+
+# Sync runtime dependencies for the API service only
+sync-api:
 	uv sync --package $(UV_PACKAGE)
 
-# A — install only dev/quality tools, no runtime service deps
-sync-tools:
-	uv sync --only-group tools
-
-# C — install runtime deps of ALL workspace services, no tools
+# Alias for syncing runtime dependencies of all workspace services
 sync-all:
-	uv sync --no-group tools
+	$(MAKE) sync
 
 # Refresh uv lockfile
 lock:
@@ -120,24 +119,24 @@ load-test-headless:
 
 install-hooks:
 	@echo "Installing pre-commit hooks..."
-	uv run --package $(UV_PACKAGE) pre-commit install
-	uv run --package $(UV_PACKAGE) pre-commit install-hooks
+	uv run --only-group tools pre-commit install
+	uv run --only-group tools pre-commit install-hooks
 	@echo "✓ Pre-commit hooks installed"
 
 run-hooks:
 	@echo "Running pre-commit hooks on all files..."
-	uv run --package $(UV_PACKAGE) pre-commit run --all-files
+	uv run --only-group tools pre-commit run --all-files
 
 run-hooks-staged:
 	@echo "Running pre-commit hooks on staged files..."
-	uv run --package $(UV_PACKAGE) pre-commit run
+	uv run --only-group tools pre-commit run
 
 update-hooks:
 	@echo "Updating pre-commit hooks to latest versions..."
-	uv run --package $(UV_PACKAGE) pre-commit autoupdate
+	uv run --only-group tools pre-commit autoupdate
 	@echo "✓ Hooks updated. Review changes in .pre-commit-config.yaml"
 
 clean-hooks:
 	@echo "Cleaning pre-commit cache..."
-	uv run --package $(UV_PACKAGE) pre-commit clean
-	uv run --package $(UV_PACKAGE) pre-commit clean-files
+	uv run --only-group tools pre-commit clean
+	uv run --only-group tools pre-commit clean-files

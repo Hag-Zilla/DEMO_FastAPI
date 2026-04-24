@@ -7,21 +7,28 @@ This module provides:
 - Mock authentication
 """
 
+import os
+from datetime import datetime, timedelta, timezone
 from typing import Generator
-from datetime import datetime, timezone, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from services.api.main import app
-from services.api.database.session import Base, get_db
-from services.api.database.models.user import User
-from services.api.database.models.expense import Expense
-from services.api.core.enums import UserRole, UserStatus, ExpenseCategory
-from services.api.core.security import get_password_hash
-from fastapi_cache.backends.inmemory import InMemoryBackend
+os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-required")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./services/data/test.db")
+os.environ.setdefault("APP_NAME", "FastAPI Expense Tracker Test")
+os.environ.setdefault("APP_VERSION", "1.0.0-test")
+os.environ.setdefault("DEBUG", "true")
+
+from services.api.main import app  # noqa: E402
+from services.api.database.session import Base, get_db  # noqa: E402
+from services.api.database.models.user import User  # noqa: E402
+from services.api.database.models.expense import Expense  # noqa: E402
+from services.api.core.enums import UserRole, UserStatus, ExpenseCategory  # noqa: E402
+from services.api.core.security import get_password_hash  # noqa: E402
+from fastapi_cache.backends.inmemory import InMemoryBackend  # noqa: E402
 
 
 # Use in-memory SQLite for tests
