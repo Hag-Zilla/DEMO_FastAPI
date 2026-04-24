@@ -7,7 +7,9 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt import InvalidTokenError
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy.orm import Session
 
 from services.api.core.config import settings
@@ -21,25 +23,35 @@ logger = get_logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# Password hashing — Argon2 primary, bcrypt as legacy fallback for migrations
+password_hash = PasswordHash((Argon2Hasher(), BcryptHasher()))
+
+# Argon2id hash of a random password used to prevent username-enumeration via
+# timing differences: we always run a full hash comparison even when the user
+# does not exist, so the response time is the same in both cases.
+DUMMY_HASH = (  # pragma: allowlist secret
+    "$argon2id$v=19$m=65536,t=3,p=4"
+    "$MjQyZWE1MzBjYjJlZTI0Yw"
+    "$YTU4NGM5ZTZmYjE2NzZlZjY0ZWY3ZGRkY2U2OWFjNjk"
+)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a plain password."""
-    return pwd_context.hash(password)
+    return password_hash.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
+    verified, _ = password_hash.verify_and_update(plain_password, hashed_password)
+    return verified
 
 
 def decode_jwt_token(token: str) -> dict:
     """Decode and return the payload of a JWT token."""
     try:
         # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to PyJWT
-        secret: str = settings.SECRET_KEY.get_secret_value()
+        secret: str = settings.SECRET_KEY.get_secret_value()  # pylint: disable=no-member
         payload = jwt.decode(
             token,
             secret,
@@ -136,7 +148,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
             minutes=settings.JWT_EXPIRATION_MINUTES
         )
     to_encode.update({"exp": expire, "sub": data["sub"]})  # Ensure "sub" is included
-    secret: str = settings.SECRET_KEY.get_secret_value()
+    secret: str = settings.SECRET_KEY.get_secret_value()  # pylint: disable=no-member
     encoded_jwt = jwt.encode(
         to_encode,
         secret,
@@ -145,11 +157,28 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def authenticate_user(db: Session, username: str, password: str):
-    """Authenticate a user by username and password."""
+def authenticate_user(db: Session, username: str, password: str) -> UserModel | None:
+    """Authenticate a user by username and password.
+
+    Runs a full hash verification even when the user does not exist to prevent
+    timing-based username enumeration. If the stored hash algorithm has been
+    upgraded (bcrypt → argon2), the new hash is persisted transparently.
+    """
     user = db.query(UserModel).filter(UserModel.username == username).first()
     if not user:
+        # Prevent timing attacks: same cost whether username exists or not.
+        password_hash.verify_and_update(password, DUMMY_HASH)
         return None
-    if not verify_password(password, user.hashed_password):  # type: ignore[arg-type]
+    verified, updated_hash = password_hash.verify_and_update(
+        password,
+        user.hashed_password,  # type: ignore[arg-type]
+    )
+    if not verified:
         return None
+    if updated_hash:
+        # Algorithm migration (e.g. bcrypt → argon2): persist the refreshed hash.
+        user.hashed_password = updated_hash  # type: ignore[assignment]
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user

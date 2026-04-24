@@ -99,6 +99,20 @@ repos:
         types: [python]
         stages: [commit]
 
+  # ===== PYTHON TYPE CHECKING: ty (fast Rust-based checker by Astral) =====
+  # ty is at 0.0.x (pre-alpha). It surfaces real typing issues but also flags
+  # legacy SQLAlchemy ORM patterns. Run manually for audit; not blocking commits.
+  - repo: local
+    hooks:
+      - id: ty
+        name: Type check with ty
+        language: system
+        entry: uv run --only-group tools ty
+        args: ['check', 'services/api']
+        pass_filenames: false
+        types: [python]
+        stages: [manual]
+
   # ===== DOCSTRING QUALITY: Pydocstyle =====
   - repo: https://github.com/PyCQA/pydocstyle
     rev: 6.3.0
