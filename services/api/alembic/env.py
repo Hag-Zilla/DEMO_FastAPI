@@ -1,12 +1,25 @@
+"""Alembic environment configuration for runtime migrations.
+
+This module is executed by Alembic and uses its dynamic ``context`` API.
+"""
+
 from __future__ import annotations
 
 import os
 from logging.config import fileConfig
 from pathlib import Path
 import sys
+from typing import Any
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+# Pylint cannot statically resolve Alembic's dynamic context proxy members
+# (config/configure/begin_transaction/run_migrations/is_offline_mode), and this
+# file intentionally performs path bootstrapping before local imports.
+# pylint: disable=no-member,wrong-import-position
+
+alembic_context: Any = context
 
 SERVICE_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = SERVICE_DIR.parent.parent
@@ -16,7 +29,7 @@ if str(REPO_ROOT) not in sys.path:
 from services.api.database.base import Base  # noqa: E402
 from services.api.database.models import expense as _expense, user as _user  # noqa: E402,F401
 
-config = context.config
+config = alembic_context.config
 
 
 def _read_database_url() -> str:
@@ -53,7 +66,7 @@ def run_migrations_offline() -> None:
     DB connection.
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(
+    alembic_context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
@@ -61,8 +74,8 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
     )
 
-    with context.begin_transaction():
-        context.run_migrations()
+    with alembic_context.begin_transaction():
+        alembic_context.run_migrations()
 
 
 def run_migrations_online() -> None:
@@ -74,17 +87,17 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
+        alembic_context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
         )
 
-        with context.begin_transaction():
-            context.run_migrations()
+        with alembic_context.begin_transaction():
+            alembic_context.run_migrations()
 
 
-if context.is_offline_mode():
+if alembic_context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
