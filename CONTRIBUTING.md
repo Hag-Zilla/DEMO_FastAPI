@@ -53,8 +53,8 @@ make init-env
 # Setup uv environment (.venv + runtime dependencies)
 make init
 
-# Install development dependencies (pytest, ruff, mypy, pre-commit, ...)
-make sync-dev
+# Optional: install runtime deps for API service only
+make sync-api
 
 # Install pre-commit hooks
 make install-hooks
@@ -62,7 +62,7 @@ make install-hooks
 
 This will:
 - Create a `.venv` Python environment with `uv` (if missing)
-- Install runtime and development dependencies
+- Install runtime dependencies
 - Install pre-commit hooks for automatic code quality checks
 
 ### 3. Make Your Changes

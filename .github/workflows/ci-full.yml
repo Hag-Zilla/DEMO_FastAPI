@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Run unit tests with coverage
         run: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Run integration tests
         run: |
@@ -112,7 +112,7 @@ jobs:
 
       - name: Install linting tools
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Check formatting with Ruff
         run: |
@@ -139,7 +139,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Run type checker
         run: |
@@ -170,7 +170,7 @@ jobs:
 
       - name: Install security tools
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Run pip-audit check on dependencies
         run: |
@@ -218,11 +218,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Run pre-commit hooks
         run: |
-          uv run --package demo-fastapi-api pre-commit run --all-files
+          make run-hooks
 
   api-documentation:
     name: API Documentation
@@ -241,7 +241,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --package demo-fastapi-api --extra dev --all-groups
+          uv sync --frozen --all-packages --all-groups
 
       - name: Check API schema generation
         run: |

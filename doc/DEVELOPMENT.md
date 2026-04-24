@@ -79,7 +79,6 @@ git commit --no-verify
 | **pydocstyle** | Check docstring format (Google style) | No | commit |
 | **shellcheck** | Check bash/shell scripts | No | commit |
 | **autoflake** | Remove unused imports/variables | **Yes** | commit |
-| **check-markdown-link-fragments** | Validate markdown links | No | commit |
 | **check-merge-conflict** | Detect merge conflict markers | No | commit |
 
 ### Configuration
@@ -94,12 +93,12 @@ default_language_version:
 # Security: Detect common secrets
 detect-secrets:
   args: ['--baseline', '.secrets.baseline']
-  exclude: ^(uv.lock|.env)$
+  exclude: ^(uv\.lock|poetry\.lock|requirements\.txt|\.env.*|\.example|.*\.jsonl.*|services/api/logs)$
 
 # Type checking with mypy
 mypy:
-  additional_dependencies: ['pydantic>=2.0', 'sqlalchemy>=2.0', ...]
-  args: ['--ignore-missing-imports']
+  entry: uv run --only-group tools mypy
+  args: ['services/api']
 
 # Docstring format (Google style)
 pydocstyle:
@@ -158,7 +157,7 @@ make install-hooks
 ```bash
 # Clear cache and retry
 make clean-hooks
-pre-commit run --all-files
+make run-hooks
 ```
 
 **Need to bypass hooks temporarily?**
