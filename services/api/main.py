@@ -16,6 +16,7 @@ Handcraft with love and sweat by Damien Mascheix @Hagzilla.
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import sentry_sdk
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +29,7 @@ from .core.config import settings
 from .core.exceptions import AppException
 from .core.logging import get_logger
 from .core.middleware import HTTPLoggingMiddleware, limiter
-from .database.session import Base, engine
+from .database.session import run_migrations
 from .routers import users, health, expenses, alerts, reports, analytics
 from .auth import router as auth_router
 from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
@@ -36,6 +37,23 @@ from .core.cache import setup_cache
 
 # Initialize logger
 logger = get_logger(__name__)
+
+
+def configure_sentry() -> bool:
+    """Initialize Sentry only when explicitly configured outside local env.
+
+    Returns:
+        True when Sentry was initialized, False otherwise.
+    """
+    if not settings.SENTRY_DSN or settings.ENVIRONMENT == "local":
+        return False
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        enable_tracing=True,
+        environment=settings.ENVIRONMENT,
+    )
+    return True
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -51,7 +69,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 async def lifespan(_app: FastAPI):
     """Application lifespan: startup and shutdown logic."""
     # --- Startup ---
-    Base.metadata.create_all(bind=engine)
+    run_migrations()
     setup_cache(settings.REDIS_URL)
     print(STARTUP_BANNER)
     logger.info(LOG_SIGNATURE)
@@ -67,6 +85,8 @@ async def lifespan(_app: FastAPI):
 
 
 # Create FastAPI application instance
+configure_sentry()
+
 app = FastAPI(
     title=settings.APP_NAME,
     description=(

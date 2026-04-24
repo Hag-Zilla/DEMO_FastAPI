@@ -17,7 +17,7 @@ class ReportService:
 
     @staticmethod
     def build_expense_report(
-        db: Session, user_id: int, start_date: datetime, end_date: datetime
+        db: Session, user_id: str, start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """
         Build an expense report for a user within a date range.
@@ -92,7 +92,7 @@ class ReportService:
 
     @staticmethod
     def get_monthly_report(
-        db: Session, user_id: int, year: int, month: int
+        db: Session, user_id: str, year: int, month: int
     ) -> Dict[str, Any]:
         """
         Get monthly expense report for a user.
@@ -117,7 +117,7 @@ class ReportService:
 
     @staticmethod
     def get_custom_period_report(
-        db: Session, user_id: int, start_date: datetime, end_date: datetime
+        db: Session, user_id: str, start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """
         Get expense report for a custom date period.

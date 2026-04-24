@@ -296,6 +296,9 @@ make install-hooks
 
 # Verify setup
 make run
+
+# Apply schema migrations explicitly when needed
+make migrate
 ```
 
 ### 2. Make Changes
@@ -346,6 +349,34 @@ make lint
 # Run hooks on all files
 make run-hooks
 ```
+
+### Database Migrations
+
+Schema changes are managed with **Alembic**.
+
+```bash
+# Apply migrations to the configured database
+make migrate
+
+# Generate a new revision after editing ORM models
+make migrate-create MSG="describe change"
+```
+
+Use `make migrate-create` only after changing SQLAlchemy models, then review the generated revision before committing it.
+
+### Optional Sentry Setup
+
+Sentry is available as an add-on for staging/production error tracking.
+
+```bash
+# .env
+ENVIRONMENT=local
+# SENTRY_DSN=https://<key>@sentry.io/<project>
+```
+
+- In `local`, Sentry stays disabled even if the dependency is installed.
+- In `staging` or `production`, setting `SENTRY_DSN` enables Sentry.
+- Existing file/console logging remains unchanged; Sentry complements it.
 
 ### 5. Push and Create PR
 

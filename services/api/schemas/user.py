@@ -99,7 +99,7 @@ class UserSelfUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user responses (read operations)."""
 
-    id: int
+    id: str
     role: UserRole
     status: UserStatus
 

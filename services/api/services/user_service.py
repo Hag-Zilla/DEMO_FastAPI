@@ -112,7 +112,7 @@ class UserService:
         return query.offset(offset).limit(limit).all()
 
     @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
         """
         Retrieve user by ID.
 
@@ -141,7 +141,7 @@ class UserService:
 
     @staticmethod
     def update_user_self(
-        db: Session, user_id: int, user_update: UserSelfUpdate
+        db: Session, user_id: str, user_update: UserSelfUpdate
     ) -> User:
         """
         Update the authenticated user's own profile fields.
@@ -190,7 +190,7 @@ class UserService:
         return user
 
     @staticmethod
-    def update_user_admin(db: Session, user_id: int, user_update: UserUpdate) -> User:
+    def update_user_admin(db: Session, user_id: str, user_update: UserUpdate) -> User:
         """
         Update any user fields by ID (admin only).
 
@@ -247,7 +247,7 @@ class UserService:
         return user
 
     @staticmethod
-    def delete_user(db: Session, user_id: int, admin_id: int) -> None:
+    def delete_user(db: Session, user_id: str, admin_id: str) -> None:
         """
         Delete a user by ID (admin only).
 
@@ -293,7 +293,7 @@ class UserService:
         return users
 
     @staticmethod
-    def approve_user(db: Session, user_id: int) -> User:
+    def approve_user(db: Session, user_id: str) -> User:
         """
         Approve a pending user by changing status from PENDING to ACTIVE.
 

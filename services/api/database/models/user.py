@@ -1,9 +1,11 @@
 """User database model."""
 
-from sqlalchemy import Column, Integer, String, Numeric, Enum
+import uuid
+
+from sqlalchemy import Column, String, Numeric, Enum
 from sqlalchemy.orm import relationship
 
-from ..session import Base
+from ..base import Base
 from services.api.core.enums import UserRole, UserStatus
 
 
@@ -12,7 +14,9 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     budget = Column(Numeric(precision=12, scale=2))

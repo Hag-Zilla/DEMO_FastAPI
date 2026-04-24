@@ -107,6 +107,8 @@ nano .env
 | `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
 | `DATABASE_URL` | SQLite database path | `sqlite:///./services/data/expense_tracker.db` |
 | `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
+| `ENVIRONMENT` | Runtime environment name | `local`, `staging`, `production` |
+| `SENTRY_DSN` | Optional Sentry DSN | `https://<key>@sentry.io/<project>` |
 
 Quick generation:
 ```bash
@@ -239,6 +241,8 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 - `make init` — Create `.venv` and install runtime dependencies for all services
 - `make sync` — Install runtime dependencies for all services
 - `make sync-api` — Install runtime dependencies for the API service only
+- `make migrate` — Apply Alembic migrations to the configured database
+- `make migrate-create MSG="..."` — Create a new Alembic revision
 - `make run` — Start the dev server
 - `make test` — Run test suite
 - `make run-hooks` — Run code quality checks
@@ -349,10 +353,15 @@ DEMO_FastAPI/
 │   │   │   └── branding.py             # Startup banner and log signature
 │   │   │
 │   │   ├── database/                    # Data layer
-│   │   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
+│   │   │   ├── base.py                 # Shared SQLAlchemy Base (Alembic-safe)
+│   │   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db(), run_migrations()
 │   │   │   └── models/
 │   │   │       ├── user.py             # User ORM model (id, username, budget, role, status)
 │   │   │       └── expense.py          # Expense ORM model (id, amount, category, date)
+│   │   │
+│   │   ├── alembic/                    # Database migrations
+│   │   │   ├── env.py                  # Alembic environment/bootstrap
+│   │   │   └── versions/               # Revision files
 │   │   │
 │   │   ├── routers/                     # API endpoints (APIRouter pattern)
 │   │   │   ├── auth.py                 # POST /token (login)
@@ -486,14 +495,14 @@ class ExpenseCategory(str, Enum):
 
 - **Engine**: SQLite (file-based, no server required)
 - **ORM**: SQLAlchemy 2.0.46
-- **Auto-creation**: Tables created automatically on app startup
+- **Schema management**: Alembic migrations applied automatically on app startup
 - **Type Validation**: Pydantic + SQLAlchemy integration
 
 #### Users Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| id | INTEGER | Primary Key | Auto-increment |
+| id | STRING(36) | Primary Key | UUID |
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
 | budget | NUMERIC(12,2) | NOT NULL | Monthly budget limit |
@@ -506,12 +515,12 @@ class ExpenseCategory(str, Enum):
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| id | INTEGER | Primary Key | Auto-increment |
+| id | STRING(36) | Primary Key | UUID |
 | description | STRING | NOT NULL | Expense description |
 | amount | NUMERIC(12,2) | NOT NULL | Amount > 0 |
 | date | DATETIME | NOT NULL | When incurred (default=now) |
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
-| user_id | INTEGER | Foreign Key → users.id | Expense owner |
+| user_id | STRING(36) | Foreign Key → users.id | Expense owner |
 
 **ORM Model**: `services/api/database/models/expense.py`
 
@@ -538,7 +547,17 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 
 ### Database Migration
 
-SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
+The application now uses **Alembic** for schema management.
+
+```bash
+# Apply all migrations to the configured database
+make migrate
+
+# Create a new revision after model changes
+make migrate-create MSG="add new field"
+```
+
+The default local database can still be SQLite. For production at scale, consider PostgreSQL or MySQL:
 
 ```python
 # services/api/core/config.py
@@ -546,6 +565,14 @@ SQLite works fine for small deployments. For production at scale, consider Postg
 ```
 
 The modular design allows easy database swaps with minimal code changes.
+
+### Optional Error Tracking
+
+The project can integrate with **Sentry** without replacing the existing logging stack.
+
+- Logs still go through the current console/file JSON logging pipeline.
+- Sentry is only initialized when `SENTRY_DSN` is set and `ENVIRONMENT != local`.
+- In local development, Sentry stays disabled by default.
 
 ## 🔌 API Endpoints
 ---

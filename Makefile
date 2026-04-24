@@ -1,4 +1,4 @@
-.PHONY: help init init-env sync sync-api sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
+.PHONY: help init init-env sync sync-api sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks migrate migrate-create
 UV_PACKAGE := demo-fastapi-api
 
 help:
@@ -15,6 +15,8 @@ help:
 	@echo ""
 	@echo "=== DEPENDENCY MANAGEMENT ==="
 	@echo "  make lock             Refresh uv.lock"
+	@echo "  make migrate          Apply Alembic migrations to head"
+	@echo "  make migrate-create   Create Alembic revision (set MSG='your message')"
 	@echo ""
 	@echo "  make contract-test    Run Schemathesis contract / property tests"
 	@echo "  make load-test        Start Locust load test (interactive, needs running API)"
@@ -75,6 +77,18 @@ sync-all:
 # Refresh uv lockfile
 lock:
 	uv lock
+
+# Apply database migrations
+migrate:
+	uv run --package $(UV_PACKAGE) alembic -c services/api/alembic.ini upgrade head
+
+# Create a new migration revision (usage: make migrate-create MSG="add field")
+migrate-create:
+	@if [ -z "$(MSG)" ]; then \
+		echo "Error: provide MSG, e.g. make migrate-create MSG='add xyz'"; \
+		exit 1; \
+	fi
+	uv run --package $(UV_PACKAGE) alembic -c services/api/alembic.ini revision --autogenerate -m "$(MSG)"
 
 # Run in development mode (auto-reload)
 run:

@@ -106,6 +106,20 @@ git commit -m "Your message"
 
 ## Making Changes
 
+### Database Schema Changes
+
+If you modify a SQLAlchemy model in `services/api/database/models/`, you must also create or update an Alembic revision.
+
+```bash
+# Generate a new revision after changing models
+make migrate-create MSG="describe schema change"
+
+# Apply migrations locally to verify the revision
+make migrate
+```
+
+Do not merge ORM model changes without the matching Alembic migration file.
+
 ### Code Organization
 
 Follow the existing structure in [doc/STANDARDS.md](doc/STANDARDS.md):

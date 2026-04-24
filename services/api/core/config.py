@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # Redis Configuration (optional – falls back to in-memory if absent)
     REDIS_URL: Optional[str] = None
 
+    # Observability / error tracking
+    SENTRY_DSN: Optional[str] = None
+    ENVIRONMENT: str = "local"
+
     # Application Configuration
     APP_NAME: str = Field(..., min_length=1)
     APP_VERSION: str = Field(..., min_length=1)

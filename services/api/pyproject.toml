@@ -23,6 +23,7 @@ dependencies = [
 
     # Database and caching
     "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13,<2.0",
     "redis>=5.0,<6.0",
     "fastapi-cache2[redis]>=0.1.8",
 
@@ -33,6 +34,7 @@ dependencies = [
     # Infra and middleware
     "PyYAML>=6.0,<7.0",
     "slowapi>=0.1.9,<2.0",
+    "sentry-sdk[fastapi]>=2.0.0,<3.0.0",
 ]
 
 [tool.uv]

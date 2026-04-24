@@ -46,7 +46,7 @@ async def get_monthly_report(
         raise ValueError("Month must be between 1 and 12")
 
     report = ReportService.get_monthly_report(
-        db, cast(int, current_user.id), year, month
+        db, cast(str, current_user.id), year, month
     )
 
     logger.info(
@@ -87,7 +87,7 @@ def get_period_report(
         raise ValueError("start_date must be before end_date")
 
     report = ReportService.get_custom_period_report(
-        db, cast(int, current_user.id), start_date, end_date
+        db, cast(str, current_user.id), start_date, end_date
     )
 
     logger.info(

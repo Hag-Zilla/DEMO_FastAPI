@@ -59,12 +59,12 @@ def self_update_user(
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ):
     """Update the authenticated user's own profile fields."""
-    return UserService.update_user_self(db, cast(int, current_user.id), user_update)
+    return UserService.update_user_self(db, cast(str, current_user.id), user_update)
 
 
 @router.put("/update/{user_id}/", name="Admin Update User", response_model=UserResponse)
 def admin_update_user(
-    user_id: int,
+    user_id: str,
     user_update: UserUpdate,
     db: Annotated[Session, Depends(get_db)],
     _admin: Annotated[UserModel, Depends(get_admin_user)],
@@ -77,12 +77,12 @@ def admin_update_user(
     "/delete/{user_id}/", name="Delete User", status_code=status.HTTP_204_NO_CONTENT
 )
 def delete_user(
-    user_id: int,
+    user_id: str,
     db: Annotated[Session, Depends(get_db)],
     admin: Annotated[UserModel, Depends(get_admin_user)],
 ):
     """Delete a user by ID (admin only)."""
-    UserService.delete_user(db, user_id, cast(int, admin.id))
+    UserService.delete_user(db, user_id, cast(str, admin.id))
 
 
 @router.get("/", name="List Users", response_model=List[UserResponse])
@@ -109,7 +109,7 @@ def list_users(
     response_model=UserResponse,
 )
 def approve_user(
-    user_id: int,
+    user_id: str,
     db: Annotated[Session, Depends(get_db)],
     moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
 ):
@@ -151,7 +151,7 @@ def approve_user(
     response_model=UserResponse,
 )
 def reject_user(
-    user_id: int,
+    user_id: str,
     db: Annotated[Session, Depends(get_db)],
     moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
 ):
@@ -193,7 +193,7 @@ def reject_user(
     response_model=UserResponse,
 )
 def disable_user(
-    user_id: int,
+    user_id: str,
     db: Annotated[Session, Depends(get_db)],
     moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
 ):
@@ -235,7 +235,7 @@ def disable_user(
     response_model=UserResponse,
 )
 def reactivate_user(
-    user_id: int,
+    user_id: str,
     db: Annotated[Session, Depends(get_db)],
     moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
 ):

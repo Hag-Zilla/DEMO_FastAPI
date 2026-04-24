@@ -37,7 +37,7 @@ def list_expenses(
     """
     return ExpenseService.list_expenses_for_user(
         db,
-        cast(int, current_user.id),
+        cast(str, current_user.id),
         current_user.role,
         category,
         start_date,
@@ -70,31 +70,31 @@ def create_expense(
     Valid categories: food, transportation, entertainment, utilities,
     healthcare, education, shopping, other
     """
-    return ExpenseService.create_expense(db, cast(int, current_user.id), expense)
+    return ExpenseService.create_expense(db, cast(str, current_user.id), expense)
 
 
 @router.get("/{expense_id}", name="Get Expense", response_model=ExpenseResponse)
 def get_expense(
-    expense_id: int,
+    expense_id: str,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """Get a specific expense by ID (must be owner or admin)."""
     return ExpenseService.verify_expense_access(
-        db, expense_id, cast(int, current_user.id), current_user.role
+        db, expense_id, cast(str, current_user.id), current_user.role
     )
 
 
 @router.put("/{expense_id}", name="Update Expense", response_model=ExpenseResponse)
 def update_expense(
-    expense_id: int,
+    expense_id: str,
     expense_update: ExpenseUpdate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """Update an expense (must be owner or admin)."""
     return ExpenseService.update_expense(
-        db, expense_id, cast(int, current_user.id), current_user.role, expense_update
+        db, expense_id, cast(str, current_user.id), current_user.role, expense_update
     )
 
 
@@ -102,11 +102,11 @@ def update_expense(
     "/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT
 )
 def delete_expense(
-    expense_id: int,
+    expense_id: str,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """Delete an expense (must be owner or admin)."""
     ExpenseService.delete_expense(
-        db, expense_id, cast(int, current_user.id), current_user.role
+        db, expense_id, cast(str, current_user.id), current_user.role
     )
