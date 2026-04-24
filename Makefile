@@ -1,13 +1,14 @@
 .PHONY: help init init-env sync lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
-
+.PHONY: help init init-env sync sync-tools sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks
 UV_PACKAGE := demo-fastapi-api
 
 help:
 	@echo "=== DEVELOPMENT (Local) ==="
-	@echo "  make init             Setup uv environment for the API service (.venv + runtime deps)"
+	@echo "  make init             Setup .venv and install runtime deps for the API service"
 	@echo "  make init-env         Create .env files from templates (.example)"
-	@echo "  make sync             Install/sync dependencies from uv.lock"
-	@echo "  make sync-dev         Install all dependencies including dev tools (pre-commit, pytest, ruff, mypy)"
+	@echo "  make sync             B – runtime deps of the API service only"
+	@echo "  make sync-tools       A – dev/quality tools only (ruff, mypy, pytest, …)"
+	@echo "  make sync-all         C – runtime deps of ALL services (no tools)"
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
 	@echo "  make lint             Run ruff linting"
@@ -64,9 +65,13 @@ init-env:
 sync:
 	uv sync --package $(UV_PACKAGE)
 
-# Sync all dependencies including dev tools (pre-commit, pytest, ruff, mypy, etc.)
-sync-dev:
-	uv sync --package $(UV_PACKAGE) --extra dev --all-groups
+# A — install only dev/quality tools, no runtime service deps
+sync-tools:
+	uv sync --only-group tools
+
+# C — install runtime deps of ALL workspace services, no tools
+sync-all:
+	uv sync --no-group tools
 
 # Refresh uv lockfile
 lock:

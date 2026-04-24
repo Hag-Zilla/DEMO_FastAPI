@@ -1,6 +1,10 @@
 # ============================================================================
 # Workspace root
 # ============================================================================
+# Install with:
+#   A – tools only (no runtime deps):  uv sync --only-group tools
+#   B – one service's runtime deps:    uv sync --package <service-name>
+#   C – all services' runtime deps:    uv sync --no-group tools
 
 [project]
 name = "demo-fastapi-workspace"
@@ -18,8 +22,41 @@ package = false
 strict = true
 
 [tool.uv.workspace]
-# Root workspace member + explicit API service member.
+# Root workspace member + all service members.
+# Add new services here as the monorepo grows.
 members = [".", "services/api"]
+
+# ============================================================================
+# Quality and dev tooling — shared across all workspace members
+# ============================================================================
+
+[dependency-groups]
+tools = [
+	# Code quality
+	"pre-commit>=3.5,<4.0",
+	"ruff>=0.3,<1.0",
+	"mypy>=1.8,<2.0",
+	"pydocstyle>=6.3,<7.0",
+	"autoflake>=2.0,<3.0",
+
+	# Testing
+	"pytest>=8.0,<9.0",
+	"pytest-cov>=4.1,<6.0",
+	"pytest-asyncio>=0.23,<1.0",
+	"httpx>=0.25,<1.0",
+
+	# Security auditing
+	"bandit>=1.7,<2.0",
+	"pip-audit>=2.6,<3.0",
+
+	# Type stubs
+	"types-PyYAML>=6.0,<7.0",
+	"types-redis>=4.6,<5.0",
+
+	# Load / contract testing
+	"locust>=2.43.3",
+	"schemathesis>=4.10.2",
+]
 
 # ============================================================================
 # Quality and test tooling configuration
