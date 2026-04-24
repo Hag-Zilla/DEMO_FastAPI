@@ -1,5 +1,6 @@
 name: CI Full
 
+# Trigger full quality gates on protected branches for both direct pushes and PRs.
 on:
   push:
     branches:
@@ -10,288 +11,97 @@ on:
       - develop
       - main
 
-env:
-  SECRET_KEY: "ci-test-secret-key-should-be-at-least-32-chars" # pragma: allowlist secret
-  DATABASE_URL: "sqlite:///./ci.db"
-  APP_NAME: "DEMO_FastAPI"
-  APP_VERSION: "ci"
-  DEBUG: "false"
-
 jobs:
-  unit-tests:
-    name: Unit Tests (All)
+  # Detect impacted services with a maintained GitHub Action (no custom script).
+  detect-services:
+    name: Detect Changed Services
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.14"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-          cache: "pip"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Run unit tests with coverage
-        run: |
-          uv run --package demo-fastapi-api pytest --cov=services/api --cov-report=xml --cov-report=html
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-      - name: Archive coverage reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report-3.14
-          path: htmlcov
-
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-          cache: "pip"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Run integration tests
-        run: |
-          set +e
-          uv run --package demo-fastapi-api pytest -m "integration"
-          status=$?
-          set -e
-
-          if [ "$status" -eq 5 ]; then
-            echo "No integration tests were collected. Skipping integration suite."
-            exit 0
-          fi
-
-          exit "$status"
-
-  lint-and-format:
-    name: Lint & Code Quality
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install linting tools
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Check formatting with Ruff
-        run: |
-          uv run --package demo-fastapi-api ruff format --check services/api services/api/tests
-
-      - name: Lint with Ruff
-        run: |
-          uv run --package demo-fastapi-api ruff check services/api services/api/tests
-
-  type-checking:
-    name: Type Checking (mypy)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Run type checker
-        run: |
-          uv run --package demo-fastapi-api mypy services/api --junit-xml=type-results.xml
-        continue-on-error: true
-
-      - name: Upload type results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mypy-results
-          path: type-results.xml
-
-  security-audit:
-    name: Security & Dependency Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install security tools
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Run pip-audit check on dependencies
-        run: |
-          uv run --package demo-fastapi-api pip-audit --desc > pip-audit-report.json
-        continue-on-error: true
-
-      - name: Run bandit security check
-        run: |
-          uv run --package demo-fastapi-api bandit -r services/api -f json -o bandit-report.json
-        continue-on-error: true
-
-      - name: Upload security reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-reports
-          path: |
-            pip-audit-report.json
-            bandit-report.json
-
-      - name: Secret scanning
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: main
-          head: HEAD
-        continue-on-error: true
-
-  pre-commit:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
+    outputs:
+      services_json: ${{ steps.detect.outputs.services_json }}
+      has_services: ${{ steps.detect.outputs.has_services }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Detect changed paths
+        id: paths
+        uses: dorny/paths-filter@v3
         with:
-          python-version: "3.14"
+          filters: |
+            shared:
+              - '.github/workflows/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'Makefile'
+              - 'services/__init__.py'
+            api:
+              - 'services/api/**'
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
+      - name: Build service matrix
+        id: detect
         run: |
-          uv sync --frozen --all-packages --all-groups
+          if [ "${{ steps.paths.outputs.shared }}" = "true" ] || [ "${{ steps.paths.outputs.api }}" = "true" ]; then
+            echo 'services_json=[{"service_name":"api","service_package":"demo-fastapi-api","service_path":"services/api","service_tests_path":"services/api/tests","openapi_module":"services.api.main","openapi_app_var":"app"}]' >> "$GITHUB_OUTPUT"
+            echo 'has_services=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'services_json=[]' >> "$GITHUB_OUTPUT"
+            echo 'has_services=false' >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Run pre-commit hooks
-        run: |
-          make run-hooks
+  # Service-level quality gates (tests/lint/type/docs) are delegated to a reusable workflow.
+  service-ci:
+    if: ${{ needs.detect-services.outputs.has_services == 'true' }}
+    needs: [detect-services]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-services.outputs.services_json) }}
+    uses: ./.github/workflows/reusable-service-ci.yml
+    with:
+      service-package: ${{ matrix.service.service_package }}
+      service-path: ${{ matrix.service.service_path }}
+      service-tests-path: ${{ matrix.service.service_tests_path }}
+      openapi-module: ${{ matrix.service.openapi_module }}
+      openapi-app-var: ${{ matrix.service.openapi_app_var }}
+      python-version: "3.14"
 
-  api-documentation:
-    name: API Documentation
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-packages --all-groups
-
-      - name: Check API schema generation
-        run: |
-          uv run --package demo-fastapi-api python -c "from services.api.main import app; schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
+  # Repo-level quality gates (pre-commit + security) are delegated to a reusable workflow.
+  repo-quality:
+    uses: ./.github/workflows/reusable-repo-quality.yml
+    with:
+      python-version: "3.14"
 
   final-status:
     name: CI Full Status
-    needs: [unit-tests, integration-tests, lint-and-format, type-checking, security-audit, pre-commit, api-documentation]
+    needs: [detect-services, service-ci, repo-quality]
     runs-on: ubuntu-latest
     if: always()
 
     steps:
+      # Centralized policy gate: decides what is merge-blocking vs advisory.
       - name: Determine job status
         run: |
           echo "=== CI FULL SUMMARY ==="
-          echo "Unit Tests: ${{ needs.unit-tests.result }}"
-          echo "Integration Tests: ${{ needs.integration-tests.result }}"
-          echo "Lint & Format: ${{ needs.lint-and-format.result }}"
-          echo "Type Checking: ${{ needs.type-checking.result }}"
-          echo "Security Audit: ${{ needs.security-audit.result }}"
-          echo "Pre-commit: ${{ needs.pre-commit.result }}"
-          echo "API Docs: ${{ needs.api-documentation.result }}"
+          echo "Detected services: ${{ needs.detect-services.outputs.services_json }}"
+          echo "Service CI: ${{ needs.service-ci.result }}"
+          echo "Repo Quality: ${{ needs.repo-quality.result }}"
 
           # Fail if critical jobs failed
-          if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
-            echo "❌ Unit tests failed - blocking merge"
+          if [ "${{ needs.service-ci.result }}" = "failure" ]; then
+            echo "❌ Service CI failed - blocking merge"
             exit 1
           fi
 
-          if [ "${{ needs.pre-commit.result }}" = "failure" ]; then
-            echo "❌ Pre-commit checks failed - blocking merge"
+          if [ "${{ needs.repo-quality.result }}" = "failure" ]; then
+            echo "❌ Repo quality checks failed - blocking merge"
             exit 1
-          fi
-
-          if [ "${{ needs.lint-and-format.result }}" = "failure" ]; then
-            echo "❌ Lint and formatting checks failed - blocking merge"
-            exit 1
-          fi
-
-          if [ "${{ needs.api-documentation.result }}" = "failure" ]; then
-            echo "❌ API documentation schema generation failed - blocking merge"
-            exit 1
-          fi
-
-          if [ "${{ needs.type-checking.result }}" = "failure" ]; then
-            echo "⚠️  Type checking failed - review recommended"
           fi
 
           echo "✅ CI Full passed - ready for merge"
 
+  # Final job keeps a single pass/fail signal for branch protection.
   notify:
     name: Notify Completion
     needs: [final-status]

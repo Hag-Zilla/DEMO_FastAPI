@@ -1,0 +1,86 @@
+name: Reusable Repo Quality
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version for repo-level quality checks"
+        required: false
+        type: string
+        default: "3.14"
+
+jobs:
+  # Mirrors local developer workflow by invoking the Makefile entrypoint.
+  pre-commit:
+    name: Pre-commit Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Run pre-commit hooks
+        run: |
+          make run-hooks
+
+  security-audit:
+    name: Security & Dependency Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Run pip-audit check on dependencies
+        run: |
+          uv run --package demo-fastapi-api pip-audit --desc > pip-audit-report.json
+        # Keep non-blocking while triaging dependency advisories over time.
+        continue-on-error: true
+
+      - name: Run bandit security check
+        run: |
+          uv run --package demo-fastapi-api bandit -r services/api -f json -o bandit-report.json
+        # Keep non-blocking while triaging code-level findings over time.
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            pip-audit-report.json
+            bandit-report.json
+
+      - name: Secret scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+        # Non-blocking: complements detect-secrets from pre-commit.
+        continue-on-error: true
