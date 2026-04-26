@@ -17,7 +17,7 @@ from sqlalchemy import engine_from_config, pool
 # Pylint cannot statically resolve Alembic's dynamic context proxy members
 # (config/configure/begin_transaction/run_migrations/is_offline_mode), and this
 # file intentionally performs path bootstrapping before local imports.
-# pylint: disable=no-member,wrong-import-position
+# pylint: disable=no-member,wrong-import-position,import-error
 
 alembic_context: Any = context
 
@@ -28,6 +28,10 @@ if str(REPO_ROOT) not in sys.path:
 
 from services.api.database.base import Base  # noqa: E402
 from services.api.database.models import expense as _expense, user as _user  # noqa: E402,F401
+
+# Keep explicit references so static analyzers don't mark these side-effect
+# imports as unused; importing models registers tables on Base.metadata.
+_MODEL_IMPORTS = (_expense, _user)
 
 config = alembic_context.config
 

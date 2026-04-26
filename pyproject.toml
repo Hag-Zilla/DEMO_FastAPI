@@ -34,6 +34,7 @@ tools = [
 	# Code quality
 	"pre-commit>=3.5,<4.0",
 	"ruff>=0.3,<1.0",
+	"pylint>=3.2,<4.0",
 	"mypy>=1.8,<2.0",
 	"ty>=0.0.25",
 	"pydocstyle>=6.3,<7.0",
