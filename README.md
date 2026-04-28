@@ -87,67 +87,53 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ```bash
 git clone <repo-url>
 cd DEMO_FastAPI
-make init-env    # Create .env files from templates
+make init-env      # Create .env from template
 ```
 
 ### Essential Configuration Variables
 
-Edit `.env` and set these required values:
+Edit `.env` with your configuration:
 
 ```bash
+# Generate a SECRET_KEY first
+openssl rand -hex 32
+
+# Then edit:
 nano .env
 ```
 
-**Essential variables:**
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `SECRET_KEY` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
-| `DATABASE_URL` | SQLite database path | `sqlite:///./services/data/expense_tracker.db` |
-| `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
-| `ENVIRONMENT` | Runtime environment name | `local`, `staging`, `production` |
-| `SENTRY_DSN` | Optional Sentry DSN | `https://<key>@sentry.io/<project>` |
-
-Quick generation:
-```bash
-# Generate SECRET_KEY
-openssl rand -hex 32
-```
+**Key variables in `.env`:**
+- `SECRET_KEY` – JWT signing key (≥32 chars)
+- `ALGORITHM` – JWT signing algorithm (`HS256`)
+- `JWT_EXPIRATION_MINUTES` – Access token expiration in minutes
+- `PASSWORD_RESET_EXPIRATION_MINUTES` – Password reset token expiration in minutes
+- `DATABASE_URL` – SQLite path (default: `sqlite:///./services/data/expense_tracker.db`)
+- `APP_NAME` – API title exposed in OpenAPI docs
+- `APP_VERSION` – API version exposed in OpenAPI docs
+- `DEBUG` – `true` for dev, `false` for production
+- `ENVIRONMENT` – `local`, `staging`, or `production`
+- `BACKEND_CORS_ORIGINS` – Allowed frontend origins for browser CORS requests
 
 ### Build and Run Services
 
-**For local development:**
-
 ```bash
-# Create .venv and install runtime dependencies for all services (A)
-make init
-
-# Activate virtual environment
-source .venv/bin/activate  # or ./venv/bin/activate
-
-# Setup pre-commit hooks
-make install-hooks
-
-# Start the API
-make run
+make init          # Create .venv and install packages
+source .venv/bin/activate
+make install-hooks # Setup pre-commit checks
+make run           # Start API at http://localhost:8000
 ```
 
-**Notes:**
-- `make init`, `make sync`, and `make sync-all` install the runtime dependencies for all workspace services
-- `make sync-api` installs the runtime dependencies for the API service only
-- `make install-hooks` configures git pre-commit hooks for code quality checks
+**4. Access the API:**
+- Interactive docs (Swagger): http://localhost:8000/docs
+- Alternative docs (ReDoc): http://localhost:8000/redoc
+- Health check: http://localhost:8000/health
 
-**Dependency installation modes:**
-
+**5. Bootstrap admin user (optional):**
 ```bash
-# A — runtime deps for all services in services/
-uv sync --no-group tools
-
-# B — runtime deps for one service
-uv sync --package demo-fastapi-api
+make bootstrap-admin    # Interactive password prompt
 ```
+
+---
 
 ### Verify Installation
 
@@ -159,8 +145,14 @@ curl http://localhost:8000/health
 
 **Access the interactive API documentation:**
 
-- **Swagger UI (Interactive)**: http://localhost:8000/docs
-- **ReDoc (Alternative)**: http://localhost:8000/redoc
+- **Swagger UI** (interactive form): http://localhost:8000/docs
+- **ReDoc** (organized reference): http://localhost:8000/redoc
+- **OpenAPI JSON** (schema): http://localhost:8000/openapi.json
+
+To export the OpenAPI schema for external tools or client generation:
+```bash
+make export-openapi    # Generates services/data/openapi.json
+```
 
 **Available health check endpoints:**
 
@@ -220,10 +212,30 @@ Environment variables & secrets
 
 Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) with validation at startup.
 
+- `SECRET_KEY` signs JWT tokens and must stay private.
+- `ALGORITHM` defines the JWT signature algorithm (`HS256`).
+- `JWT_EXPIRATION_MINUTES` controls access token lifetime.
+- `PASSWORD_RESET_EXPIRATION_MINUTES` controls password-reset token lifetime.
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
+- `APP_NAME` and `APP_VERSION` are used in generated API documentation metadata.
+- `DEBUG` and `ENVIRONMENT` control runtime behavior (dev/staging/prod behavior).
 - Use `make init` or `make sync` for all workspace services.
 - Use `make sync-api` when you want the API service only.
+
+##### `BACKEND_CORS_ORIGINS`
+
+Defines which frontend origins are allowed to call the API from a browser.
+
+Accepted formats:
+- Single URL: `http://localhost:5173`
+- Comma-separated list: `https://app.example.com,https://admin.example.com`
+- JSON array string: `["https://app.example.com", "https://admin.example.com"]`
+
+Behavior notes:
+- This controls browser CORS checks (not server-to-server calls like `curl`/backend jobs).
+- In local environment, if empty, the app falls back to `http://localhost:5173`.
+- In production, explicitly list trusted frontend domains only.
 
 #### Logging
 
@@ -248,7 +260,7 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 - `make run-hooks` — Run code quality checks
 - `make help` — Show all available targets
 
-**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
+**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#quick-reference)** or run:
 
 
 ### Running Tests
@@ -566,14 +578,6 @@ The default local database can still be SQLite. For production at scale, conside
 
 The modular design allows easy database swaps with minimal code changes.
 
-### Optional Error Tracking
-
-The project can integrate with **Sentry** without replacing the existing logging stack.
-
-- Logs still go through the current console/file JSON logging pipeline.
-- Sentry is only initialized when `SENTRY_DSN` is set and `ENVIRONMENT != local`.
-- In local development, Sentry stays disabled by default.
-
 ## 🔌 API Endpoints
 ---
 
@@ -679,7 +683,7 @@ New users follow an approval workflow before they can access the API:
 
 - **Method**: OAuth2 with JWT (Bearer tokens)
 - **Token Expiration**: Configurable via `JWT_EXPIRATION_MINUTES` (.env)
-- **Password Hashing**: Argon2 via passlib
+- **Password Hashing**: Argon2 via pwdlib
 - **Required Status**: Only users with `status=ACTIVE` can authenticate
 - **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
@@ -731,7 +735,7 @@ For specialized topics and detailed guides:
 - [Pydantic Documentation](https://docs.pydantic.dev/)
 - [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
 - [PyJWT Documentation](https://pyjwt.readthedocs.io/)
-- [Passlib Hashing](https://passlib.readthedocs.io/)
+- [pwdlib Documentation](https://frankie567.github.io/pwdlib/)
 - [DBeaver Database Tool](https://dbeaver.io/)
 
 ## 🤝 Contributing

@@ -1,4 +1,4 @@
-.PHONY: help init init-env sync sync-api sync-all lock run test lint format bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks migrate migrate-create
+.PHONY: help init init-env sync sync-api sync-all lock run test lint format prestart init-data export-openapi bootstrap-admin clean install-hooks run-hooks run-hooks-staged update-hooks clean-hooks migrate migrate-create migrate-check
 UV_PACKAGE := demo-fastapi-api
 
 help:
@@ -11,12 +11,15 @@ help:
 	@echo "  make run              Start FastAPI dev server (auto-reload)"
 	@echo "  make test             Run pytest suite"
 	@echo "  make lint             Run ruff linting"
+
 	@echo "  make format           Format code with ruff"
 	@echo ""
 	@echo "=== DEPENDENCY MANAGEMENT ==="
 	@echo "  make lock             Refresh uv.lock"
 	@echo "  make migrate          Apply Alembic migrations to head"
 	@echo "  make migrate-create   Create Alembic revision (set MSG='your message')"
+	@echo "  make migrate-check    Fail if migrations are out of sync"
+	@echo "  make export-openapi   Export OpenAPI schema to services/data/openapi.json"
 	@echo ""
 	@echo "  make contract-test    Run Schemathesis contract / property tests"
 	@echo "  make load-test        Start Locust load test (interactive, needs running API)"
@@ -30,6 +33,8 @@ help:
 	@echo "  make clean-hooks      Clean pre-commit cache"
 	@echo ""
 	@echo "=== MAINTENANCE ==="
+	@echo "  make prestart         Run DB readiness checks"
+	@echo "  make init-data        No-op helper (use make bootstrap-admin)"
 	@echo "  make bootstrap-admin  Bootstrap admin user (interactive)"
 	@echo "  make clean            Remove Python cache files"
 	@echo "  make help             Show this help message"
@@ -90,6 +95,9 @@ migrate-create:
 	fi
 	uv run --package $(UV_PACKAGE) alembic -c services/api/alembic.ini revision --autogenerate -m "$(MSG)"
 
+migrate-check:
+	uv run --package $(UV_PACKAGE) alembic -c services/api/alembic.ini check
+
 # Run in development mode (auto-reload)
 run:
 	uv run --package $(UV_PACKAGE) uvicorn services.api.main:app --reload --host 127.0.0.1 --port 8000
@@ -102,6 +110,15 @@ lint:
 
 format:
 	uv run --package $(UV_PACKAGE) ruff format services/api
+
+prestart:
+	uv run --package $(UV_PACKAGE) python -m services.api.prestart
+
+init-data:
+	@echo "No automatic init-data bootstrap. Use: make bootstrap-admin"
+
+export-openapi:
+	uv run --package $(UV_PACKAGE) python -c "import json; from services.api.main import app; print(json.dumps(app.openapi(), indent=2))" > services/data/openapi.json
 
 # Admin bootstrap (interactive)
 bootstrap-admin:

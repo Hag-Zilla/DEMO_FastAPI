@@ -76,6 +76,8 @@ git commit --no-verify
 | **ruff** | Fast Python linter (replaces flake8) | **Yes** | commit |
 | **ruff-format** | Auto-formatter (black-compatible) | **Yes** | commit |
 | **mypy** | Static type checking | No | commit |
+| **ty** | Additional static type checking (Astral) | No | commit |
+| **pylint** | Static analysis and code quality checks | No | commit |
 | **pydocstyle** | Check docstring format (Google style) | No | commit |
 | **shellcheck** | Check bash/shell scripts | No | commit |
 | **autoflake** | Remove unused imports/variables | **Yes** | commit |
@@ -98,6 +100,15 @@ detect-secrets:
 # Type checking with mypy
 mypy:
   entry: uv run --only-group tools mypy
+  args: ['services/api']
+
+# Additional typing and static analysis at commit time
+ty:
+  entry: uv run --only-group tools ty
+  args: ['check', 'services/api']
+
+pylint:
+  entry: uv run --only-group tools pylint
   args: ['services/api']
 
 # Docstring format (Google style)
@@ -297,6 +308,9 @@ make install-hooks
 # Verify setup
 make run
 
+# Run startup readiness checks manually (database, app preflight)
+make prestart
+
 # Apply schema migrations explicitly when needed
 make migrate
 ```
@@ -364,19 +378,24 @@ make migrate-create MSG="describe change"
 
 Use `make migrate-create` only after changing SQLAlchemy models, then review the generated revision before committing it.
 
-### Optional Sentry Setup
+### Maintenance Helpers
 
-Sentry is available as an add-on for staging/production error tracking.
+Some Make targets exist as lightweight operational helpers:
 
 ```bash
-# .env
-ENVIRONMENT=local
-# SENTRY_DSN=https://<key>@sentry.io/<project>
+# Run the API pre-start checks manually
+make prestart
+
+# Placeholder target kept for compatibility; use bootstrap-admin instead
+make init-data
+
+# Bootstrap an admin account interactively
+make bootstrap-admin
 ```
 
-- In `local`, Sentry stays disabled even if the dependency is installed.
-- In `staging` or `production`, setting `SENTRY_DSN` enables Sentry.
-- Existing file/console logging remains unchanged; Sentry complements it.
+- `make prestart` runs the application's readiness / preflight checks manually.
+- `make init-data` is intentionally a no-op helper and points contributors to `make bootstrap-admin`.
+- `make bootstrap-admin` is the supported way to create an admin user locally.
 
 ### 5. Push and Create PR
 
@@ -549,20 +568,32 @@ git commit -m "chore: update dependencies"
 # Development commands
 make help              # List all available commands
 make init              # Setup environment (.venv + runtime deps for all services)
+make init-env          # Create local .env from .env.example if missing
 make sync              # Install runtime deps for all services
 make sync-api          # Install runtime deps for the API service only
 make sync-all          # Alias of make sync
 make run               # Start dev server
+make prestart          # Run startup readiness checks manually
 make test              # Run tests
+make contract-test     # Run Schemathesis contract tests
+make load-test         # Run interactive Locust load tests
+make load-test-headless # Run headless Locust load tests
 make lint              # Lint code
 make format            # Format code
 
 # Dependency management
 make lock              # Regenerate uv.lock
+make migrate           # Apply Alembic migrations
+make migrate-create MSG="..." # Generate Alembic revision from model changes
+make migrate-check     # Verify models and migrations are in sync
+make export-openapi    # Export OpenAPI schema to services/data/openapi.json
+make init-data         # Compatibility no-op; use bootstrap-admin instead
+make bootstrap-admin   # Create an admin account interactively
 
 # Pre-commit commands
 make install-hooks     # Install git hooks
 make run-hooks         # Test all hooks
+make run-hooks-staged  # Run hooks only on staged files
 make update-hooks      # Update to latest versions
 make clean-hooks       # Clear cache
 ```
@@ -579,5 +610,5 @@ make clean-hooks       # Clear cache
 
 ---
 
-**Last Updated**: 2026-04-22
+**Last Updated**: 2026-04-28
 **Maintainer**: Development Team
