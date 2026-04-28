@@ -100,8 +100,6 @@ repos:
         stages: [commit]
 
   # ===== PYTHON TYPE CHECKING: ty (fast Rust-based checker by Astral) =====
-  # ty is at 0.0.x (pre-alpha). It surfaces real typing issues but also flags
-  # legacy SQLAlchemy ORM patterns. Run manually for audit; not blocking commits.
   - repo: local
     hooks:
       - id: ty
@@ -111,7 +109,19 @@ repos:
         args: ['check', 'services/api']
         pass_filenames: false
         types: [python]
-        stages: [manual]
+        stages: [commit]
+
+  # ===== PYTHON STATIC ANALYSIS: Pylint =====
+  - repo: local
+    hooks:
+      - id: pylint
+        name: Static analysis with pylint
+        language: system
+        entry: uv run --only-group tools pylint
+        args: ['services/api']
+        pass_filenames: false
+        types: [python]
+        stages: [commit]
 
   # ===== DOCSTRING QUALITY: Pydocstyle =====
   - repo: https://github.com/PyCQA/pydocstyle
