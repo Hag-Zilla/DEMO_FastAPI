@@ -260,7 +260,7 @@ The project provides a comprehensive `Makefile` to simplify common workflows:
 - `make run-hooks` — Run code quality checks
 - `make help` — Show all available targets
 
-**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#quick-reference)** or run:
+**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#quick-reference)** or run:
 
 
 ### Running Tests
@@ -428,7 +428,7 @@ DEMO_FastAPI/
 │   ├── data/                           # SQLite database (git-ignored)
 │   │   └── expense_tracker.db          # SQLite database (auto-created)
 │
-├── doc/                            # Project documentation
+├── docs/                            # Project documentation
 │   ├── DEVELOPMENT.md              # Development workflow, pre-commit, Makefile targets
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
@@ -457,7 +457,7 @@ DEMO_FastAPI/
 **Key Directories:**
 - **`services/`** - Multi-service microservices architecture
   - **`services/api/`** - FastAPI service with its own `pyproject.toml` (code, tests, logs — self-contained)
-- **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
+- **`docs/`** - Specialized documentation (deployment, development, standards, rate limiting)
 - **`scripts/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
@@ -712,8 +712,8 @@ All exceptions are caught by global exception handlers in `services/api/main.py`
 This project maintains strict code quality standards enforced through pre-commit hooks (10+ checks), type hints, Google-style docstrings, and Makefile automation.
 
 **For details:**
-- **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
-- **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
+- **[docs/STANDARDS.md](docs/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
 
 ---
 
@@ -723,9 +723,9 @@ For specialized topics and detailed guides:
 
 | Document | Purpose |
 |----------|----------|
-| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
-| **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
-| **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
+| **[docs/RATE_LIMITING.md](docs/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
+| **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
+| **[docs/STANDARDS.md](docs/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
 
 ## 📚 Resources
 ---

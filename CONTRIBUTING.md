@@ -67,7 +67,7 @@ This will:
 
 ### 3. Make Your Changes
 
-Edit files following the project structure and code organization. See [doc/STANDARDS.md](doc/STANDARDS.md) for code style guidelines.
+Edit files following the project structure and code organization. See [docs/STANDARDS.md](docs/STANDARDS.md) for code style guidelines.
 
 ### 4. Test Your Changes
 
@@ -126,7 +126,7 @@ Do not merge ORM model changes without the matching Alembic migration file.
 
 ### Code Organization
 
-Follow the existing structure in [doc/STANDARDS.md](doc/STANDARDS.md):
+Follow the existing structure in [docs/STANDARDS.md](docs/STANDARDS.md):
 - Type hints on all public functions
 - Google-style docstrings with Args, Returns, Raises, Example
 - Clear variable naming
@@ -257,8 +257,8 @@ Your changes will be:
 ## For More Information
 
 For detailed technical information about code standards, pre-commit hooks, and development tools, see:
-- **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development environment, pre-commit hooks, Makefile, troubleshooting
-- **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — Development environment, pre-commit hooks, Makefile, troubleshooting
+- **[docs/STANDARDS.md](docs/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
 
 ---
 
