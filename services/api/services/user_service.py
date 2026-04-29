@@ -182,7 +182,9 @@ class UserService:
         if user_update.budget is not None:
             user.budget = user_update.budget  # type: ignore[assignment]
         if user_update.password:
-            user.hashed_password = get_password_hash(user_update.password)  # type: ignore[assignment]
+            user.hashed_password = get_password_hash(  # type: ignore[assignment]
+                user_update.password
+            )
 
         db.commit()
         db.refresh(user)
@@ -237,7 +239,9 @@ class UserService:
         if user_update.status is not None:
             user.status = user_update.status  # type: ignore[assignment]
         if user_update.password:
-            user.hashed_password = get_password_hash(user_update.password)  # type: ignore[assignment]
+            user.hashed_password = get_password_hash(  # type: ignore[assignment]
+                user_update.password
+            )
         if user_update.role is not None:
             user.role = user_update.role  # type: ignore[assignment]
 

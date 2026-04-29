@@ -6,8 +6,8 @@ import uuid
 from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 
-from ..base import Base
 from services.api.core.enums import ExpenseCategory
+from ..base import Base
 
 
 class Expense(Base):

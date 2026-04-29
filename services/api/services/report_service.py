@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from services.api.core.logging import get_logger
 from services.api.database.models.expense import Expense
+from services.api.database.models.user import User
 
 logger = get_logger(__name__)
 
@@ -144,8 +145,6 @@ class ReportService:
         Returns:
             Dict with report_type, total_across_users, total_expenses_count, by_user.
         """
-        from services.api.database.models.user import User
-
         # Totals across all users
         total_query = db.query(func.sum(Expense.amount)).scalar()  # pylint: disable=not-callable
         total = float(total_query) if total_query else 0.0

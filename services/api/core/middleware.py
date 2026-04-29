@@ -9,6 +9,7 @@ from starlette.responses import Response
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from services.api.core.config import settings
 from services.api.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -21,22 +22,21 @@ def get_limiter() -> Limiter:
     Uses Redis for distributed quota tracking across multiple instances.
     Falls back to in-memory storage if Redis is unavailable.
     """
-    from services.api.core.config import settings
-
     redis_url = settings.REDIS_URL
     if redis_url:
         try:
-            limiter = Limiter(
+            redis_limiter = Limiter(
                 key_func=get_remote_address,
                 storage_uri=redis_url,
                 default_limits=["100/minute"],
                 swallow_errors=True,
             )
             logger.info("Rate limiter initialized with Redis storage")
-            return limiter
-        except Exception as e:
+            return redis_limiter
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.warning(
-                "Failed to initialize Redis limiter, falling back to memory: %s", e
+                "Failed to initialize Redis limiter, falling back to memory: %s",
+                exc,
             )
 
     return Limiter(

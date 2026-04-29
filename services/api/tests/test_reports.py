@@ -1,9 +1,9 @@
 """Expense report endpoint tests."""
 # pylint: disable=unused-argument  # pytest fixtures are injected for side effects
 
-import pytest
 from datetime import datetime, timezone
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 

@@ -5,8 +5,8 @@ import uuid
 from sqlalchemy import Column, String, Numeric, Enum
 from sqlalchemy.orm import relationship
 
-from ..base import Base
 from services.api.core.enums import UserRole, UserStatus
+from ..base import Base
 
 
 class User(Base):

@@ -82,7 +82,8 @@ class TestAdminUserOperations:
 
     def test_list_users_by_status(self, admin_client: TestClient, db: Session) -> None:
         """Test listing users filtered by status."""
-        # Create users with different statuses (do NOT delete testadmin - it would invalidate the token)
+        # Create users with different statuses.
+        # Do NOT delete testadmin, or the auth token becomes invalid.
         active_user = User(
             username="active1",
             hashed_password="hashed",  # pragma: allowlist secret
