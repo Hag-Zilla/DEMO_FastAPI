@@ -122,7 +122,7 @@ export-openapi:
 
 # Admin bootstrap (interactive)
 bootstrap-admin:
-	uv run --package $(UV_PACKAGE) bash startup/project_spec.sh
+	uv run --package $(UV_PACKAGE) bash scripts/project_spec.sh
 
 clean:
 	find . -type f -name "*.pyc" -delete

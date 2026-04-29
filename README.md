@@ -331,13 +331,13 @@ Workflow file: `.github/workflows/ci-full.yml`
 
 ### Scripts Management
 
-Administrative script in the `startup/` directory:
+Administrative script in the `scripts/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
+| `project_spec.sh` | Admin bootstrap & DB init | `./scripts/project_spec.sh` |
 
-See [startup/](startup/) for the scripts.
+See [scripts/](scripts/) for the scripts.
 
 ## 📁 Project Structure
 ---
@@ -433,7 +433,7 @@ DEMO_FastAPI/
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
 │
-├── startup/                        # Administrative bootstrap script
+├── scripts/                        # Administrative bootstrap script
 │   ├── project_spec.sh             # Admin bootstrap & database init
 │
 │
@@ -458,7 +458,7 @@ DEMO_FastAPI/
 - **`services/`** - Multi-service microservices architecture
   - **`services/api/`** - FastAPI service with its own `pyproject.toml` (code, tests, logs — self-contained)
 - **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
-- **`startup/`** - Administrative bootstrap script (admin account initialization)
+- **`scripts/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
 - **`Makefile`** - Simplifies common development and dependency-management tasks

@@ -35,7 +35,7 @@ DEMO_FastAPI/
 │       ├── utils/                  # Dependencies, branding, static assets
 │       └── tests/                  # Pytest test suite + load tests
 ├── doc/                            # Project documentation
-├── startup/                        # project_spec.sh (admin bootstrap)
+├── scripts/                        # project_spec.sh (admin bootstrap)
 ├── pyproject.toml                  # Workspace root (uv orchestration)
 ├── services/
 │   └── api/
