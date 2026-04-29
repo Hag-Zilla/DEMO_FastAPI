@@ -39,8 +39,8 @@ class RegularUser(HttpUser):
     def on_start(self) -> None:
         """Register a unique user and obtain a JWT for subsequent requests."""
         suffix = _random_suffix()
-        self.username = f"loadtest_{suffix}"
-        self.password = "LoadTest@1234!"  # pragma: allowlist secret
+        self.username = f"loadtest_{suffix}"  # pylint: disable=attribute-defined-outside-init
+        self.password = "LoadTest@1234!"  # pragma: allowlist secret  # pylint: disable=attribute-defined-outside-init
 
         # Register
         self.client.post(

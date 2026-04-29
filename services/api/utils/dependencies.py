@@ -52,3 +52,10 @@ def get_admin_or_moderator_user(
             detail="You do not have permission to perform this action.",
         )
     return current_user
+
+
+# Provides an authenticated admin user.
+AdminUserDep = Annotated[UserModel, Depends(get_admin_user)]
+
+# Provides an authenticated admin or moderator user.
+AdminOrModeratorDep = Annotated[UserModel, Depends(get_admin_or_moderator_user)]

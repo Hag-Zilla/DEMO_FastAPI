@@ -5,7 +5,6 @@
 # ============================================================================
 
 from pathlib import Path
-from typing import cast
 
 from alembic import command
 from alembic.config import Config
@@ -24,16 +23,17 @@ from services.api.database.base import Base
 __all__ = ["Base", "engine", "SessionLocal", "get_db", "run_migrations"]
 
 # Database configuration
-DATABASE_URL = cast(str, settings.DATABASE_URL)  # pylint: disable=no-member
+# pylint: disable=no-member
+DATABASE_URL: str = str(settings.DATABASE_URL)
 
 engine_kwargs: dict = {}
 
-if DATABASE_URL.startswith("sqlite"):
+if DATABASE_URL.startswith("sqlite"):  # pylint: disable=no-member
     engine_kwargs["connect_args"] = {"check_same_thread": False}
     engine_kwargs["poolclass"] = StaticPool
 
-    if DATABASE_URL.startswith("sqlite:///"):
-        DB_PATH = DATABASE_URL.replace("sqlite:///", "", 1)
+    if DATABASE_URL.startswith("sqlite:///"):  # pylint: disable=no-member
+        DB_PATH = DATABASE_URL.replace("sqlite:///", "", 1)  # pylint: disable=no-member
         if DB_PATH and DB_PATH != ":memory:" and not DB_PATH.startswith("file:"):
             Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 

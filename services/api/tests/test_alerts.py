@@ -1,4 +1,5 @@
 """Budget alert endpoint tests."""
+# pylint: disable=unused-argument  # pytest fixtures are injected for side effects
 
 import pytest
 from datetime import datetime, timezone

@@ -1,19 +1,23 @@
 """User management router."""
 
-from typing import Annotated, List, cast
+from typing import cast
 
-from fastapi import APIRouter, Depends, status, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query, status
 
-from ..core.exceptions import ResourceNotFoundException
+from ..core.config import settings
+from ..core.exceptions import ResourceNotFoundException, ValidationException
 from ..core.logging import get_logger
-from ..core.security import get_current_user
 from ..core.enums import UserStatus
-from ..database.session import get_db
-from ..utils.dependencies import get_admin_user, get_admin_or_moderator_user
 from ..database.models.user import User as UserModel
+from ..schemas.common import ListResponse
 from ..schemas.user import UserCreate, UserSelfUpdate, UserUpdate, UserResponse
 from ..services.user_service import UserService
+from ..utils.dependencies import (
+    AdminOrModeratorDep,
+    AdminUserDep,
+    CurrentUserDep,
+    SessionDep,
+)
 
 logger = get_logger(__name__)
 
@@ -26,7 +30,7 @@ router = APIRouter(prefix="/users", tags=["User Management"])
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
+def create_user(user: UserCreate, db: SessionDep):
     """Create a new standard user account (status: PENDING, awaiting admin approval)."""
     return UserService.create_user(db, user)
 
@@ -37,17 +41,19 @@ def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user_active(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
+def create_user_active(user: UserCreate, db: SessionDep):
     """Create a new standard user account with ACTIVE status (development/testing only).
 
     This endpoint bypasses the normal approval workflow and is useful for
     development and testing. In production, use POST /create followed by approval.
     """
+    if settings.ENVIRONMENT != "local":
+        raise HTTPException(status_code=404, detail="Endpoint not found")
     return UserService.create_user_active(db, user)
 
 
 @router.get("/me", name="Read Current User", response_model=UserResponse)
-def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)]):
+def read_users_me(current_user: CurrentUserDep):
     """Return the authenticated user's profile data."""
     return current_user
 
@@ -55,8 +61,8 @@ def read_users_me(current_user: Annotated[UserModel, Depends(get_current_user)])
 @router.put("/update/", name="Self Update User", response_model=UserResponse)
 def self_update_user(
     user_update: UserSelfUpdate,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Update the authenticated user's own profile fields."""
     return UserService.update_user_self(db, cast(str, current_user.id), user_update)
@@ -66,8 +72,8 @@ def self_update_user(
 def admin_update_user(
     user_id: str,
     user_update: UserUpdate,
-    db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    db: SessionDep,
+    _admin: AdminUserDep,
 ):
     """Update any user fields by ID (admin only)."""
     return UserService.update_user_admin(db, user_id, user_update)
@@ -78,14 +84,14 @@ def admin_update_user(
 )
 def delete_user(
     user_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    admin: Annotated[UserModel, Depends(get_admin_user)],
+    db: SessionDep,
+    admin: AdminUserDep,
 ):
     """Delete a user by ID (admin only)."""
     UserService.delete_user(db, user_id, cast(str, admin.id))
 
 
-@router.get("/", name="List Users", response_model=List[UserResponse])
+@router.get("/", name="List Users", response_model=ListResponse[UserResponse])
 def list_users(
     status_filter: UserStatus | None = Query(
         None,
@@ -96,11 +102,12 @@ def list_users(
         default=100, ge=1, le=1000, description="Maximum number of results"
     ),
     offset: int = Query(default=0, ge=0, description="Number of results to skip"),
-    db: Annotated[Session, Depends(get_db)] = None,  # type: ignore[assignment]
-    _admin: Annotated[UserModel, Depends(get_admin_user)] = None,  # type: ignore[assignment]
+    db: SessionDep = None,  # type: ignore[assignment]
+    _admin: AdminUserDep = None,  # type: ignore[assignment]
 ):
     """List all users with optional status filter and pagination (admin only)."""
-    return UserService.list_users(db, status_filter, limit, offset)
+    users = UserService.list_users(db, status_filter, limit, offset)
+    return ListResponse[UserResponse](data=users, count=len(users))
 
 
 @router.post(
@@ -110,8 +117,8 @@ def list_users(
 )
 def approve_user(
     user_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
+    db: SessionDep,
+    moderator: AdminOrModeratorDep,
 ):
     """Approve a pending user (admin or moderator only).
 
@@ -127,14 +134,14 @@ def approve_user(
 
     Raises:
         ResourceNotFoundException: If user with given ID not found.
-        ValueError: If user is not in PENDING status.
+        ValidationException: If user is not in PENDING status.
     """
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")
 
     if user.status != UserStatus.PENDING:
-        raise ValueError(
+        raise ValidationException(
             f"User {user_id} is not in PENDING status (current: {user.status})"
         )
 
@@ -152,8 +159,8 @@ def approve_user(
 )
 def reject_user(
     user_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
+    db: SessionDep,
+    moderator: AdminOrModeratorDep,
 ):
     """Reject a pending user (admin or moderator only).
 
@@ -169,14 +176,14 @@ def reject_user(
 
     Raises:
         ResourceNotFoundException: If user with given ID not found.
-        ValueError: If user is not in PENDING status.
+        ValidationException: If user is not in PENDING status.
     """
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")
 
     if user.status != UserStatus.PENDING:
-        raise ValueError(
+        raise ValidationException(
             f"User {user_id} is not in PENDING status (current: {user.status})"
         )
 
@@ -194,8 +201,8 @@ def reject_user(
 )
 def disable_user(
     user_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
+    db: SessionDep,
+    moderator: AdminOrModeratorDep,
 ):
     """Disable an active user (admin or moderator only).
 
@@ -211,14 +218,14 @@ def disable_user(
 
     Raises:
         ResourceNotFoundException: If user with given ID not found.
-        ValueError: If user is not in ACTIVE status.
+        ValidationException: If user is not in ACTIVE status.
     """
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")
 
     if user.status != UserStatus.ACTIVE:
-        raise ValueError(
+        raise ValidationException(
             f"Cannot disable user {user_id}: user is not ACTIVE (current: {user.status})"
         )
 
@@ -236,8 +243,8 @@ def disable_user(
 )
 def reactivate_user(
     user_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    moderator: Annotated[UserModel, Depends(get_admin_or_moderator_user)],
+    db: SessionDep,
+    moderator: AdminOrModeratorDep,
 ):
     """Reactivate a disabled user (admin or moderator only).
 
@@ -253,14 +260,14 @@ def reactivate_user(
 
     Raises:
         ResourceNotFoundException: If user with given ID not found.
-        ValueError: If user is not in DISABLED status.
+        ValidationException: If user is not in DISABLED status.
     """
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise ResourceNotFoundException(f"User with id {user_id} not found")
 
     if user.status != UserStatus.DISABLED:
-        raise ValueError(
+        raise ValidationException(
             f"Cannot reactivate user {user_id}: user is not DISABLED (current: {user.status})"
         )
 

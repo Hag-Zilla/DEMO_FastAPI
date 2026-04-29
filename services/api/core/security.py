@@ -1,7 +1,7 @@
 """Authentication and security utilities."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -47,7 +47,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return verified
 
 
-def decode_jwt_token(token: str) -> dict:
+def decode_jwt_token(token: str) -> dict[str, Any]:
     """Decode and return the payload of a JWT token."""
     try:
         # settings.SECRET_KEY is a pydantic SecretStr; pass its raw value to PyJWT
@@ -126,7 +126,9 @@ def is_admin(current_user: Annotated[UserModel, Depends(get_current_user)]):
     return current_user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """Generate a JSON Web Token (JWT) for authentication.
 
     Args:
@@ -155,6 +157,26 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         algorithm=settings.ALGORITHM,
     )
     return encoded_jwt
+
+
+def create_password_reset_token(username: str) -> str:
+    """Create a short-lived JWT token dedicated to password reset."""
+    expires_delta = timedelta(minutes=settings.PASSWORD_RESET_EXPIRATION_MINUTES)
+    return create_access_token(
+        {"sub": username, "scope": "password_reset"},
+        expires_delta=expires_delta,
+    )
+
+
+def decode_password_reset_token(token: str) -> str:
+    """Decode password-reset token and return username subject."""
+    payload = decode_jwt_token(token)
+    if payload.get("scope") != "password_reset":
+        raise AuthenticationException("Invalid password reset token")
+    username = payload.get("sub")
+    if not isinstance(username, str) or not username:
+        raise AuthenticationException("Invalid password reset token")
+    return username
 
 
 def authenticate_user(db: Session, username: str, password: str) -> UserModel | None:

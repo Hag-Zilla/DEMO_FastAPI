@@ -1,18 +1,14 @@
 """Alert router - Budget overflow detection."""
 
 from datetime import datetime, timezone
-from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi_cache.decorator import cache
-from sqlalchemy.orm import Session
 
 from ..core.cache import user_cache_key_builder
 from ..core.logging import get_logger
-from ..core.security import get_current_user
-from ..database.models.user import User as UserModel
-from ..database.session import get_db
 from ..services.alert_service import AlertService
+from ..utils.dependencies import CurrentUserDep, SessionDep
 
 logger = get_logger(__name__)
 
@@ -22,8 +18,8 @@ router = APIRouter(prefix="/alerts", tags=["Alerts"])
 @router.get("/", name="Check Budget Alerts")
 @cache(expire=60, namespace="alerts", key_builder=user_cache_key_builder)
 async def check_alerts(
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Check for budget overruns in current month.
 

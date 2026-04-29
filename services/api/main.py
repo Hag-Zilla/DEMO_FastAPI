@@ -16,7 +16,6 @@ Handcraft with love and sweat by Damien Mascheix @Hagzilla.
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import sentry_sdk
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,23 +36,6 @@ from .core.cache import setup_cache
 
 # Initialize logger
 logger = get_logger(__name__)
-
-
-def configure_sentry() -> bool:
-    """Initialize Sentry only when explicitly configured outside local env.
-
-    Returns:
-        True when Sentry was initialized, False otherwise.
-    """
-    if not settings.SENTRY_DSN or settings.ENVIRONMENT == "local":
-        return False
-
-    sentry_sdk.init(
-        dsn=settings.SENTRY_DSN,
-        enable_tracing=True,
-        environment=settings.ENVIRONMENT,
-    )
-    return True
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -85,8 +67,6 @@ async def lifespan(_app: FastAPI):
 
 
 # Create FastAPI application instance
-configure_sentry()
-
 app = FastAPI(
     title=settings.APP_NAME,
     description=(
@@ -126,13 +106,18 @@ app = FastAPI(
 )
 
 # CORS – restrict allow_origins in production
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins = [str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS]
+if settings.ENVIRONMENT == "local" and not origins:
+    origins = ["http://localhost:5173"]
+
+if origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Attach SlowAPI limiter to app for decorator usage
 app.state.limiter = limiter

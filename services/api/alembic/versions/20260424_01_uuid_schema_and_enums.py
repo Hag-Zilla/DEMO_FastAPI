@@ -7,7 +7,9 @@ Create Date: 2026-04-24
 
 # Alembic revision files require specific module-level names like revision and
 # down_revision, which conflict with Pylint naming rules.
-# pylint: disable=invalid-name
+# alembic.op module members (create_table, create_index, etc.) are dynamically
+# injected at runtime by Alembic and cannot be resolved by static analysis.
+# pylint: disable=invalid-name,no-member
 
 from typing import Any
 
