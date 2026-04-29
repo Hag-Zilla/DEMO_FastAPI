@@ -72,6 +72,18 @@ repos:
         args: ['--fix=lf']
         types: [text]
 
+  # ===== DOCUMENTATION LINK CHECKING: Lychee =====
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.1
+    hooks:
+      - id: lychee
+        name: Check links with Lychee
+        args:
+          - '--no-progress'
+          - '--exclude-private'
+        files: \.(md|rst|html)$
+        stages: [commit]
+
   # ===== PYTHON LINTING & FORMATTING: Ruff =====
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.0

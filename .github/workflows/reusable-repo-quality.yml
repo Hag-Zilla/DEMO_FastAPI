@@ -36,6 +36,27 @@ jobs:
         run: |
           make run-hooks
 
+  link-check:
+    name: Link Check (Lychee)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links with Lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --exclude-private
+            --exclude-path services/api/logs/**
+            --root-dir .
+            './**/*.md'
+            './**/*.rst'
+            './**/*.html'
+          fail: true
+          format: markdown
+
   security-audit:
     name: Security & Dependency Checks
     runs-on: ubuntu-latest
