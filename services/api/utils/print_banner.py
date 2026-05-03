@@ -1,10 +1,10 @@
-"""Small CLI to print banner files from the `app.branding` package.
+"""Small CLI to print banner files from the `services.api.utils.branding` package.
 
 Usage:
-  python3 -m app.utils.print_banner completion
+  python3 -m services.api.utils.print_banner completion
 
 It prefers importlib.resources (works when packaged) and falls back
-to reading `app/utils/branding/*.txt` by path. It also replaces a
+to reading `services/api/utils/branding/*.txt` by path. It also replaces a
 `{{PROJECT_NAME}}` placeholder from the `PROJECT_NAME` environment
 variable if present.
 """
@@ -28,8 +28,8 @@ def _read_with_importlib(package: str, filename: str) -> str:
         return ""
 
 
-def _read_with_path(project_root: Path, filename: str) -> str:
-    p = project_root / "app" / "utils" / "branding" / filename
+def _read_with_path(filename: str) -> str:
+    p = Path(__file__).resolve().parent / "branding" / filename
     try:
         return p.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError, UnicodeDecodeError):
@@ -54,13 +54,12 @@ def read_banner(name: str) -> str:
 
     # 1) Try importlib.resources (works in installed packages)
     if resources is not None:
-        content = _read_with_importlib("app.utils.branding", filename)
+        content = _read_with_importlib("services.api.utils.branding", filename)
         if content:
             return content
 
     # 2) Fallback: read from repository path
-    project_root = Path(__file__).resolve().parents[1]
-    content = _read_with_path(project_root, filename)
+    content = _read_with_path(filename)
     return content
 
 

@@ -8,6 +8,7 @@ from services.api.core.exceptions import (
     AuthorizationException,
     ConflictException,
     ResourceNotFoundException,
+    ValidationException,
 )
 from services.api.core.enums import UserRole, UserStatus
 from services.api.core.logging import get_logger
@@ -20,6 +21,27 @@ logger = get_logger(__name__)
 
 class UserService:
     """Service handling user CRUD operations, validation, and admin workflows."""
+
+    @staticmethod
+    def _check_username_uniqueness(
+        db: Session, username: str, exclude_user_id: str | None = None
+    ) -> None:
+        """Raise ConflictException if username is already taken.
+
+        Args:
+            db: Database session.
+            username: Username to check.
+            exclude_user_id: Optional user ID to exclude (for updates).
+
+        Raises:
+            ConflictException: If another user already has this username.
+        """
+        query = db.query(User).filter(User.username == username)
+        if exclude_user_id is not None:
+            query = query.filter(User.id != exclude_user_id)
+        if query.first():
+            logger.warning("Username already taken: %s", username)
+            raise ConflictException(f"Username '{username}' already taken")
 
     @staticmethod
     def create_user(db: Session, user: UserCreate) -> User:
@@ -36,13 +58,7 @@ class UserService:
         Raises:
             ConflictException: If username already exists
         """
-        # Check if username already exists
-        existing_user = db.query(User).filter(User.username == user.username).first()
-        if existing_user:
-            logger.warning(
-                "Attempt to create user with existing username: %s", user.username
-            )
-            raise ConflictException(f"Username '{user.username}' already taken")
+        UserService._check_username_uniqueness(db, user.username)
 
         hashed_password = get_password_hash(user.password)
         db_user = User(
@@ -76,13 +92,7 @@ class UserService:
         Raises:
             ConflictException: If username already exists
         """
-        # Check if username already exists
-        existing_user = db.query(User).filter(User.username == user.username).first()
-        if existing_user:
-            logger.warning(
-                "Attempt to create user with existing username: %s", user.username
-            )
-            raise ConflictException(f"Username '{user.username}' already taken")
+        UserService._check_username_uniqueness(db, user.username)
 
         hashed_password = get_password_hash(user.password)
         db_user = User(
@@ -110,6 +120,14 @@ class UserService:
         if status_filter is not None:
             query = query.filter(User.status == status_filter)  # type: ignore[arg-type]
         return query.offset(offset).limit(limit).all()
+
+    @staticmethod
+    def count_users(db: Session, status_filter: Optional[UserStatus] = None) -> int:
+        """Return the total count of users matching the given status filter."""
+        query = db.query(User)
+        if status_filter is not None:
+            query = query.filter(User.status == status_filter)  # type: ignore[arg-type]
+        return query.count()
 
     @staticmethod
     def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
@@ -164,18 +182,9 @@ class UserService:
 
         # Check username uniqueness (if changed)
         if user_update.username and user_update.username != user.username:
-            existing_user = (
-                db.query(User).filter(User.username == user_update.username).first()
+            UserService._check_username_uniqueness(
+                db, user_update.username, exclude_user_id=user_id
             )
-            if existing_user:
-                logger.warning(
-                    "User %s tried to change username to existing one: %s",
-                    user_id,
-                    user_update.username,
-                )
-                raise ConflictException(
-                    f"Username '{user_update.username}' already taken"
-                )
             user.username = user_update.username  # type: ignore[assignment]
 
         # Update fields
@@ -214,23 +223,9 @@ class UserService:
 
         # Check username uniqueness
         if user_update.username is not None:
-            existing_user = (
-                db.query(User)
-                .filter(
-                    User.username == user_update.username,
-                    User.id != user_id,
-                )
-                .first()
+            UserService._check_username_uniqueness(
+                db, user_update.username, exclude_user_id=user_id
             )
-            if existing_user:
-                logger.warning(
-                    "Admin tried to change user %s username to existing one: %s",
-                    user_id,
-                    user_update.username,
-                )
-                raise ConflictException(
-                    f"Username '{user_update.username}' already taken"
-                )
             user.username = user_update.username  # type: ignore[assignment]
 
         # Update fields
@@ -297,32 +292,73 @@ class UserService:
         return users
 
     @staticmethod
-    def approve_user(db: Session, user_id: str) -> User:
-        """
-        Approve a pending user by changing status from PENDING to ACTIVE.
+    def _transition_status(
+        db: Session,
+        user_id: str,
+        from_status: UserStatus,
+        to_status: UserStatus,
+        action_label: str,
+    ) -> User:
+        """Fetch user, assert current status, set new status, commit.
 
         Args:
-            db: Database session
-            user_id: ID of user to approve
+            db: Database session.
+            user_id: ID of the user whose status is being changed.
+            from_status: Expected current status (raises ValidationException if wrong).
+            to_status: Target status to set.
+            action_label: Human-readable name for logging (e.g. "approve").
 
         Returns:
-            Updated User object with ACTIVE status
+            Updated User object.
 
         Raises:
-            ResourceNotFoundException: If user not found
-            ConflictException: If user is not in PENDING status
+            ResourceNotFoundException: If user not found.
+            ValidationException: If current status does not match from_status.
         """
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             raise ResourceNotFoundException(f"User with id {user_id} not found")
-
-        if user.status != UserStatus.PENDING:
-            raise ConflictException(
-                f"Can only approve PENDING users; user is {user.status}"
+        if user.status != from_status:
+            raise ValidationException(
+                f"Cannot {action_label} user {user_id}: "
+                f"expected {from_status.value}, got {user.status}"
             )
-
-        user.status = UserStatus.ACTIVE  # type: ignore[assignment]
+        user.status = to_status  # type: ignore[assignment]
         db.commit()
         db.refresh(user)
-        logger.info("User %s approved and set to ACTIVE", user_id)
+        logger.info(
+            "User %s %sd (status: %s → %s)",
+            user_id,
+            action_label,
+            from_status.value,
+            to_status.value,
+        )
         return user
+
+    @staticmethod
+    def approve_user(db: Session, user_id: str) -> User:
+        """Approve a PENDING user → ACTIVE."""
+        return UserService._transition_status(
+            db, user_id, UserStatus.PENDING, UserStatus.ACTIVE, "approve"
+        )
+
+    @staticmethod
+    def reject_user(db: Session, user_id: str) -> User:
+        """Reject a PENDING user → DISABLED."""
+        return UserService._transition_status(
+            db, user_id, UserStatus.PENDING, UserStatus.DISABLED, "reject"
+        )
+
+    @staticmethod
+    def disable_user(db: Session, user_id: str) -> User:
+        """Disable an ACTIVE user → DISABLED."""
+        return UserService._transition_status(
+            db, user_id, UserStatus.ACTIVE, UserStatus.DISABLED, "disable"
+        )
+
+    @staticmethod
+    def reactivate_user(db: Session, user_id: str) -> User:
+        """Reactivate a DISABLED user → ACTIVE."""
+        return UserService._transition_status(
+            db, user_id, UserStatus.DISABLED, UserStatus.ACTIVE, "reactivate"
+        )

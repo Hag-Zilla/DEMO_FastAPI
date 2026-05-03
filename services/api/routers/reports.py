@@ -1,7 +1,6 @@
 """Report router - Expense reporting and analytics."""
 
 from datetime import datetime
-from typing import cast
 
 from fastapi import APIRouter
 from fastapi_cache.decorator import cache
@@ -41,9 +40,7 @@ async def get_monthly_report(
     if not 1 <= month <= 12:
         raise ValueError("Month must be between 1 and 12")
 
-    report = ReportService.get_monthly_report(
-        db, cast(str, current_user.id), year, month
-    )
+    report = ReportService.get_monthly_report(db, current_user.id, year, month)
 
     logger.info(
         "User %s generated monthly report for %s-%02d", current_user.id, year, month
@@ -83,7 +80,7 @@ def get_period_report(
         raise ValueError("start_date must be before end_date")
 
     report = ReportService.get_custom_period_report(
-        db, cast(str, current_user.id), start_date, end_date
+        db, current_user.id, start_date, end_date
     )
 
     logger.info(

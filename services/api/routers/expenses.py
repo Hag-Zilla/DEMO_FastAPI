@@ -1,7 +1,7 @@
 """Expense management router."""
 
 from datetime import datetime
-from typing import Optional, cast
+from typing import Optional
 
 from fastapi import APIRouter, Body, Query, status
 
@@ -11,6 +11,7 @@ from ..schemas.common import ListResponse
 from ..schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
 from ..services.expense_service import ExpenseService
 from ..utils.dependencies import CurrentUserDep, SessionDep
+from ..utils.pagination import make_list_response
 
 logger = get_logger(__name__)
 
@@ -35,7 +36,7 @@ def list_expenses(
     """
     expenses = ExpenseService.list_expenses_for_user(
         db,
-        cast(str, current_user.id),
+        current_user.id,
         current_user.role,
         category,
         start_date,
@@ -43,7 +44,15 @@ def list_expenses(
         limit,
         offset,
     )
-    return ListResponse[ExpenseResponse](data=expenses, count=len(expenses))
+    total = ExpenseService.count_expenses_for_user(
+        db,
+        current_user.id,
+        current_user.role,
+        category,
+        start_date,
+        end_date,
+    )
+    return make_list_response(expenses, total)
 
 
 @router.post(
@@ -69,7 +78,7 @@ def create_expense(
     Valid categories: food, transportation, entertainment, utilities,
     healthcare, education, shopping, other
     """
-    return ExpenseService.create_expense(db, cast(str, current_user.id), expense)
+    return ExpenseService.create_expense(db, current_user.id, expense)
 
 
 @router.get("/{expense_id}", name="Get Expense", response_model=ExpenseResponse)
@@ -80,7 +89,7 @@ def get_expense(
 ):
     """Get a specific expense by ID (must be owner or admin)."""
     return ExpenseService.verify_expense_access(
-        db, expense_id, cast(str, current_user.id), current_user.role
+        db, expense_id, current_user.id, current_user.role
     )
 
 
@@ -93,7 +102,7 @@ def update_expense(
 ):
     """Update an expense (must be owner or admin)."""
     return ExpenseService.update_expense(
-        db, expense_id, cast(str, current_user.id), current_user.role, expense_update
+        db, expense_id, current_user.id, current_user.role, expense_update
     )
 
 
@@ -106,6 +115,4 @@ def delete_expense(
     current_user: CurrentUserDep,
 ):
     """Delete an expense (must be owner or admin)."""
-    ExpenseService.delete_expense(
-        db, expense_id, cast(str, current_user.id), current_user.role
-    )
+    ExpenseService.delete_expense(db, expense_id, current_user.id, current_user.role)

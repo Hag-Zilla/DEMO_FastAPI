@@ -51,6 +51,28 @@ class ExpenseService:
         return expenses
 
     @staticmethod
+    def count_expenses_for_user(
+        db: Session,
+        user_id: str,
+        user_role: UserRole,
+        category: Optional[ExpenseCategory] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        """Return the total number of expenses matching the given filters (no pagination)."""
+        if user_role == UserRole.ADMIN:
+            query = db.query(Expense)
+        else:
+            query = db.query(Expense).filter(Expense.user_id == user_id)
+        if category:
+            query = query.filter(Expense.category == category)  # type: ignore[arg-type]
+        if start_date:
+            query = query.filter(Expense.date >= start_date)
+        if end_date:
+            query = query.filter(Expense.date <= end_date)
+        return query.count()
+
+    @staticmethod
     def create_expense(
         db: Session,
         user_id: str,

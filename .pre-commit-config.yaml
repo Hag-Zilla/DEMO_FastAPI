@@ -20,7 +20,7 @@
 # ============================================================================
 
 default_language_version:
-  python: python3.14
+  python: python3
 
 repos:
   # ===== SECURITY: Detect Secrets =====
@@ -73,11 +73,12 @@ repos:
         types: [text]
 
   # ===== DOCUMENTATION LINK CHECKING: Lychee =====
-  - repo: https://github.com/lycheeverse/lychee
-    rev: lychee-v0.24.1
+  - repo: local
     hooks:
       - id: lychee
         name: Check links with Lychee
+        language: system
+        entry: lychee
         args:
           - '--no-progress'
           - '--exclude-private'

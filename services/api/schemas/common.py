@@ -17,7 +17,10 @@ class ListResponse(BaseModel, Generic[SchemaT]):
     """
 
     data: Sequence[SchemaT] = Field(default_factory=list)
-    count: int = Field(0, ge=0)
+    count: int = Field(0, ge=0, description="Number of items in this page.")
+    total: int = Field(
+        0, ge=0, description="Total items matching the query (without pagination)."
+    )
 
 
 __all__ = ["Token", "TokenData", "ListResponse"]

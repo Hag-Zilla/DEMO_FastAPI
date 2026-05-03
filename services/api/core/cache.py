@@ -13,9 +13,9 @@ def user_cache_key_builder(
     func,
     namespace: str = "",
     *,
-    _request=None,
-    _response=None,
-    _args=None,
+    request=None,
+    response=None,
+    args=None,
     kwargs=None,
 ) -> str:
     """Build a per-user cache key.
@@ -23,6 +23,7 @@ def user_cache_key_builder(
     Includes the function name, all scalar path/query params, and the current
     user's ID so that users never receive each other's cached results.
     """
+    del request, response, args
     kw = kwargs or {}
     # Support both 'current_user' (regular user) and '_admin' (admin-only endpoints)
     user = kw.get("current_user") or kw.get("_admin")

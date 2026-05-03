@@ -3,7 +3,7 @@
 import uuid
 
 from sqlalchemy import Column, String, Numeric, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 from services.api.core.enums import UserRole, UserStatus
 from ..base import Base
@@ -14,7 +14,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(
+    id: Mapped[str] = Column(  # type: ignore[assignment]
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     username = Column(String, unique=True, index=True)

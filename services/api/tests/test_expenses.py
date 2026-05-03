@@ -122,6 +122,19 @@ class TestListExpenses:
         assert len(page1_ids) == 2
         assert len(set(page1_ids) & set(page2_ids)) == 0
 
+    def test_list_expenses_includes_total(
+        self, authenticated_client: TestClient, multiple_expenses: list[Expense]
+    ) -> None:
+        """Test that list_expenses returns total count separate from page size."""
+        response = authenticated_client.get("/api/v1/expenses/?limit=1&offset=0")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert "count" in data
+        assert data["total"] >= data["count"]  # total is unaffected by limit
+        assert data["total"] == len(multiple_expenses)
+        assert data["count"] == 1  # page size
+
     def test_list_expenses_admin_sees_all(
         self, admin_client: TestClient, test_expense: Expense, db: Session
     ) -> None:

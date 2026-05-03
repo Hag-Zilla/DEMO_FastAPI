@@ -1,14 +1,10 @@
 """User management router."""
 
-from typing import cast
-
 from fastapi import APIRouter, HTTPException, Query, status
 
 from ..core.config import settings
-from ..core.exceptions import ResourceNotFoundException, ValidationException
-from ..core.logging import get_logger
 from ..core.enums import UserStatus
-from ..database.models.user import User as UserModel
+from ..core.logging import get_logger
 from ..schemas.common import ListResponse
 from ..schemas.user import UserCreate, UserSelfUpdate, UserUpdate, UserResponse
 from ..services.user_service import UserService
@@ -18,6 +14,7 @@ from ..utils.dependencies import (
     CurrentUserDep,
     SessionDep,
 )
+from ..utils.pagination import make_list_response
 
 logger = get_logger(__name__)
 
@@ -65,7 +62,7 @@ def self_update_user(
     current_user: CurrentUserDep,
 ):
     """Update the authenticated user's own profile fields."""
-    return UserService.update_user_self(db, cast(str, current_user.id), user_update)
+    return UserService.update_user_self(db, current_user.id, user_update)
 
 
 @router.put("/update/{user_id}/", name="Admin Update User", response_model=UserResponse)
@@ -88,7 +85,7 @@ def delete_user(
     admin: AdminUserDep,
 ):
     """Delete a user by ID (admin only)."""
-    UserService.delete_user(db, user_id, cast(str, admin.id))
+    UserService.delete_user(db, user_id, admin.id)
 
 
 @router.get("/", name="List Users", response_model=ListResponse[UserResponse])
@@ -107,7 +104,8 @@ def list_users(
 ):
     """List all users with optional status filter and pagination (admin only)."""
     users = UserService.list_users(db, status_filter, limit, offset)
-    return ListResponse[UserResponse](data=users, count=len(users))
+    total = UserService.count_users(db, status_filter)
+    return make_list_response(users, total)
 
 
 @router.post(
@@ -120,34 +118,8 @@ def approve_user(
     db: SessionDep,
     moderator: AdminOrModeratorDep,
 ):
-    """Approve a pending user (admin or moderator only).
-
-    Sets the user's status from PENDING to ACTIVE.
-
-    Args:
-        user_id: ID of the user to approve.
-        db: Database session.
-        moderator: Current admin or moderator user.
-
-    Returns:
-        The updated User object.
-
-    Raises:
-        ResourceNotFoundException: If user with given ID not found.
-        ValidationException: If user is not in PENDING status.
-    """
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise ResourceNotFoundException(f"User with id {user_id} not found")
-
-    if user.status != UserStatus.PENDING:
-        raise ValidationException(
-            f"User {user_id} is not in PENDING status (current: {user.status})"
-        )
-
-    user.status = UserStatus.ACTIVE
-    db.commit()
-    db.refresh(user)
+    """Approve a pending user (admin or moderator only). PENDING → ACTIVE."""
+    user = UserService.approve_user(db, user_id)
     logger.info("Moderator %s approved user %s", moderator.id, user_id)
     return user
 
@@ -162,34 +134,8 @@ def reject_user(
     db: SessionDep,
     moderator: AdminOrModeratorDep,
 ):
-    """Reject a pending user (admin or moderator only).
-
-    Sets the user's status from PENDING to DISABLED.
-
-    Args:
-        user_id: ID of the user to reject.
-        db: Database session.
-        moderator: Current admin or moderator user.
-
-    Returns:
-        The updated User object.
-
-    Raises:
-        ResourceNotFoundException: If user with given ID not found.
-        ValidationException: If user is not in PENDING status.
-    """
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise ResourceNotFoundException(f"User with id {user_id} not found")
-
-    if user.status != UserStatus.PENDING:
-        raise ValidationException(
-            f"User {user_id} is not in PENDING status (current: {user.status})"
-        )
-
-    user.status = UserStatus.DISABLED
-    db.commit()
-    db.refresh(user)
+    """Reject a pending user (admin or moderator only). PENDING → DISABLED."""
+    user = UserService.reject_user(db, user_id)
     logger.info("Moderator %s rejected user %s", moderator.id, user_id)
     return user
 
@@ -204,34 +150,8 @@ def disable_user(
     db: SessionDep,
     moderator: AdminOrModeratorDep,
 ):
-    """Disable an active user (admin or moderator only).
-
-    Sets the user's status from ACTIVE to DISABLED.
-
-    Args:
-        user_id: ID of the user to disable.
-        db: Database session.
-        moderator: Current admin or moderator user.
-
-    Returns:
-        The updated User object.
-
-    Raises:
-        ResourceNotFoundException: If user with given ID not found.
-        ValidationException: If user is not in ACTIVE status.
-    """
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise ResourceNotFoundException(f"User with id {user_id} not found")
-
-    if user.status != UserStatus.ACTIVE:
-        raise ValidationException(
-            f"Cannot disable user {user_id}: user is not ACTIVE (current: {user.status})"
-        )
-
-    user.status = UserStatus.DISABLED
-    db.commit()
-    db.refresh(user)
+    """Disable an active user (admin or moderator only). ACTIVE → DISABLED."""
+    user = UserService.disable_user(db, user_id)
     logger.info("Moderator %s disabled user %s", moderator.id, user_id)
     return user
 
@@ -246,33 +166,7 @@ def reactivate_user(
     db: SessionDep,
     moderator: AdminOrModeratorDep,
 ):
-    """Reactivate a disabled user (admin or moderator only).
-
-    Sets the user's status from DISABLED to ACTIVE.
-
-    Args:
-        user_id: ID of the user to reactivate.
-        db: Database session.
-        moderator: Current admin or moderator user.
-
-    Returns:
-        The updated User object.
-
-    Raises:
-        ResourceNotFoundException: If user with given ID not found.
-        ValidationException: If user is not in DISABLED status.
-    """
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if not user:
-        raise ResourceNotFoundException(f"User with id {user_id} not found")
-
-    if user.status != UserStatus.DISABLED:
-        raise ValidationException(
-            f"Cannot reactivate user {user_id}: user is not DISABLED (current: {user.status})"
-        )
-
-    user.status = UserStatus.ACTIVE
-    db.commit()
-    db.refresh(user)
+    """Reactivate a disabled user (admin or moderator only). DISABLED → ACTIVE."""
+    user = UserService.reactivate_user(db, user_id)
     logger.info("Moderator %s reactivated user %s", moderator.id, user_id)
     return user

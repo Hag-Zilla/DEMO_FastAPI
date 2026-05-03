@@ -129,6 +129,65 @@ class TestAdminUserOperations:
         response = admin_client.post("/api/v1/users/99999/approve")
         assert response.status_code == 404
 
+    def test_reject_user(
+        self, admin_client: TestClient, test_pending_user: User, db: Session
+    ) -> None:
+        """Test admin rejecting a pending user (PENDING → DISABLED)."""
+        response = admin_client.post(f"/api/v1/users/{test_pending_user.id}/reject")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "disabled"
+
+        updated_user = db.get(User, test_pending_user.id)
+        assert updated_user is not None
+        assert updated_user.status == UserStatus.DISABLED
+
+    def test_disable_user(
+        self, admin_client: TestClient, test_user: User, db: Session
+    ) -> None:
+        """Test admin disabling an active user (ACTIVE → DISABLED)."""
+        response = admin_client.post(f"/api/v1/users/{test_user.id}/disable")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "disabled"
+
+        updated_user = db.get(User, test_user.id)
+        assert updated_user is not None
+        assert updated_user.status == UserStatus.DISABLED
+
+    def test_reactivate_user(self, admin_client: TestClient, db: Session) -> None:
+        """Test admin reactivating a disabled user (DISABLED → ACTIVE)."""
+        # Create a disabled user
+        disabled_user = User(
+            username="disabled1",
+            hashed_password="hashed",  # pragma: allowlist secret
+            role=UserRole.USER,
+            status=UserStatus.DISABLED,
+            budget=1000.0,
+        )
+        db.add(disabled_user)
+        db.commit()
+
+        response = admin_client.post(f"/api/v1/users/{disabled_user.id}/reactivate")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "active"
+
+        updated_user = db.get(User, disabled_user.id)
+        assert updated_user is not None
+        assert updated_user.status == UserStatus.ACTIVE
+
+    def test_list_users_includes_total(
+        self, admin_client: TestClient, db: Session
+    ) -> None:
+        """Test that list_users endpoint returns total count separate from page size."""
+        response = admin_client.get("/api/v1/users/?limit=1&offset=0")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert "count" in data
+        assert data["total"] >= data["count"]  # total >= page size
+
     def test_admin_update_user(self, admin_client: TestClient, test_user: User) -> None:
         """Test admin updating user fields."""
         response = admin_client.put(
