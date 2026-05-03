@@ -14,17 +14,52 @@ Or with the Schemathesis CLI for more extensive fuzzing against a live server::
 See: https://schemathesis.io/
 """
 
+import importlib
+
 import schemathesis
 from hypothesis import HealthCheck, settings as hyp_settings
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from services.api.main import app
+from services.api.database.session import get_db
+from services.api.database.base import Base
 
 
 # ---------------------------------------------------------------------------
 # Schema fixture — loads OpenAPI spec directly from the ASGI app (no server)
 # ---------------------------------------------------------------------------
 
+# Load model modules before create_all so tables are registered in metadata.
+importlib.import_module("services.api.database.models.user")
+importlib.import_module("services.api.database.models.expense")
+
 schema = schemathesis.openapi.from_asgi("/openapi.json", app)
+
+
+# ---------------------------------------------------------------------------
+# Contract-test database isolation
+# ---------------------------------------------------------------------------
+
+TEST_ENGINE = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=TEST_ENGINE)
+Base.metadata.create_all(bind=TEST_ENGINE)
+
+
+def _override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+app.dependency_overrides[get_db] = _override_get_db
 
 
 # ---------------------------------------------------------------------------

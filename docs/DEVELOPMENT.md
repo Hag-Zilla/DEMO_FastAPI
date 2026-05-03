@@ -31,15 +31,12 @@ This project uses **[pre-commit](https://pre-commit.com/)** to automate code qua
 
 ### Installation
 
-Pre-commit is included in the `dev` dependencies. Install hooks with:
+Pre-commit is part of the shared `tools` dependency group. Install hooks with:
 
 ```bash
-# Install all dev dependencies (pre-commit, pytest, ruff, mypy, etc.)
-make sync-dev
-
 # Register hooks with git
 make install-hooks
-# or manually: pre-commit install
+# or manually: uv run --only-group tools pre-commit install
 ```
 
 ### Running Hooks
@@ -50,15 +47,17 @@ git commit -m "Your message"
 
 # Run all hooks on all files
 make run-hooks
-# or: pre-commit run --all-files
+# or: uv run --only-group tools pre-commit run --all-files
 
 # Run hooks on only staged files
 make run-hooks-staged
-# or: pre-commit run
+# or: uv run --only-group tools pre-commit run
 
 # Bypass hooks if absolutely necessary
 git commit --no-verify
 ```
+
+`uvx pre-commit ...` is fine for one-off manual runs, but it is not the default workflow here because `pre-commit` is already versioned in the repository's `tools` group. `uv run --only-group tools ...` stays aligned with the project's declared and locked toolchain.
 
 ### Available Hooks
 
@@ -77,10 +76,11 @@ git commit --no-verify
 | **ruff** | Fast Python linter (replaces flake8) | **Yes** | commit |
 | **ruff-format** | Auto-formatter (black-compatible) | **Yes** | commit |
 | **mypy** | Static type checking | No | commit |
+| **ty** | Additional static type checking (Astral) | No | commit |
+| **pylint** | Static analysis and code quality checks | No | commit |
 | **pydocstyle** | Check docstring format (Google style) | No | commit |
 | **shellcheck** | Check bash/shell scripts | No | commit |
 | **autoflake** | Remove unused imports/variables | **Yes** | commit |
-| **check-markdown-link-fragments** | Validate markdown links | No | commit |
 | **check-merge-conflict** | Detect merge conflict markers | No | commit |
 
 ### Configuration
@@ -95,12 +95,21 @@ default_language_version:
 # Security: Detect common secrets
 detect-secrets:
   args: ['--baseline', '.secrets.baseline']
-  exclude: ^(uv.lock|.env)$
+  exclude: ^(uv\.lock|poetry\.lock|requirements\.txt|\.env.*|\.example|.*\.jsonl.*|services/api/logs)$
 
 # Type checking with mypy
 mypy:
-  additional_dependencies: ['pydantic>=2.0', 'sqlalchemy>=2.0', ...]
-  args: ['--ignore-missing-imports']
+  entry: uv run --only-group tools mypy
+  args: ['services/api']
+
+# Additional typing and static analysis at commit time
+ty:
+  entry: uv run --only-group tools ty
+  args: ['check', 'services/api']
+
+pylint:
+  entry: uv run --only-group tools pylint
+  args: ['services/api']
 
 # Docstring format (Google style)
 pydocstyle:
@@ -136,7 +145,7 @@ Hooks are pinned to specific versions in `.pre-commit-config.yaml`. Update them:
 ```bash
 # Check for new versions and update config
 make update-hooks
-# or: pre-commit autoupdate
+# or: uv run --only-group tools pre-commit autoupdate
 
 # Review changes
 git diff .pre-commit-config.yaml
@@ -159,7 +168,7 @@ make install-hooks
 ```bash
 # Clear cache and retry
 make clean-hooks
-pre-commit run --all-files
+make run-hooks
 ```
 
 **Need to bypass hooks temporarily?**
@@ -290,7 +299,7 @@ Hooks enforce:
 git clone <repo>
 cd DEMO_FastAPI
 
-# Setup uv environment (.venv + runtime dependencies)
+# Setup uv environment (.venv + runtime dependencies for all services)
 make init
 
 # Install pre-commit hooks
@@ -298,6 +307,12 @@ make install-hooks
 
 # Verify setup
 make run
+
+# Run startup readiness checks manually (database, app preflight)
+make prestart
+
+# Apply schema migrations explicitly when needed
+make migrate
 ```
 
 ### 2. Make Changes
@@ -348,6 +363,39 @@ make lint
 # Run hooks on all files
 make run-hooks
 ```
+
+### Database Migrations
+
+Schema changes are managed with **Alembic**.
+
+```bash
+# Apply migrations to the configured database
+make migrate
+
+# Generate a new revision after editing ORM models
+make migrate-create MSG="describe change"
+```
+
+Use `make migrate-create` only after changing SQLAlchemy models, then review the generated revision before committing it.
+
+### Maintenance Helpers
+
+Some Make targets exist as lightweight operational helpers:
+
+```bash
+# Run the API pre-start checks manually
+make prestart
+
+# Placeholder target kept for compatibility; use bootstrap-admin instead
+make init-data
+
+# Bootstrap an admin account interactively
+make bootstrap-admin
+```
+
+- `make prestart` runs the application's readiness / preflight checks manually.
+- `make init-data` is intentionally a no-op helper and points contributors to `make bootstrap-admin`.
+- `make bootstrap-admin` is the supported way to create an admin user locally.
 
 ### 5. Push and Create PR
 
@@ -465,7 +513,6 @@ make run-hooks
 ```bash
 # Nuke old installation and reinstall
 make clean-hooks
-make sync-dev
 make install-hooks
 ```
 
@@ -482,7 +529,7 @@ Edit `.pre-commit-config.yaml` to adjust:
 
 Then reinstall:
 ```bash
-pre-commit install-hooks
+uv run --only-group tools pre-commit install-hooks
 ```
 
 ---
@@ -494,8 +541,8 @@ pre-commit install-hooks
 If `uv.lock` is committed, install exact versions without regenerating:
 
 ```bash
-make init        # Install runtime deps from uv.lock
-make sync-dev    # Add dev tools (pre-commit, pytest, ruff, mypy…)
+make init        # Install runtime deps for all services from uv.lock
+make sync-api    # Or install only the API service runtime deps
 make test
 make run
 ```
@@ -520,19 +567,33 @@ git commit -m "chore: update dependencies"
 ```bash
 # Development commands
 make help              # List all available commands
-make init              # Setup environment (runtime deps)
-make sync-dev          # Install all dev dependencies
+make init              # Setup environment (.venv + runtime deps for all services)
+make init-env          # Create local .env from .env.example if missing
+make sync              # Install runtime deps for all services
+make sync-api          # Install runtime deps for the API service only
+make sync-all          # Alias of make sync
 make run               # Start dev server
+make prestart          # Run startup readiness checks manually
 make test              # Run tests
+make contract-test     # Run Schemathesis contract tests
+make load-test         # Run interactive Locust load tests
+make load-test-headless # Run headless Locust load tests
 make lint              # Lint code
 make format            # Format code
 
 # Dependency management
 make lock              # Regenerate uv.lock
+make migrate           # Apply Alembic migrations
+make migrate-create MSG="..." # Generate Alembic revision from model changes
+make migrate-check     # Verify models and migrations are in sync
+make export-openapi    # Export OpenAPI schema to services/data/openapi.json
+make init-data         # Compatibility no-op; use bootstrap-admin instead
+make bootstrap-admin   # Create an admin account interactively
 
 # Pre-commit commands
 make install-hooks     # Install git hooks
 make run-hooks         # Test all hooks
+make run-hooks-staged  # Run hooks only on staged files
 make update-hooks      # Update to latest versions
 make clean-hooks       # Clear cache
 ```
@@ -549,5 +610,5 @@ make clean-hooks       # Clear cache
 
 ---
 
-**Last Updated**: 2026-04-22
+**Last Updated**: 2026-04-28
 **Maintainer**: Development Team

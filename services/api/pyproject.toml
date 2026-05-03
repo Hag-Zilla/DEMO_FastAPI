@@ -9,7 +9,8 @@ description = "FastAPI API service for DEMO_FastAPI"
 readme = "../../README.md"
 requires-python = ">=3.13"
 
-# Runtime dependencies required to start and run the API service.
+# Runtime dependencies only — dev/quality tools live in [dependency-groups].tools
+# at the workspace root (see root pyproject.toml).
 dependencies = [
     # Web/API stack
     "fastapi>=0.115,<1.0",
@@ -22,51 +23,19 @@ dependencies = [
 
     # Database and caching
     "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13,<2.0",
     "redis>=5.0,<6.0",
     "fastapi-cache2[redis]>=0.1.8",
 
     # Security/authentication
     "PyJWT>=2.10,<3.0",
-    "passlib[argon2]>=1.7.4,<2.0",
-    "argon2-cffi>=23.1,<26.0",
+    "pwdlib[argon2,bcrypt]>=0.3.0,<1.0",
 
     # Infra and middleware
     "PyYAML>=6.0,<7.0",
     "slowapi>=0.1.9,<2.0",
 ]
 
-# Optional dependency set for local development and CI checks.
-[project.optional-dependencies]
-dev = [
-    # Tooling and quality gates
-    "pre-commit>=3.5,<4.0",
-    "ruff>=0.3,<1.0",
-    "mypy>=1.8,<2.0",
-    "pydocstyle>=6.3,<7.0",
-    "autoflake>=2.0,<3.0",
-
-    # Testing
-    "pytest>=8.0,<9.0",
-    "pytest-cov>=4.1,<6.0",
-    "pytest-asyncio>=0.23,<1.0",
-    "httpx>=0.25,<1.0",
-
-    # Security
-    "bandit>=1.7,<2.0",
-    "pip-audit>=2.6,<3.0",
-
-    # Type stubs
-    "types-PyYAML>=6.0,<7.0",
-    "types-redis>=4.6,<5.0",
-]
-
 [tool.uv]
-# This member is an application/service, not a publishable package.
+# This member is an application/service, not a publishable library.
 package = false
-
-# Additional dev-only tools managed via uv dependency groups.
-[dependency-groups]
-dev = [
-    "locust>=2.43.3",
-    "schemathesis>=4.10.2",
-]

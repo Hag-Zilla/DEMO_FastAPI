@@ -17,7 +17,7 @@ class _CounterHandle:
 
     def inc(self, amount: float = 1.0) -> None:
         """Increment the bound counter value."""
-        self._counter._inc_for_key(self._key, amount)
+        self._counter.inc_for_key(self._key, amount)
 
 
 class InMemoryCounter:
@@ -40,9 +40,10 @@ class InMemoryCounter:
 
     def inc(self, amount: float = 1.0) -> None:
         """Increment the unlabelled counter value."""
-        self._inc_for_key((), amount)
+        self.inc_for_key((), amount)
 
-    def _inc_for_key(self, key: tuple[str, ...], amount: float) -> None:
+    def inc_for_key(self, key: tuple[str, ...], amount: float) -> None:
+        """Increment counter for a concrete label key."""
         with self._lock:
             self._values[key] += amount
 

@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
@@ -27,7 +28,7 @@ from .core.config import settings
 from .core.exceptions import AppException
 from .core.logging import get_logger
 from .core.middleware import HTTPLoggingMiddleware, limiter
-from .database.session import Base, engine
+from .database.session import run_migrations
 from .routers import users, health, expenses, alerts, reports, analytics
 from .auth import router as auth_router
 from .core.branding import STARTUP_BANNER, LOG_SIGNATURE
@@ -37,23 +38,32 @@ from .core.cache import setup_cache
 logger = get_logger(__name__)
 
 
+def custom_generate_unique_id(route: APIRoute) -> str:
+    """Generate stable OpenAPI operation IDs from tag + route name.
+
+    Produces IDs like ``users-list_users`` instead of auto-generated UUIDs,
+    which makes generated TypeScript / Python clients predictable.
+    """
+    return f"{route.tags[0]}-{route.name}" if route.tags else route.name
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan: startup and shutdown logic."""
     # --- Startup ---
-    Base.metadata.create_all(bind=engine)
+    run_migrations()
     setup_cache(settings.REDIS_URL)
     print(STARTUP_BANNER)
     logger.info(LOG_SIGNATURE)
     logger.info("=" * 70)
     logger.info("🚀 Expense Tracker API is running and ready to accept requests")
     logger.info("=" * 70)
-    app.state.startup_complete = True
+    _app.state.startup_complete = True
 
     yield
 
     # --- Shutdown ---
-    app.state.startup_complete = False
+    _app.state.startup_complete = False
 
 
 # Create FastAPI application instance
@@ -92,16 +102,22 @@ app = FastAPI(
             "description": "Admin-only business analytics and KPI summary.",
         },
     ],
+    generate_unique_id_function=custom_generate_unique_id,
 )
 
 # CORS – restrict allow_origins in production
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins = [str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS]
+if settings.ENVIRONMENT == "local" and not origins:
+    origins = ["http://localhost:5173"]
+
+if origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Attach SlowAPI limiter to app for decorator usage
 app.state.limiter = limiter

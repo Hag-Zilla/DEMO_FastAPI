@@ -13,9 +13,9 @@ def user_cache_key_builder(
     func,
     namespace: str = "",
     *,
-    request=None,
-    response=None,
-    args=None,
+    _request=None,
+    _response=None,
+    _args=None,
     kwargs=None,
 ) -> str:
     """Build a per-user cache key.
@@ -45,8 +45,8 @@ def setup_cache(redis_url: Optional[str] = None) -> None:
     This keeps local development and tests working without a Redis instance.
     """
     if redis_url:
-        from redis import asyncio as aioredis  # type: ignore[import]
-        from fastapi_cache.backends.redis import RedisBackend  # type: ignore[import]
+        from redis import asyncio as aioredis  # type: ignore[import]  # pylint: disable=import-outside-toplevel
+        from fastapi_cache.backends.redis import RedisBackend  # type: ignore[import]  # pylint: disable=import-outside-toplevel
 
         redis_client = aioredis.from_url(
             redis_url, encoding="utf8", decode_responses=False

@@ -1,4 +1,5 @@
 """Expense management endpoint tests."""
+# pylint: disable=unused-argument  # pytest fixtures are injected for side effects
 
 from datetime import datetime, timedelta, timezone
 
@@ -67,7 +68,9 @@ class TestListExpenses:
         """Test listing expenses when none exist."""
         response = authenticated_client.get("/api/v1/expenses/")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data["count"] == 0
+        assert data["data"] == []
 
     def test_list_expenses_by_user(
         self, authenticated_client: TestClient, test_expense: Expense
@@ -75,7 +78,9 @@ class TestListExpenses:
         """Test that users only see their own expenses."""
         response = authenticated_client.get("/api/v1/expenses/")
         assert response.status_code == 200
-        expenses = response.json()
+        payload = response.json()
+        expenses = payload["data"]
+        assert payload["count"] == 1
         assert len(expenses) == 1
         assert expenses[0]["id"] == test_expense.id
 
@@ -85,7 +90,7 @@ class TestListExpenses:
         """Test filtering expenses by category."""
         response = authenticated_client.get("/api/v1/expenses/?category=food")
         assert response.status_code == 200
-        expenses = response.json()
+        expenses = response.json()["data"]
         assert len(expenses) > 0
         assert all(e["category"] == "food" for e in expenses)
 
@@ -101,7 +106,7 @@ class TestListExpenses:
         )
         assert response.status_code == 200
         # Should have results within the date range
-        assert len(response.json()) > 0
+        assert response.json()["count"] > 0
 
     def test_list_expenses_pagination(
         self, authenticated_client: TestClient, multiple_expenses: list[Expense]
@@ -111,8 +116,8 @@ class TestListExpenses:
         response_page2 = authenticated_client.get("/api/v1/expenses/?limit=2&offset=2")
         assert response_page1.status_code == 200
         assert response_page2.status_code == 200
-        page1_ids = [e["id"] for e in response_page1.json()]
-        page2_ids = [e["id"] for e in response_page2.json()]
+        page1_ids = [e["id"] for e in response_page1.json()["data"]]
+        page2_ids = [e["id"] for e in response_page2.json()["data"]]
         # Pages must not overlap
         assert len(page1_ids) == 2
         assert len(set(page1_ids) & set(page2_ids)) == 0
@@ -144,8 +149,9 @@ class TestListExpenses:
         # Admin should see multiple expenses
         response = admin_client.get("/api/v1/expenses/")
         assert response.status_code == 200
-        expenses = response.json()
-        assert len(expenses) >= 2
+        payload = response.json()
+        assert payload["count"] >= 2
+        assert len(payload["data"]) >= 2
 
 
 class TestUpdateDeleteExpense:

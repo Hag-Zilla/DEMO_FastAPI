@@ -1,4 +1,5 @@
 """Authentication and login endpoint tests."""
+# pylint: disable=unused-argument  # pytest fixtures are injected for side effects
 
 from fastapi.testclient import TestClient
 
@@ -92,6 +93,63 @@ class TestLogin:
         # JWT tokens have 3 parts separated by dots
         parts = token.split(".")
         assert len(parts) == 3, "Invalid JWT token format"
+
+
+class TestPasswordReset:
+    """Test cases for password recovery and reset endpoints."""
+
+    def test_password_recovery_generic_message(
+        self, client: TestClient, test_user: User
+    ) -> None:
+        """Recovery endpoint returns generic message to avoid user enumeration."""
+        response = client.post(
+            "/api/v1/auth/password-recovery",
+            json={"username": "testuser"},
+        )
+        assert response.status_code == 200
+        assert "message" in response.json()
+
+    def test_password_reset_with_recovery_token(
+        self, client: TestClient, test_user: User
+    ) -> None:
+        """A user can reset password using a recovery token."""
+        recovery = client.post(
+            "/api/v1/auth/password-recovery",
+            json={"username": "testuser"},
+        )
+        assert recovery.status_code == 200
+        token = recovery.json().get("reset_token")
+        assert token is not None
+
+        reset = client.post(
+            "/api/v1/auth/reset-password",
+            json={
+                "token": token,
+                "new_password": "BrandNewPassword123!",  # pragma: allowlist secret
+            },
+        )
+        assert reset.status_code == 204
+
+        login = client.post(
+            "/api/v1/auth/token",
+            data={
+                "username": "testuser",
+                "password": "BrandNewPassword123!",  # pragma: allowlist secret
+                "grant_type": "password",
+            },
+        )
+        assert login.status_code == 200
+
+    def test_password_reset_invalid_token(self, client: TestClient) -> None:
+        """Invalid reset token is rejected."""
+        reset = client.post(
+            "/api/v1/auth/reset-password",
+            json={
+                "token": "invalid.token.value",
+                "new_password": "BrandNewPassword123!",  # pragma: allowlist secret
+            },
+        )
+        assert reset.status_code == 400
 
 
 class TestCurrentUser:

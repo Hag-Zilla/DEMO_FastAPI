@@ -466,6 +466,6 @@ async def endpoint():
 
 ## 📚 References
 
-- [slowapi Documentation](https://github.com/laurenceisla/slowapi)
+- [slowapi Documentation](https://github.com/laurentS/slowapi)
 - [Redis Documentation](https://redis.io/docs/)
 - [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)

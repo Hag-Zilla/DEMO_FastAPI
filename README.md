@@ -87,58 +87,53 @@ A personal expense tracking API built with **FastAPI** and **SQLite**. Users can
 ```bash
 git clone <repo-url>
 cd DEMO_FastAPI
-make init-env    # Create .env files from templates
+make init-env      # Create .env from template
 ```
 
 ### Essential Configuration Variables
 
-Edit `.env` and set these required values:
+Edit `.env` with your configuration:
 
 ```bash
+# Generate a SECRET_KEY first
+openssl rand -hex 32
+
+# Then edit:
 nano .env
 ```
 
-**Essential variables:**
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `SECRET_KEY` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `JWT_EXPIRATION_MINUTES` | Token expiration | `30` |
-| `DATABASE_URL` | SQLite database path | `sqlite:///./services/data/expense_tracker.db` |
-| `DEBUG` | Debug mode (⚠️ `False` in production) | `True` (dev), `False` (prod) |
-
-Quick generation:
-```bash
-# Generate SECRET_KEY
-openssl rand -hex 32
-```
+**Key variables in `.env`:**
+- `SECRET_KEY` – JWT signing key (≥32 chars)
+- `ALGORITHM` – JWT signing algorithm (`HS256`)
+- `JWT_EXPIRATION_MINUTES` – Access token expiration in minutes
+- `PASSWORD_RESET_EXPIRATION_MINUTES` – Password reset token expiration in minutes
+- `DATABASE_URL` – SQLite path (default: `sqlite:///./services/data/expense_tracker.db`)
+- `APP_NAME` – API title exposed in OpenAPI docs
+- `APP_VERSION` – API version exposed in OpenAPI docs
+- `DEBUG` – `true` for dev, `false` for production
+- `ENVIRONMENT` – `local`, `staging`, or `production`
+- `BACKEND_CORS_ORIGINS` – Allowed frontend origins for browser CORS requests
 
 ### Build and Run Services
 
-**For local development:**
-
 ```bash
-# Install dependencies (uses committed uv.lock)
-make init
-
-# Activate virtual environment
-source .venv/bin/activate  # or ./venv/bin/activate
-
-# Install development dependencies (pre-commit, pytest, ruff, mypy, etc.)
-make sync-dev
-
-# Setup pre-commit hooks
-make install-hooks
-
-# Start the API
-make run
+make init          # Create .venv and install packages
+source .venv/bin/activate
+make install-hooks # Setup pre-commit checks
+make run           # Start API at http://localhost:8000
 ```
 
-**Notes:**
-- `make init` installs runtime dependencies only
-- `make sync-dev` adds development tools (pre-commit, testing, linting)
-- `make install-hooks` configures git pre-commit hooks for code quality checks
+**4. Access the API:**
+- Interactive docs (Swagger): http://localhost:8000/docs
+- Alternative docs (ReDoc): http://localhost:8000/redoc
+- Health check: http://localhost:8000/health
+
+**5. Bootstrap admin user (optional):**
+```bash
+make bootstrap-admin    # Interactive password prompt
+```
+
+---
 
 ### Verify Installation
 
@@ -150,8 +145,14 @@ curl http://localhost:8000/health
 
 **Access the interactive API documentation:**
 
-- **Swagger UI (Interactive)**: http://localhost:8000/docs
-- **ReDoc (Alternative)**: http://localhost:8000/redoc
+- **Swagger UI** (interactive form): http://localhost:8000/docs
+- **ReDoc** (organized reference): http://localhost:8000/redoc
+- **OpenAPI JSON** (schema): http://localhost:8000/openapi.json
+
+To export the OpenAPI schema for external tools or client generation:
+```bash
+make export-openapi    # Generates services/data/openapi.json
+```
 
 **Available health check endpoints:**
 
@@ -211,9 +212,30 @@ Environment variables & secrets
 
 Settings are loaded via **Pydantic Settings** (`services/api/core/config.py`) with validation at startup.
 
+- `SECRET_KEY` signs JWT tokens and must stay private.
+- `ALGORITHM` defines the JWT signature algorithm (`HS256`).
+- `JWT_EXPIRATION_MINUTES` controls access token lifetime.
+- `PASSWORD_RESET_EXPIRATION_MINUTES` controls password-reset token lifetime.
 - `DATABASE_URL` is the single source of truth for database connection.
 - For SQLite, the app auto-creates the parent folder (default: `services/data/`).
-- Install runtime dependencies with: `make init`
+- `APP_NAME` and `APP_VERSION` are used in generated API documentation metadata.
+- `DEBUG` and `ENVIRONMENT` control runtime behavior (dev/staging/prod behavior).
+- Use `make init` or `make sync` for all workspace services.
+- Use `make sync-api` when you want the API service only.
+
+##### `BACKEND_CORS_ORIGINS`
+
+Defines which frontend origins are allowed to call the API from a browser.
+
+Accepted formats:
+- Single URL: `http://localhost:5173`
+- Comma-separated list: `https://app.example.com,https://admin.example.com`
+- JSON array string: `["https://app.example.com", "https://admin.example.com"]`
+
+Behavior notes:
+- This controls browser CORS checks (not server-to-server calls like `curl`/backend jobs).
+- In local environment, if empty, the app falls back to `http://localhost:5173`.
+- In production, explicitly list trusted frontend domains only.
 
 #### Logging
 
@@ -228,13 +250,17 @@ Configured via YAML in `services/api/logs/config/logging.yaml`, loaded by `servi
 The project provides a comprehensive `Makefile` to simplify common workflows:
 
 **Quick Commands:**
-- `make init` — Setup environment and install dependencies
+- `make init` — Create `.venv` and install runtime dependencies for all services
+- `make sync` — Install runtime dependencies for all services
+- `make sync-api` — Install runtime dependencies for the API service only
+- `make migrate` — Apply Alembic migrations to the configured database
+- `make migrate-create MSG="..."` — Create a new Alembic revision
 - `make run` — Start the dev server
 - `make test` — Run test suite
 - `make run-hooks` — Run code quality checks
 - `make help` — Show all available targets
 
-**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md#make-commands)** or run:
+**For all available Makefile targets** (development, quality checks, dependency management, etc.), see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#quick-reference)** or run:
 
 
 ### Running Tests
@@ -305,13 +331,13 @@ Workflow file: `.github/workflows/ci-full.yml`
 
 ### Scripts Management
 
-Administrative script in the `startup/` directory:
+Administrative script in the `scripts/` directory:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `project_spec.sh` | Admin bootstrap & DB init | `./startup/project_spec.sh` |
+| `project_spec.sh` | Admin bootstrap & DB init | `./scripts/project_spec.sh` |
 
-See [startup/](startup/) for the scripts.
+See [scripts/](scripts/) for the scripts.
 
 ## 📁 Project Structure
 ---
@@ -339,10 +365,15 @@ DEMO_FastAPI/
 │   │   │   └── branding.py             # Startup banner and log signature
 │   │   │
 │   │   ├── database/                    # Data layer
-│   │   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db()
+│   │   │   ├── base.py                 # Shared SQLAlchemy Base (Alembic-safe)
+│   │   │   ├── session.py              # SQLAlchemy engine, sessionmaker, get_db(), run_migrations()
 │   │   │   └── models/
 │   │   │       ├── user.py             # User ORM model (id, username, budget, role, status)
 │   │   │       └── expense.py          # Expense ORM model (id, amount, category, date)
+│   │   │
+│   │   ├── alembic/                    # Database migrations
+│   │   │   ├── env.py                  # Alembic environment/bootstrap
+│   │   │   └── versions/               # Revision files
 │   │   │
 │   │   ├── routers/                     # API endpoints (APIRouter pattern)
 │   │   │   ├── auth.py                 # POST /token (login)
@@ -397,12 +428,12 @@ DEMO_FastAPI/
 │   ├── data/                           # SQLite database (git-ignored)
 │   │   └── expense_tracker.db          # SQLite database (auto-created)
 │
-├── doc/                            # Project documentation
+├── docs/                            # Project documentation
 │   ├── DEVELOPMENT.md              # Development workflow, pre-commit, Makefile targets
 │   ├── STANDARDS.md                # Code standards, naming conventions, type hints
 │   └── RATE_LIMITING.md            # Rate limiting implementation details
 │
-├── startup/                        # Administrative bootstrap script
+├── scripts/                        # Administrative bootstrap script
 │   ├── project_spec.sh             # Admin bootstrap & database init
 │
 │
@@ -426,13 +457,13 @@ DEMO_FastAPI/
 **Key Directories:**
 - **`services/`** - Multi-service microservices architecture
   - **`services/api/`** - FastAPI service with its own `pyproject.toml` (code, tests, logs — self-contained)
-- **`doc/`** - Specialized documentation (deployment, development, standards, rate limiting)
-- **`startup/`** - Administrative bootstrap script (admin account initialization)
+- **`docs/`** - Specialized documentation (deployment, development, standards, rate limiting)
+- **`scripts/`** - Administrative bootstrap script (admin account initialization)
 
 **Configuration & Deployment:**
-- **`Makefile`** - Simplifies common development and deployment tasks
+- **`Makefile`** - Simplifies common development and dependency-management tasks
 - **Root `pyproject.toml` + `uv.lock`** - Workspace orchestration and shared lockfile
-- **`services/api/pyproject.toml`** - API service dependencies and tool configuration
+- **`services/api/pyproject.toml`** - API service runtime dependencies only
 
 ## 📊 Data Structures
 ---
@@ -476,14 +507,14 @@ class ExpenseCategory(str, Enum):
 
 - **Engine**: SQLite (file-based, no server required)
 - **ORM**: SQLAlchemy 2.0.46
-- **Auto-creation**: Tables created automatically on app startup
+- **Schema management**: Alembic migrations applied automatically on app startup
 - **Type Validation**: Pydantic + SQLAlchemy integration
 
 #### Users Table
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| id | INTEGER | Primary Key | Auto-increment |
+| id | STRING(36) | Primary Key | UUID |
 | username | STRING | UNIQUE, NOT NULL | Login identifier |
 | hashed_password | STRING | NOT NULL | Argon2 hashed |
 | budget | NUMERIC(12,2) | NOT NULL | Monthly budget limit |
@@ -496,12 +527,12 @@ class ExpenseCategory(str, Enum):
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| id | INTEGER | Primary Key | Auto-increment |
+| id | STRING(36) | Primary Key | UUID |
 | description | STRING | NOT NULL | Expense description |
 | amount | NUMERIC(12,2) | NOT NULL | Amount > 0 |
 | date | DATETIME | NOT NULL | When incurred (default=now) |
 | category | ENUM(ExpenseCategory) | NOT NULL | food, transportation, entertainment, utilities, healthcare, education, shopping, other |
-| user_id | INTEGER | Foreign Key → users.id | Expense owner |
+| user_id | STRING(36) | Foreign Key → users.id | Expense owner |
 
 **ORM Model**: `services/api/database/models/expense.py`
 
@@ -528,7 +559,17 @@ Use [DBeaver Community Edition](https://dbeaver.io/) to browse and edit your SQL
 
 ### Database Migration
 
-SQLite works fine for small deployments. For production at scale, consider PostgreSQL or MySQL:
+The application now uses **Alembic** for schema management.
+
+```bash
+# Apply all migrations to the configured database
+make migrate
+
+# Create a new revision after model changes
+make migrate-create MSG="add new field"
+```
+
+The default local database can still be SQLite. For production at scale, consider PostgreSQL or MySQL:
 
 ```python
 # services/api/core/config.py
@@ -642,7 +683,7 @@ New users follow an approval workflow before they can access the API:
 
 - **Method**: OAuth2 with JWT (Bearer tokens)
 - **Token Expiration**: Configurable via `JWT_EXPIRATION_MINUTES` (.env)
-- **Password Hashing**: Argon2 via passlib
+- **Password Hashing**: Argon2 via pwdlib
 - **Required Status**: Only users with `status=ACTIVE` can authenticate
 - **Ownership**: Non-admin users can only access their own data (expenses, profile)
 
@@ -671,8 +712,8 @@ All exceptions are caught by global exception handlers in `services/api/main.py`
 This project maintains strict code quality standards enforced through pre-commit hooks (10+ checks), type hints, Google-style docstrings, and Makefile automation.
 
 **For details:**
-- **[doc/STANDARDS.md](doc/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
-- **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
+- **[docs/STANDARDS.md](docs/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
 
 ---
 
@@ -682,9 +723,9 @@ For specialized topics and detailed guides:
 
 | Document | Purpose |
 |----------|----------|
-| **[doc/RATE_LIMITING.md](doc/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
-| **[doc/DEVELOPMENT.md](doc/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
-| **[doc/STANDARDS.md](doc/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
+| **[docs/RATE_LIMITING.md](docs/RATE_LIMITING.md)** | Rate limiting implementation with slowapi + Redis |
+| **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Development setup, pre-commit hooks, code quality workflow |
+| **[docs/STANDARDS.md](docs/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
 
 ## 📚 Resources
 ---
@@ -694,7 +735,7 @@ For specialized topics and detailed guides:
 - [Pydantic Documentation](https://docs.pydantic.dev/)
 - [SQLAlchemy ORM](https://docs.sqlalchemy.org/)
 - [PyJWT Documentation](https://pyjwt.readthedocs.io/)
-- [Passlib Hashing](https://passlib.readthedocs.io/)
+- [pwdlib Documentation](https://frankie567.github.io/pwdlib/)
 - [DBeaver Database Tool](https://dbeaver.io/)
 
 ## 🤝 Contributing

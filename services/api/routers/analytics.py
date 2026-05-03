@@ -1,10 +1,7 @@
 """Analytics router — admin-only business KPI endpoint."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy import func
-from sqlalchemy.orm import Session
 
 from ..core.enums import UserStatus
 from ..core.logging import get_logger
@@ -18,8 +15,7 @@ from ..core.metrics import (
 )
 from ..database.models.expense import Expense
 from ..database.models.user import User as UserModel
-from ..database.session import get_db
-from ..utils.dependencies import get_admin_user
+from ..utils.dependencies import AdminUserDep, SessionDep
 
 logger = get_logger(__name__)
 
@@ -28,8 +24,8 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 @router.get("/", name="Business Analytics Summary")
 def get_analytics_summary(
-    db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    db: SessionDep,
+    _admin: AdminUserDep,
 ):
     """Return a snapshot of key business metrics (admin only).
 

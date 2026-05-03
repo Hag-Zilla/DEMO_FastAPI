@@ -7,10 +7,22 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from ..core.enums import UserRole
 from ..core.security import get_current_user
 from ..database.models.user import User as UserModel
+from ..database.session import get_db
+
+# ============================================================================
+# TYPE ALIASES — use these in router signatures instead of raw Depends()
+# ============================================================================
+
+# Provides a SQLAlchemy session for the current request.
+SessionDep = Annotated[Session, Depends(get_db)]
+
+# Provides the currently authenticated user (raises 401/403 if not authed).
+CurrentUserDep = Annotated[UserModel, Depends(get_current_user)]
 
 
 # ============================================================================
@@ -40,3 +52,10 @@ def get_admin_or_moderator_user(
             detail="You do not have permission to perform this action.",
         )
     return current_user
+
+
+# Provides an authenticated admin user.
+AdminUserDep = Annotated[UserModel, Depends(get_admin_user)]
+
+# Provides an authenticated admin or moderator user.
+AdminOrModeratorDep = Annotated[UserModel, Depends(get_admin_or_moderator_user)]

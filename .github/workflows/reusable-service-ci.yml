@@ -1,0 +1,201 @@
+name: Reusable Service CI
+
+on:
+  workflow_call:
+    inputs:
+      service-package:
+        description: "uv package name for the target service"
+        required: true
+        type: string
+      service-path:
+        description: "Workspace-relative path of the target service"
+        required: true
+        type: string
+      service-tests-path:
+        description: "Workspace-relative path of the target service tests"
+        required: true
+        type: string
+      openapi-module:
+        description: "Python module containing the ASGI app object"
+        required: false
+        type: string
+        default: "services.api.main"
+      openapi-app-var:
+        description: "ASGI app variable name in openapi-module"
+        required: false
+        type: string
+        default: "app"
+      python-version:
+        description: "Python version for this service CI"
+        required: false
+        type: string
+        default: "3.14"
+
+# Minimal settings required at import time by services.api.core.config.Settings.
+env:
+  SECRET_KEY: "ci-test-secret-key-should-be-at-least-32-chars" # pragma: allowlist secret
+  DATABASE_URL: "sqlite:///./ci.db"
+  APP_NAME: "DEMO_FastAPI"
+  APP_VERSION: "ci"
+  DEBUG: "false"
+
+jobs:
+  # Main test suite with coverage artifacts for visibility in CI and Codecov.
+  unit-tests:
+    name: Unit Tests (Service)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      # Workspace-wide sync: installs runtime packages + shared tools groups.
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Run unit tests with coverage
+        run: |
+          uv run --package ${{ inputs.service-package }} pytest --cov=${{ inputs.service-path }} --cov-report=xml --cov-report=html
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Archive coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-${{ inputs.python-version }}
+          path: htmlcov
+
+  integration-tests:
+    name: Integration Tests (Service)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      # Exit code 5 means "no tests collected"; keep this job informational.
+      - name: Run integration tests
+        run: |
+          set +e
+          uv run --package ${{ inputs.service-package }} pytest -m "integration"
+          status=$?
+          set -e
+
+          if [ "$status" -eq 5 ]; then
+            echo "No integration tests were collected. Skipping integration suite."
+            exit 0
+          fi
+
+          exit "$status"
+
+  # Fast static quality gates (formatting + lint).
+  lint-and-format:
+    name: Lint & Code Quality (Service)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Check formatting with Ruff
+        run: |
+          uv run --package ${{ inputs.service-package }} ruff format --check ${{ inputs.service-path }} ${{ inputs.service-tests-path }}
+
+      - name: Lint with Ruff
+        run: |
+          uv run --package ${{ inputs.service-package }} ruff check ${{ inputs.service-path }} ${{ inputs.service-tests-path }}
+
+  type-checking:
+    name: Type Checking (Service)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Run type checker
+        run: |
+          uv run --package ${{ inputs.service-package }} mypy ${{ inputs.service-path }} --junit-xml=type-results.xml
+        # Keep informational for now; status is reported but does not block merge.
+        continue-on-error: true
+
+      - name: Upload type results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mypy-results
+          path: type-results.xml
+
+  # Verifies OpenAPI can be generated from the application bootstrap.
+  api-documentation:
+    name: API Documentation (Service)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-packages --all-groups
+
+      - name: Check API schema generation
+        run: |
+          uv run --package ${{ inputs.service-package }} python -c "import importlib; module = importlib.import_module('${{ inputs.openapi-module }}'); app = getattr(module, '${{ inputs.openapi-app-var }}'); schema = app.openapi(); print('API schema generated successfully'); print(f'Endpoints: {len(schema[\"paths\"])}')"
