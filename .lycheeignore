@@ -1,0 +1,3 @@
+# Local-only endpoints that should not be validated in repository link checks.
+^http://localhost(:[0-9]+)?/
+^https?://127\.0\.0\.1(:[0-9]+)?/

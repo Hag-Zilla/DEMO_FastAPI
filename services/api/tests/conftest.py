@@ -7,21 +7,32 @@ This module provides:
 - Mock authentication
 """
 
-from typing import Generator
-from datetime import datetime, timezone, timedelta
+# pylint: disable=wrong-import-position,wrong-import-order,redefined-outer-name,import-outside-toplevel
+
+import os
+from datetime import datetime, timedelta, timezone
+from typing import Any, Generator, cast
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from services.api.main import app
-from services.api.database.session import Base, get_db
-from services.api.database.models.user import User
-from services.api.database.models.expense import Expense
-from services.api.core.enums import UserRole, UserStatus, ExpenseCategory
-from services.api.core.security import get_password_hash
-from fastapi_cache.backends.inmemory import InMemoryBackend
+os.environ.setdefault("SECRET_KEY", "test-secret-key-min-32-chars-required")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./services/data/test.db")
+os.environ.setdefault("APP_NAME", "FastAPI Expense Tracker Test")
+os.environ.setdefault("APP_VERSION", "1.0.0-test")
+os.environ.setdefault("DEBUG", "true")
+
+from services.api.main import app  # noqa: E402
+from services.api.database.session import Base, get_db  # noqa: E402
+from services.api.database.models.user import User  # noqa: E402
+from services.api.database.models.expense import Expense  # noqa: E402
+from services.api.core.enums import UserRole, UserStatus, ExpenseCategory  # noqa: E402
+from services.api.core.security import get_password_hash  # noqa: E402
+from fastapi_cache.backends.inmemory import (  # type: ignore[reportMissingTypeStubs]  # noqa: E402
+    InMemoryBackend,
+)
 
 
 # Use in-memory SQLite for tests
@@ -42,10 +53,11 @@ def clear_response_cache() -> None:
     The lifespan does not run when using TestClient without a context manager,
     so the cache must be bootstrapped here instead.
     """
-    from fastapi_cache import FastAPICache
+    from fastapi_cache import FastAPICache  # type: ignore[reportMissingTypeStubs]
 
-    FastAPICache.init(InMemoryBackend(), prefix="expense-tracker")
-    InMemoryBackend._store.clear()
+    backend = InMemoryBackend()
+    cast(Any, FastAPICache).init(backend, prefix="expense-tracker")
+    getattr(cast(Any, backend), "_store").clear()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -86,6 +98,7 @@ def db() -> Generator[Session, None, None]:
 @pytest.fixture
 def client(db: Session) -> TestClient:
     """Provide a TestClient with overridden dependencies."""
+    _ = db
     return TestClient(app)
 
 
@@ -178,6 +191,7 @@ def test_expense(db: Session, test_user: User) -> Expense:
 @pytest.fixture
 def auth_token(client: TestClient, test_user: User) -> str:
     """Obtain JWT token for test_user."""
+    _ = test_user
     response = client.post(
         "/api/v1/auth/token",
         data={
@@ -194,6 +208,7 @@ def auth_token(client: TestClient, test_user: User) -> str:
 @pytest.fixture
 def admin_auth_token(client: TestClient, test_admin: User) -> str:
     """Obtain JWT token for test_admin."""
+    _ = test_admin
     response = client.post(
         "/api/v1/auth/token",
         data={
@@ -224,7 +239,7 @@ def admin_client(client: TestClient, admin_auth_token: str) -> TestClient:
 @pytest.fixture
 def multiple_expenses(db: Session, test_user: User) -> list[Expense]:
     """Create multiple test expenses for bulk testing."""
-    expenses = []
+    expenses: list[Expense] = []
     base_date = datetime.now(timezone.utc)
     categories = [
         ExpenseCategory.FOOD,
@@ -233,7 +248,7 @@ def multiple_expenses(db: Session, test_user: User) -> list[Expense]:
     ]
 
     for i in range(6):
-        expense = Expense(
+        expense: Expense = Expense(
             description=f"Expense {i + 1}",
             amount=10.0 + i * 5,
             category=categories[i % len(categories)],

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from services.api.core.logging import get_logger
 from services.api.database.models.expense import Expense
+from services.api.database.models.user import User
 
 logger = get_logger(__name__)
 
@@ -17,7 +18,7 @@ class ReportService:
 
     @staticmethod
     def build_expense_report(
-        db: Session, user_id: int, start_date: datetime, end_date: datetime
+        db: Session, user_id: str, start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """
         Build an expense report for a user within a date range.
@@ -92,7 +93,7 @@ class ReportService:
 
     @staticmethod
     def get_monthly_report(
-        db: Session, user_id: int, year: int, month: int
+        db: Session, user_id: str, year: int, month: int
     ) -> Dict[str, Any]:
         """
         Get monthly expense report for a user.
@@ -117,7 +118,7 @@ class ReportService:
 
     @staticmethod
     def get_custom_period_report(
-        db: Session, user_id: int, start_date: datetime, end_date: datetime
+        db: Session, user_id: str, start_date: datetime, end_date: datetime
     ) -> Dict[str, Any]:
         """
         Get expense report for a custom date period.
@@ -144,8 +145,6 @@ class ReportService:
         Returns:
             Dict with report_type, total_across_users, total_expenses_count, by_user.
         """
-        from services.api.database.models.user import User
-
         # Totals across all users
         total_query = db.query(func.sum(Expense.amount)).scalar()  # pylint: disable=not-callable
         total = float(total_query) if total_query else 0.0

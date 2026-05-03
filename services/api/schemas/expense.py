@@ -58,9 +58,9 @@ class ExpenseUpdate(BaseModel):
 class ExpenseResponse(ExpenseBase):
     """Schema for expense responses (read operations)."""
 
-    id: int
+    id: str
     date: datetime
-    user_id: int
+    user_id: str
 
     class Config:
         """Pydantic config."""

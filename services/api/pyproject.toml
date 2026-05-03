@@ -1,0 +1,41 @@
+# ============================================================================
+# Service metadata and runtime dependencies
+# ============================================================================
+
+[project]
+name = "demo-fastapi-api"
+version = "1.0.0"
+description = "FastAPI API service for DEMO_FastAPI"
+readme = "../../README.md"
+requires-python = ">=3.13"
+
+# Runtime dependencies only — dev/quality tools live in [dependency-groups].tools
+# at the workspace root (see root pyproject.toml).
+dependencies = [
+    # Web/API stack
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "python-multipart>=0.0.9,<1.0",
+
+    # Validation and settings
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.3,<3.0",
+
+    # Database and caching
+    "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13,<2.0",
+    "redis>=5.0,<6.0",
+    "fastapi-cache2[redis]>=0.1.8",
+
+    # Security/authentication
+    "PyJWT>=2.10,<3.0",
+    "pwdlib[argon2,bcrypt]>=0.3.0,<1.0",
+
+    # Infra and middleware
+    "PyYAML>=6.0,<7.0",
+    "slowapi>=0.1.9,<2.0",
+]
+
+[tool.uv]
+# This member is an application/service, not a publishable library.
+package = false

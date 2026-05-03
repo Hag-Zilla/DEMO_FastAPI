@@ -1,19 +1,15 @@
 """Report router - Expense reporting and analytics."""
 
 from datetime import datetime
-from typing import Annotated, cast
+from typing import cast
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi_cache.decorator import cache
-from sqlalchemy.orm import Session
 
 from ..core.cache import user_cache_key_builder
 from ..core.logging import get_logger
-from ..core.security import get_current_user
-from ..database.models.user import User as UserModel
-from ..database.session import get_db
 from ..services.report_service import ReportService
-from ..utils.dependencies import get_admin_user
+from ..utils.dependencies import AdminUserDep, CurrentUserDep, SessionDep
 
 logger = get_logger(__name__)
 
@@ -25,8 +21,8 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 async def get_monthly_report(
     year: int,
     month: int,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Get monthly expense report for the authenticated user.
 
@@ -46,7 +42,7 @@ async def get_monthly_report(
         raise ValueError("Month must be between 1 and 12")
 
     report = ReportService.get_monthly_report(
-        db, cast(int, current_user.id), year, month
+        db, cast(str, current_user.id), year, month
     )
 
     logger.info(
@@ -66,8 +62,8 @@ async def get_monthly_report(
 def get_period_report(
     start_date: datetime,
     end_date: datetime,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserModel, Depends(get_current_user)],
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Get expense report for a custom date range.
 
@@ -87,7 +83,7 @@ def get_period_report(
         raise ValueError("start_date must be before end_date")
 
     report = ReportService.get_custom_period_report(
-        db, cast(int, current_user.id), start_date, end_date
+        db, cast(str, current_user.id), start_date, end_date
     )
 
     logger.info(
@@ -109,8 +105,8 @@ def get_period_report(
 @router.get("/all", name="Admin All Reports")
 @cache(expire=120, namespace="reports-all", key_builder=user_cache_key_builder)
 async def get_all_reports(
-    db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    db: SessionDep,
+    _admin: AdminUserDep,
 ):
     """Get aggregated expense reports for all users (admin only).
 

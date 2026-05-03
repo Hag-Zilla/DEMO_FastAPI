@@ -112,7 +112,7 @@ class UserService:
         return query.offset(offset).limit(limit).all()
 
     @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
         """
         Retrieve user by ID.
 
@@ -141,7 +141,7 @@ class UserService:
 
     @staticmethod
     def update_user_self(
-        db: Session, user_id: int, user_update: UserSelfUpdate
+        db: Session, user_id: str, user_update: UserSelfUpdate
     ) -> User:
         """
         Update the authenticated user's own profile fields.
@@ -182,7 +182,9 @@ class UserService:
         if user_update.budget is not None:
             user.budget = user_update.budget  # type: ignore[assignment]
         if user_update.password:
-            user.hashed_password = get_password_hash(user_update.password)  # type: ignore[assignment]
+            user.hashed_password = get_password_hash(  # type: ignore[assignment]
+                user_update.password
+            )
 
         db.commit()
         db.refresh(user)
@@ -190,7 +192,7 @@ class UserService:
         return user
 
     @staticmethod
-    def update_user_admin(db: Session, user_id: int, user_update: UserUpdate) -> User:
+    def update_user_admin(db: Session, user_id: str, user_update: UserUpdate) -> User:
         """
         Update any user fields by ID (admin only).
 
@@ -237,7 +239,9 @@ class UserService:
         if user_update.status is not None:
             user.status = user_update.status  # type: ignore[assignment]
         if user_update.password:
-            user.hashed_password = get_password_hash(user_update.password)  # type: ignore[assignment]
+            user.hashed_password = get_password_hash(  # type: ignore[assignment]
+                user_update.password
+            )
         if user_update.role is not None:
             user.role = user_update.role  # type: ignore[assignment]
 
@@ -247,7 +251,7 @@ class UserService:
         return user
 
     @staticmethod
-    def delete_user(db: Session, user_id: int, admin_id: int) -> None:
+    def delete_user(db: Session, user_id: str, admin_id: str) -> None:
         """
         Delete a user by ID (admin only).
 
@@ -293,7 +297,7 @@ class UserService:
         return users
 
     @staticmethod
-    def approve_user(db: Session, user_id: int) -> User:
+    def approve_user(db: Session, user_id: str) -> User:
         """
         Approve a pending user by changing status from PENDING to ACTIVE.
 

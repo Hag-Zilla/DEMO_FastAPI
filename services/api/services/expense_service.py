@@ -21,7 +21,7 @@ class ExpenseService:
     @staticmethod
     def list_expenses_for_user(
         db: Session,
-        user_id: int,
+        user_id: str,
         user_role: UserRole,
         category: Optional[ExpenseCategory] = None,
         start_date: Optional[datetime] = None,
@@ -53,7 +53,7 @@ class ExpenseService:
     @staticmethod
     def create_expense(
         db: Session,
-        user_id: int,
+        user_id: str,
         expense: ExpenseCreate,
     ) -> Expense:
         """
@@ -87,7 +87,7 @@ class ExpenseService:
         return db_expense
 
     @staticmethod
-    def get_expense_by_id(db: Session, expense_id: int) -> Optional[Expense]:
+    def get_expense_by_id(db: Session, expense_id: str) -> Optional[Expense]:
         """
         Retrieve expense by ID.
 
@@ -102,7 +102,7 @@ class ExpenseService:
 
     @staticmethod
     def verify_expense_access(
-        db: Session, expense_id: int, user_id: int, user_role: UserRole
+        db: Session, expense_id: str, user_id: str, user_role: UserRole
     ) -> Expense:
         """
         Verify user has access to expense and return it.
@@ -140,8 +140,8 @@ class ExpenseService:
     @staticmethod
     def update_expense(
         db: Session,
-        expense_id: int,
-        user_id: int,
+        expense_id: str,
+        user_id: str,
         user_role: UserRole,
         expense_update: ExpenseUpdate,
     ) -> Expense:
@@ -181,8 +181,8 @@ class ExpenseService:
     @staticmethod
     def delete_expense(
         db: Session,
-        expense_id: int,
-        user_id: int,
+        expense_id: str,
+        user_id: str,
         user_role: UserRole,
     ) -> None:
         """
@@ -209,7 +209,7 @@ class ExpenseService:
     @staticmethod
     def get_total_spent_by_user(
         db: Session,
-        user_id: int,
+        user_id: str,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ) -> float:

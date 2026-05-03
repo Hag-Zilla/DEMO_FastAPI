@@ -19,16 +19,16 @@ This guide explains how to add rate limiting to FastAPI endpoints using the slow
 
 ## 🌍 Overview
 
-The application uses a **4-layer rate limiting strategy**:
+The application uses a practical layered strategy:
 
-1. **Host Firewall (ufw)** - Connection limits at OS level
-2. **Reverse Proxy (Nginx)** - Request rate limiting (100 req/min general, 20 req/min auth)
-3. **Application Layer (slowapi)** - Endpoint-specific limits with Redis tracking
-4. **Database** - Query optimization to prevent resource exhaustion
+1. **Application Layer (slowapi)** - Endpoint-specific limits and 429 handling
+2. **Redis Storage** - Shared quota tracking across instances
+3. **Host-Level Controls (optional)** - OS/network connection controls
+4. **Database Layer** - Query optimization to prevent resource exhaustion
 
 ## ⚙️ How slowapi Works
 
-The `limiter` object from `app.core.middleware` tracks requests per IP address and enforces configured limits. It stores quota information in Redis for distributed tracking across multiple app instances.
+The `limiter` object from `services.api.core.middleware` tracks requests per IP address and enforces configured limits. It uses Redis for distributed tracking and can fall back to in-memory storage when Redis is unavailable.
 
 ### Available Limits
 
@@ -51,9 +51,9 @@ Combining:
 
 ```python
 from fastapi import APIRouter
-from app.core.middleware import limiter
+from services.api.core.middleware import limiter
 
-router = APIRouter(tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 @router.post("/token")
 @limiter.limit("5/minute")  # Max 5 login attempts per minute
@@ -106,50 +106,50 @@ async def batch_import_expenses(
 ### Example 4: Multiple Limits (Time-Based Tiers)
 
 ```python
-@router.get("/api/v1/reports/annual")
+@router.get("/api/v1/reports/monthly/{year}/{month}")
 @limiter.limit("5/minute;50/hour;500/day")
-async def get_annual_report(
+async def get_monthly_report(
     year: int,
+    month: int,
     current_user: User = Depends(get_current_user)
 ):
-    """Generate annual report.
+    """Generate monthly report.
 
     Rate limits:
     - 5 requests per minute (burst traffic protection)
     - 50 requests per hour (sustained usage limit)
     - 500 requests per day (daily quota)
     """
-    return report_generator.generate_annual(current_user.id, year)
+    return report_generator.generate_monthly(current_user.id, year, month)
 ```
 
 ## 🎯 Recommended Limits by Endpoint Type
 
 ### Authentication Endpoints
 ```python
-- /auth/login       → 5/minute    (prevent brute-force)
-- /auth/register    → 3/minute    (prevent spam registration)
-- /auth/refresh     → 10/minute   (token refresh is frequent)
+- POST /api/v1/auth/token         → 5/minute
+- POST /api/v1/users/create       → 3/minute
+- POST /api/v1/users/create-active → 3/minute
 ```
 
 ### Read-Only Endpoints (Safe)
 ```python
-- GET /expenses      → 100/minute
-- GET /reports       → 50/minute
-- GET /budgets       → 100/minute
+- GET /api/v1/expenses/         → 100/minute
+- GET /api/v1/reports/period    → 50/minute
+- GET /api/v1/alerts/           → 60/minute
 ```
 
 ### Write Operations (Moderate)
 ```python
-- POST /expenses     → 20/minute  (prevent spam)
-- PATCH /expenses    → 20/minute
-- DELETE /expenses   → 10/minute  (destructive, stricter)
+- POST /api/v1/expenses/                  → 20/minute
+- PUT /api/v1/expenses/{expense_id}       → 20/minute
+- DELETE /api/v1/expenses/{expense_id}    → 10/minute
 ```
 
 ### Heavy Operations (Strict)
 ```python
-- /reports/export    → 5/minute   (CPU/memory intensive)
-- /batch-import      → 2/minute   (large file processing)
-- /generate-pdf      → 3/minute   (PDF generation)
+- GET /api/v1/reports/monthly/{year}/{month}  → 10/minute
+- GET /api/v1/reports/all                     → 5/minute
 ```
 
 ## ⚠️ Handling Rate Limit Exceeded (429 Errors)
@@ -228,7 +228,7 @@ response = session.get('http://localhost:8000/api/v1/expenses')
 
 ```bash
 # Connect to Redis
-docker-compose exec redis redis-cli -a <REDIS_PASSWORD>
+redis-cli -h 127.0.0.1 -p 6379 -a <REDIS_PASSWORD>
 
 # Monitor rate limit keys
 MONITOR
@@ -248,23 +248,11 @@ GET slowapi:127.0.0.1:/api/v1/expenses
 
 ```bash
 # Watch for rate limit errors
-docker-compose logs -f app | grep "Rate limit"
+tail -f services/api/logs/app.log | grep "Rate limit"
 
 # Expected log entries:
 # WARNING Rate limit exceeded for /api/v1/login from 192.168.1.100
 # WARNING Rate limit exceeded for /api/v1/expenses/upload from 10.0.0.5
-```
-
-### Prometheus Metrics (Optional)
-
-If Prometheus is enabled, monitor:
-
-```
-# Requests that hit rate limits
-rate_limit_exceeded_total{endpoint="/api/v1/login"}
-
-# Average response time (should stay low)
-http_request_duration_seconds{endpoint="/api/v1/health"}
 ```
 
 ## 🔓 Disabling Rate Limits
@@ -344,7 +332,7 @@ async def generate_report():
 # Test authentication rate limit (5/min)
 for i in {1..10}; do
   echo "Request $i:"
-  curl -X POST http://localhost/api/v1/auth/token \
+    curl -X POST http://localhost:8000/api/v1/auth/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "username=test&password=wrong"
   echo ""
@@ -359,7 +347,7 @@ done
 ```python
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+from services.api.main import app
 
 client = TestClient(app)
 
@@ -384,16 +372,14 @@ def test_login_rate_limit():
 def test_report_generation_limit():
     """Test report generation is strictly limited."""
     response = client.get(
-        "/api/v1/reports/annual",
-        params={"year": 2024},
+        "/api/v1/reports/monthly/2024/1",
         headers={"Authorization": "Bearer valid_token"}
     )
     # First request should succeed
     assert response.status_code == 200
     # Subsequent requests quickly should fail
     response = client.get(
-        "/api/v1/reports/annual",
-        params={"year": 2024},
+        "/api/v1/reports/monthly/2024/1",
         headers={"Authorization": "Bearer valid_token"}
     )
     # (depends on configured limit)
@@ -407,19 +393,21 @@ def test_report_generation_limit():
 
 ```bash
 # Check Redis is running
-docker-compose ps redis
+redis-cli -h 127.0.0.1 -p 6379 ping
 
 # Verify connectivity
-docker-compose logs app | grep "limiter initialized"
+grep -i "limiter initialized" services/api/logs/app.log
 # Should see: "Rate limiter initialized with Redis storage"
 ```
 
-## 🚀 Production Considerations
+### Quick Fix
 
-**Fix:**
 ```bash
-docker-compose restart redis
-docker-compose restart app
+# Restart local Redis service (if managed by systemd)
+sudo systemctl restart redis
+
+# Restart API process in your terminal session
+# (stop current process then run make run)
 ```
 
 ### Issue: All IPs Share the Same Quota
@@ -471,14 +459,13 @@ async def endpoint():
        env: REDIS_URL=redis://shared-redis:6379
    ```
 
-4. **DDoS Mitigation**: Combine with Nginx limits
-   - Nginx: 100 req/min general, 20 req/min auth
-   - App: More granular per-endpoint limits
-   - Firewall: Connection limits at OS level
+4. **DDoS Mitigation**: Combine app limits with host-level network controls
+    - App: Granular per-endpoint limits
+    - Redis: Shared quota storage for multi-instance setups
+    - Firewall: Connection limits at OS level
 
 ## 📚 References
 
-- [slowapi Documentation](https://github.com/laurenceisla/slowapi)
+- [slowapi Documentation](https://github.com/laurentS/slowapi)
 - [Redis Documentation](https://redis.io/docs/)
 - [FastAPI Security](https://fastapi.tiangolo.com/advanced/security/)
-- [Nginx Rate Limiting](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html)

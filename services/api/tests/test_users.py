@@ -1,4 +1,5 @@
 """User management endpoint tests."""
+# pylint: disable=unused-argument  # pytest fixtures are injected for side effects
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -81,7 +82,8 @@ class TestAdminUserOperations:
 
     def test_list_users_by_status(self, admin_client: TestClient, db: Session) -> None:
         """Test listing users filtered by status."""
-        # Create users with different statuses (do NOT delete testadmin - it would invalidate the token)
+        # Create users with different statuses.
+        # Do NOT delete testadmin, or the auth token becomes invalid.
         active_user = User(
             username="active1",
             hashed_password="hashed",  # pragma: allowlist secret
@@ -104,8 +106,9 @@ class TestAdminUserOperations:
         response = admin_client.get("/api/v1/users/?status=active")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) >= 1
-        assert all(user["status"] == "active" for user in data)
+        assert data["count"] >= 1
+        assert len(data["data"]) == data["count"]
+        assert all(user["status"] == "active" for user in data["data"])
 
     def test_approve_user(
         self, admin_client: TestClient, test_pending_user: User, db: Session

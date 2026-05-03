@@ -3,26 +3,24 @@
 from datetime import datetime
 from typing import Optional, cast
 
-from fastapi import APIRouter, Depends, Query, status, Body
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Body, Query, status
 
 from ..core.enums import ExpenseCategory
 from ..core.logging import get_logger
-from ..core.security import get_current_user
-from ..database.models.user import User as UserModel
-from ..database.session import get_db
+from ..schemas.common import ListResponse
 from ..schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
 from ..services.expense_service import ExpenseService
+from ..utils.dependencies import CurrentUserDep, SessionDep
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 
-@router.get("/", name="List Expenses", response_model=list[ExpenseResponse])
+@router.get("/", name="List Expenses", response_model=ListResponse[ExpenseResponse])
 def list_expenses(
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    db: SessionDep,
+    current_user: CurrentUserDep,
     category: Optional[ExpenseCategory] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -35,9 +33,9 @@ def list_expenses(
 
     Admins see all expenses; regular users only their own.
     """
-    return ExpenseService.list_expenses_for_user(
+    expenses = ExpenseService.list_expenses_for_user(
         db,
-        cast(int, current_user.id),
+        cast(str, current_user.id),
         current_user.role,
         category,
         start_date,
@@ -45,6 +43,7 @@ def list_expenses(
         limit,
         offset,
     )
+    return ListResponse[ExpenseResponse](data=expenses, count=len(expenses))
 
 
 @router.post(
@@ -54,6 +53,8 @@ def list_expenses(
     status_code=status.HTTP_201_CREATED,
 )
 def create_expense(
+    db: SessionDep,
+    current_user: CurrentUserDep,
     expense: ExpenseCreate = Body(
         ...,
         example={
@@ -62,39 +63,37 @@ def create_expense(
             "category": "food",
         },
     ),
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
 ):
     """Create a new expense for the authenticated user.
 
     Valid categories: food, transportation, entertainment, utilities,
     healthcare, education, shopping, other
     """
-    return ExpenseService.create_expense(db, cast(int, current_user.id), expense)
+    return ExpenseService.create_expense(db, cast(str, current_user.id), expense)
 
 
 @router.get("/{expense_id}", name="Get Expense", response_model=ExpenseResponse)
 def get_expense(
-    expense_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    expense_id: str,
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Get a specific expense by ID (must be owner or admin)."""
     return ExpenseService.verify_expense_access(
-        db, expense_id, cast(int, current_user.id), current_user.role
+        db, expense_id, cast(str, current_user.id), current_user.role
     )
 
 
 @router.put("/{expense_id}", name="Update Expense", response_model=ExpenseResponse)
 def update_expense(
-    expense_id: int,
+    expense_id: str,
     expense_update: ExpenseUpdate,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Update an expense (must be owner or admin)."""
     return ExpenseService.update_expense(
-        db, expense_id, cast(int, current_user.id), current_user.role, expense_update
+        db, expense_id, cast(str, current_user.id), current_user.role, expense_update
     )
 
 
@@ -102,11 +101,11 @@ def update_expense(
     "/{expense_id}", name="Delete Expense", status_code=status.HTTP_204_NO_CONTENT
 )
 def delete_expense(
-    expense_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    expense_id: str,
+    db: SessionDep,
+    current_user: CurrentUserDep,
 ):
     """Delete an expense (must be owner or admin)."""
     ExpenseService.delete_expense(
-        db, expense_id, cast(int, current_user.id), current_user.role
+        db, expense_id, cast(str, current_user.id), current_user.role
     )

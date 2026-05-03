@@ -1,47 +1,36 @@
 """Analytics router — admin-only business KPI endpoint."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, Depends
-from prometheus_client import REGISTRY
+from fastapi import APIRouter
 from sqlalchemy import func
-from sqlalchemy.orm import Session
 
 from ..core.enums import UserStatus
 from ..core.logging import get_logger
-from ..core.metrics import ACTIVE_USERS
+from ..core.metrics import (
+    ACTIVE_USERS,
+    EXPENSE_CREATED,
+    EXPENSE_DELETED,
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+    BUDGET_EXCEEDED,
+)
 from ..database.models.expense import Expense
 from ..database.models.user import User as UserModel
-from ..database.session import get_db
-from ..utils.dependencies import get_admin_user
+from ..utils.dependencies import AdminUserDep, SessionDep
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
-def _prometheus_counter_total(metric_name: str) -> float:
-    """Read the current total from a registered Prometheus counter by name."""
-    total = 0.0
-    for metric in REGISTRY.collect():
-        if metric.name == metric_name:
-            for sample in metric.samples:
-                if sample.name in (metric_name, metric_name + "_total"):
-                    total += sample.value
-    return total
-
-
 @router.get("/", name="Business Analytics Summary")
 def get_analytics_summary(
-    db: Annotated[Session, Depends(get_db)],
-    _admin: Annotated[UserModel, Depends(get_admin_user)],
+    db: SessionDep,
+    _admin: AdminUserDep,
 ):
     """Return a snapshot of key business metrics (admin only).
 
-    Includes live database counts and the current values of the in-process
-    Prometheus counters.  Counter values reset when the process restarts;
-    for persistence use the ``/metrics`` Prometheus endpoint with a remote
-    write target.
+    Includes live database counts and in-process business counters.
+    Counter values reset when the process restarts.
     """
     # ---- Live database counts ----
     total_users: int = db.query(func.count(UserModel.id)).scalar() or 0  # pylint: disable=not-callable
@@ -67,14 +56,11 @@ def get_analytics_summary(
             "total_amount_tracked": round(total_spent, 2),
         },
         "counters": {
-            "expense_created_total": _prometheus_counter_total("expense_created"),
-            "expense_deleted_total": _prometheus_counter_total("expense_deleted"),
-            "login_success_total": _prometheus_counter_total("user_login_success"),
-            "login_failure_total": _prometheus_counter_total("user_login_failure"),
-            "budget_exceeded_total": _prometheus_counter_total("budget_exceeded"),
+            "expense_created_total": EXPENSE_CREATED.total(),
+            "expense_deleted_total": EXPENSE_DELETED.total(),
+            "login_success_total": LOGIN_SUCCESS.total(),
+            "login_failure_total": LOGIN_FAILURE.total(),
+            "budget_exceeded_total": BUDGET_EXCEEDED.total(),
         },
-        "note": (
-            "Counter values reflect the current process lifetime only. "
-            "Scrape /metrics for persistent Prometheus time-series data."
-        ),
+        "note": "Counter values reflect the current process lifetime only.",
     }

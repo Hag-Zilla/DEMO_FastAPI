@@ -112,7 +112,7 @@ class AlertService:
     @staticmethod
     def get_month_spending(
         db: Session,
-        user_id: int,
+        user_id: str,
         year: Optional[int] = None,
         month: Optional[int] = None,
     ) -> float:
