@@ -169,5 +169,5 @@ update-hooks:
 
 clean-hooks:
 	@echo "Cleaning pre-commit cache..."
-	uv run --only-group tools pre-commit clean
-	uv run --only-group tools pre-commit clean-files
+	rm -rf "$${PRE_COMMIT_HOME:-$$HOME/.cache/pre-commit}"
+	@echo "✓ Pre-commit cache removed"
