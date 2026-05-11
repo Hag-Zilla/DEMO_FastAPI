@@ -21,13 +21,13 @@ jobs:
       has_services: ${{ steps.detect.outputs.has_services }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
         id: paths
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@6852f92c20ea7fd3b0c25de3b5112db3a98da050
         with:
           filters: |
             shared:
