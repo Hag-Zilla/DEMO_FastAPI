@@ -1,149 +1,216 @@
 # Development Standards
 
-This document records the **architectural decisions and project-level policies** that
-apply to every repository using MyBro. It is the authoritative reference for humans
-and is automatically injected into Copilot context via `copilot-instructions.md`.
+This document is the **MyBro Governance Contract** shared across repositories.
+It defines mandatory principles, decision rules, and policy boundaries.
 
-> **Template** - Adapt every section to your project before committing.
-> Remove sections that do not apply. Document deviations explicitly.
+This file is intentionally generic and conceptual. Detailed implementation rules,
+path-specific conventions, and coding patterns must live in:
 
-**Scope**: decisions and policies only. Code patterns and examples belong in
-`.github/instructions/*.instructions.md`.
+- `.github/instructions/*.instructions.md`
 
 ---
 
 ## Table of Contents
 
-1. [Stack and Tooling](#stack-and-tooling)
-2. [Target Architecture](#target-architecture)
-3. [Target Directory Structure](#target-directory-structure)
-4. [Code Style Policy](#code-style-policy)
-5. [Testing Policy](#testing-policy)
-6. [Security Policy](#security-policy)
-7. [Data Engineering Policy](#data-engineering-policy)
-8. [API Design Policy](#api-design-policy)
-9. [Observability Policy](#observability-policy)
-10. [Branch and Release Strategy](#branch-and-release-strategy)
+1. [Purpose and Positioning](#purpose-and-positioning)
+2. [Normative Hierarchy and Conflict Resolution](#normative-hierarchy-and-conflict-resolution)
+3. [Applicability Profiles](#applicability-profiles)
+4. [Technology Decision Policy](#technology-decision-policy)
+5. [Architecture Baseline (Max Target Model)](#architecture-baseline-max-target-model)
+6. [Target Directory Structure](#target-directory-structure)
+7. [Code Style Policy](#code-style-policy)
+8. [Testing Policy](#testing-policy)
+9. [Security Policy](#security-policy)
+10. [Data Engineering Policy](#data-engineering-policy)
+11. [API Design Policy](#api-design-policy)
+12. [Observability Policy](#observability-policy)
+13. [Branch and Release Strategy](#branch-and-release-strategy)
+14. [Decision Records and Deviations](#decision-records-and-deviations)
 
 ---
 
-## Stack and Tooling
+## Purpose and Positioning
 
-| Concern | Decision |
+- This file defines **repository governance standards** that are stable across projects.
+- It does not store low-level examples, snippets, or implementation recipes.
+- Service-level documentation belongs in each service README.
+- Root README must remain repository-level and must not duplicate service internals.
+
+---
+
+## Normative Hierarchy and Conflict Resolution
+
+Use this order of precedence:
+
+1. Platform/system policies
+2. Direct user request (current conversation)
+3. `docs/STANDARDS.md` (this file)
+4. `.github/instructions/*.instructions.md` (contextual implementation rules)
+5. Service-level README files
+
+Conflict resolution rules:
+
+- Prefer the more specific rule when scope differs.
+- If equally specific, prefer the most recent explicit decision in this file.
+- Any unresolved conflict must be documented as a deviation in this file.
+
+---
+
+## Applicability Profiles
+
+Policies in this file use explicit applicability markers:
+
+- **Always**: applies to all repositories.
+- **If API**: applies when the repository exposes HTTP APIs.
+- **If Data Pipeline**: applies when the repository runs ETL/ELT pipelines.
+- **If Deployed Service**: applies when software is deployed and operated in runtime environments.
+
+Rules remain strict inside their applicability scope.
+
+---
+
+## Technology Decision Policy
+
+Every repository must declare a primary stack profile and supporting tools.
+
+### Strong default profile (Python service full-feature)
+
+| Concern | Default Decision |
 | --- | --- |
-| Language | Python ≥ 3.11 |
-| API framework | FastAPI ≥ 0.110 |
+| Language | Python >= 3.11 |
+| API framework (If API) | FastAPI |
 | Data validation | Pydantic v2 |
-| ORM | SQLAlchemy + Alembic for migrations |
-| DataFrame validation | Pandera |
-| Experiment tracking | MLflow |
-| Data versioning | DVC |
-| Formatter / Linter | ruff (replaces black, isort, flake8) |
+| ORM + migrations | SQLAlchemy + Alembic |
+| Formatter / Linter | ruff |
 | Test runner | pytest |
 | Dependency management | uv |
-| Pre-commit hooks | pre-commit |
+| Git hooks | pre-commit |
 
-Deviations from this stack require an explicit decision record in this file.
+Additional capabilities (If Data Pipeline / If ML) may include dedicated tooling
+(for example Pandera, MLflow, DVC) and must be explicitly declared per repo.
+
+Deviations from the selected profile require a documented decision in this file.
 
 ---
 
-## Target Architecture
+## Architecture Baseline (Max Target Model)
 
-The default target architecture is a layered, modular service with clear boundaries.
+The default architecture is the **max target model** (full feature set):
 
-| Layer | Responsibility | Decision |
-| --- | --- | --- |
-| API | HTTP contract, validation, auth checks | FastAPI routers + Pydantic schemas |
-| Application | Orchestration and use-case flows | Stateless service classes |
-| Domain | Business rules and invariants | Pure Python logic, framework-agnostic |
-| Data | Persistence and migrations | SQLAlchemy ORM + Alembic |
-| Platform | Observability and config | Prometheus metrics + structured logging |
+| Layer | Responsibility |
+| --- | --- |
+| API | Contract surface, transport validation, auth entry controls |
+| Application | Use-case orchestration and transaction boundaries |
+| Domain | Core business rules and invariants |
+| Data | Persistence, repositories, migrations |
+| Platform | Config, logging, metrics, tracing, runtime integrations |
 
-- Dependency direction is inward only (API -> Application -> Domain).
-- Domain layer must not import framework, database, or network clients.
-- External integrations (DB, queues, APIs) are isolated behind adapters.
-- Cross-cutting concerns (auth, logging, tracing) are centralized and reusable.
+Mandatory architecture invariants:
+
+- Dependency direction is inward only.
+- Domain logic must remain framework-agnostic.
+- External integrations are isolated behind adapters.
+- Cross-cutting concerns are centralized and reusable.
+
+**Controlled simplification rule**:
+
+- Repositories may prune layers when requirements do not justify full complexity.
+- Pruning is allowed only if boundaries stay explicit and no hidden coupling is introduced.
+- Every simplification must be recorded in [Decision Records and Deviations](#decision-records-and-deviations).
 
 ---
 
 ## Target Directory Structure
 
-Repository structure is a project-level decision and must follow these constraints:
+Repository structure is a mandatory project-level decision.
+
+Hard requirements:
 
 - Separate source code, tests, docs, scripts, and assets at top level.
 - Keep business logic isolated from framework and infrastructure concerns.
-- Enforce predictable naming and package boundaries for generated code.
+- Use predictable naming and stable package boundaries.
+- Keep service-level technical documentation in service-local README files.
 
-Detailed layout, naming conventions, and file placement rules are defined in:
-`.github/instructions/project-structure.instructions.md`.
+Detailed layout and path rules are defined in:
+
+- `.github/instructions/project-structure.instructions.md`
 
 ---
 
 ## Code Style Policy
 
-- Follow PEP 8. `ruff format` and `ruff check` are the enforcement tools — do not
-  override their output manually.
-- Maximum function length: 50 lines. Extract helpers when exceeded.
-- All public functions and classes must have a Google-style docstring (Args, Returns,
-  Raises).
-- Type hints are required on all function signatures.
-- No magic numbers inline — use named constants.
-- No `print` in production code — use `logging`.
+Applicability: **Always**
+
+- Enforce formatter/linter output (no manual overrides).
+- Maximum function length: 50 lines (extract helpers when exceeded).
+- Public classes/functions must have docstrings following repository conventions.
+- Type hints are mandatory on function signatures when language/tooling supports it.
+- No magic numbers inline: use named constants.
+- No `print` in production code: use structured logging.
 
 ---
 
 ## Testing Policy
 
+Applicability: **Always**
+
 - Minimum coverage target: 80% on critical modules.
-- Unit tests must be pure (no I/O, no network, no DB).
-- Integration tests that require external services go in `tests/integration/`.
-- Every new public function must have at least a happy-path test and one error-path test.
-- Test naming: `test_<function>_<scenario>` (e.g., `test_create_user_duplicate_email`).
+- Unit tests must be isolated from I/O, network, and external services.
+- Integration tests requiring external services must be separated by test scope.
+- Every new public behavior must include at least one success-path and one error-path test.
+- Test names follow the `test_<unit>_<scenario>` convention.
 
 ---
 
 ## Security Policy
 
-- All secrets loaded via `pydantic-settings` and typed as `SecretStr`. Never hardcoded.
-- Add `.env` to `.gitignore`; provide `.env.example` with placeholder values only.
-- JWT access token expiry ≤ 15 minutes; use refresh tokens for sessions.
-- Authentication via `OAuth2PasswordBearer` + `Depends(get_current_user)` only.
-- HTTP 401 for invalid credentials, HTTP 403 for insufficient permissions. Never HTTP 404
-  on auth failures (information leakage).
-- All SQL queries must use parameterized values. String interpolation for SQL is
-  prohibited.
+Applicability: **Always** (with API-specific constraints under *If API*)
+
+- Secrets must never be hardcoded.
+- `.env` is git-ignored; `.env.example` contains placeholders only.
+- Access control and authentication failures must return explicit, consistent status codes.
+- SQL execution must be parameterized; string interpolation in SQL is prohibited.
+
+If API:
+
+- Authn/Authz mechanisms must be centralized and reusable.
+- Token/session lifecycles must be explicitly defined and documented.
+- Production CORS and exposure settings must be least-privilege.
 
 ---
 
 ## Data Engineering Policy
 
-- All pipelines must be idempotent: running twice must produce the same result.
-- Prefer incremental loads over full reloads; use watermarks or partition keys.
-- Failed records must be routed to a dead-letter table. Silent discard is prohibited.
-- Log row counts at the entry and exit of every pipeline step.
-- Schema migrations via Alembic only. Never modify the database schema manually.
-- All migrations must be reversible (`upgrade` + `downgrade`).
+Applicability: **If Data Pipeline**
+
+- Pipelines must be idempotent.
+- Prefer incremental processing over full reloads when possible.
+- Failed records must be captured; silent discard is prohibited.
+- Input/output row counts must be logged per pipeline step.
+- Schema changes must use migration tooling; manual drift is prohibited.
+- Migrations must be reversible unless explicitly justified.
 
 ---
 
 ## API Design Policy
 
-- One `APIRouter` per business domain. No monolithic router files.
-- All endpoints must have an explicit `status_code`.
-- Exception hierarchy: define a base `APIError` and map subclasses to HTTP codes in a
-  shared exception handler — not inline in route functions.
-- CORS must be explicitly configured. Permissive defaults (`allow_origins=["*"]`) are
-  prohibited in production.
+Applicability: **If API**
+
+- Route modules are organized by domain (no monolithic router files).
+- Endpoints must declare explicit response semantics and status codes.
+- Exception mapping is centralized (not ad-hoc per route).
+- Contracts (schemas/errors/versioning) must be stable and documented.
 
 ---
 
 ## Observability Policy
 
-- Use the `logging` module with structured JSON output (compatible with Loki).
-- Prometheus metrics defined at module level, never inside functions.
-- Metric labels must be low-cardinality (method, endpoint, status code). User IDs and
-  raw URLs as labels are prohibited.
-- All services must expose a `/metrics` endpoint.
+Applicability: **If Deployed Service**
+
+- Logs must be structured and machine-consumable.
+- Metrics must be defined consistently and avoid high-cardinality labels.
+- Metrics and traces must support incident diagnosis and SLO tracking.
+- Operational endpoints and dashboards must be documented.
 
 ---
 
@@ -156,8 +223,22 @@ Detailed layout, naming conventions, and file placement rules are defined in:
 | `feature/<ticket>-<description>` | One branch per feature or fix. |
 
 - All PRs must have CI green before merge.
-- Commit messages: `feat:`, `fix:`, `chore:`, `docs:` prefix required.
+- Commit messages require a typed prefix: `feat:`, `fix:`, `chore:`, `docs:`.
 - Releases are tagged on `main` with semver (`v1.2.3`).
+
+---
+
+## Decision Records and Deviations
+
+Any significant deviation from this standard must be recorded with:
+
+1. Date
+2. Decision summary
+3. Rationale
+4. Scope (which repos/modules are affected)
+5. Expiration or review date (if temporary)
+
+If a repository uses ADRs, reference the ADR identifier here.
 
 ---
 
