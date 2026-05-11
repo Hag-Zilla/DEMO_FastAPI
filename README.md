@@ -101,6 +101,7 @@ Service-internal layout should be documented in each service's own README rather
 - **`Makefile`** - Entry point for common local commands
 - **`pyproject.toml` + `uv.lock`** - Workspace and dependency lock configuration
 - **`.pre-commit-config.yaml`** - Repository-wide code quality automation
+- **`.github/dependabot.yml`** - Automated dependency update policy
 
 ## 🧩 Service Documentation
 ---
