@@ -40,6 +40,7 @@ git checkout -b feature/your-feature-name
 ```
 
 Use descriptive branch names like:
+
 - `feature/add-expense-export` — for new features
 - `fix/auth-token-expiry` — for bug fixes
 - `docs/update-deployment-guide` — for documentation
@@ -61,6 +62,7 @@ make install-hooks
 ```
 
 This will:
+
 - Create a `.venv` Python environment with `uv` (if missing)
 - Install runtime dependencies
 - Install pre-commit hooks for automatic code quality checks
@@ -90,6 +92,7 @@ make run-hooks
 ```
 
 This will automatically:
+
 - Detect secrets and API keys
 - Check code formatting
 - Lint Python code
@@ -127,6 +130,7 @@ Do not merge ORM model changes without the matching Alembic migration file.
 ### Code Organization
 
 Follow the existing structure in [docs/STANDARDS.md](docs/STANDARDS.md):
+
 - Type hints on all public functions
 - Google-style docstrings with Args, Returns, Raises, Example
 - Clear variable naming
@@ -162,7 +166,7 @@ def validate_expense(amount: float, category: ExpenseCategory) -> bool:
 
 Use semantic commit messages with the following format:
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -182,7 +186,7 @@ Use semantic commit messages with the following format:
 
 ### Examples
 
-```
+```text
 feat(expenses): add bulk import from CSV
 
 - Parse CSV file with expense data
@@ -192,7 +196,7 @@ feat(expenses): add bulk import from CSV
 Closes #42
 ```
 
-```
+```text
 fix(auth): prevent token reuse after logout
 
 Reset auth tokens on user logout to prevent
@@ -248,6 +252,7 @@ Adds CSV import functionality for bulk expense uploads.
 ### 4. After Merge
 
 Your changes will be:
+
 - ✅ Merged to `main` or `develop` branch
 - ✅ Tested on CI/CD pipeline
 - ✅ Ready for next release
@@ -257,9 +262,10 @@ Your changes will be:
 ## For More Information
 
 For detailed technical information about code standards, pre-commit hooks, and development tools, see:
+
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — Development environment, pre-commit hooks, Makefile, troubleshooting
 - **[docs/STANDARDS.md](docs/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
 
 ---
 
-**Thank you for contributing! 🙏**
+Thank you for contributing! 🙏

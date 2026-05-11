@@ -119,6 +119,7 @@ pydocstyle:
 ### Secrets Detection
 
 The `detect-secrets` hook prevents accidental commits of:
+
 - API keys, tokens, passwords
 - AWS/Azure/GCP credentials
 - Private keys
@@ -127,6 +128,7 @@ The `detect-secrets` hook prevents accidental commits of:
 **Baseline file**: `.secrets.baseline` maintains allowlisted secrets that are safe to commit (e.g., test credentials in comments).
 
 If a secret is detected:
+
 ```bash
 # 1. Option A: Don't commit the secret (recommended)
 git checkout services/api/file_with_secret.py
@@ -158,6 +160,7 @@ git commit -m "chore: update pre-commit hooks"
 ### Troubleshooting
 
 **Hooks not running?**
+
 ```bash
 # Reinstall hooks
 make clean-hooks
@@ -165,6 +168,7 @@ make install-hooks
 ```
 
 **Hook mysteriously failed?**
+
 ```bash
 # Clear cache and retry
 make clean-hooks
@@ -172,11 +176,13 @@ make run-hooks
 ```
 
 **Need to bypass hooks temporarily?**
+
 ```bash
 git commit --no-verify  # Bypasses ALL hooks
 ```
 
 **Hooks too strict?**
+
 - Edit `.pre-commit-config.yaml` to adjust args
 - Exclude files with `exclude:` patterns
 - Allowlist known acceptable issues
@@ -407,6 +413,7 @@ git push origin feat/my-feature
 ### Best Practices
 
 ✅ **DO**:
+
 - Commit frequently (small, focused commits)
 - Write descriptive commit messages
 - Test locally before pushing
@@ -414,6 +421,7 @@ git push origin feat/my-feature
 - Ask questions in PR reviews
 
 ❌ **DON'T**:
+
 - Use `git commit --no-verify` routinely
 - Commit large files (>1MB)
 - Hardcode secrets/API keys
@@ -449,6 +457,7 @@ make contract-test
 ```
 
 Tests verify that all endpoints:
+
 - Accept documented request formats
 - Return documented response status codes
 - Never crash with 5xx errors
@@ -465,6 +474,7 @@ make load-test-headless     # CI mode (20 users, 60s)
 Scenarios run realistic user workflows — see [services/api/tests/load_tests/locustfile.py](../services/api/tests/load_tests/locustfile.py).
 
 **Typical use cases:**
+
 - Identify slow endpoints
 - Verify caching effectiveness (alerts, reports should be fast)
 - Measure max RPS before degradation
@@ -528,6 +538,7 @@ Edit `.pre-commit-config.yaml` to adjust:
 ```
 
 Then reinstall:
+
 ```bash
 uv run --only-group tools pre-commit install-hooks
 ```

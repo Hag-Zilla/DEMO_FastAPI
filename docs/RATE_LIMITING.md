@@ -32,7 +32,7 @@ The `limiter` object from `services.api.core.middleware` tracks requests per IP 
 
 ### Available Limits
 
-```
+```text
 Format: "requests/timeframe"
 
 Examples:
@@ -126,6 +126,7 @@ async def get_monthly_report(
 ## 🎯 Recommended Limits by Endpoint Type
 
 ### Authentication Endpoints
+
 ```python
 - POST /api/v1/auth/token         → 5/minute
 - POST /api/v1/users/create       → 3/minute
@@ -133,6 +134,7 @@ async def get_monthly_report(
 ```
 
 ### Read-Only Endpoints (Safe)
+
 ```python
 - GET /api/v1/expenses/         → 100/minute
 - GET /api/v1/reports/period    → 50/minute
@@ -140,6 +142,7 @@ async def get_monthly_report(
 ```
 
 ### Write Operations (Moderate)
+
 ```python
 - POST /api/v1/expenses/                  → 20/minute
 - PUT /api/v1/expenses/{expense_id}       → 20/minute
@@ -147,6 +150,7 @@ async def get_monthly_report(
 ```
 
 ### Heavy Operations (Strict)
+
 ```python
 - GET /api/v1/reports/monthly/{year}/{month}  → 10/minute
 - GET /api/v1/reports/all                     → 5/minute

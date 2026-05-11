@@ -181,6 +181,25 @@ repos:
           - '--remove-duplicate-keys'
         stages: [commit]
 
+  # ===== MARKDOWN LINTING: markdownlint-cli2 =====
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.22.1
+    hooks:
+      - id: markdownlint-cli2
+        name: Lint Markdown files
+        args: ['--config', '.github/.markdownlint.json']
+        stages: [commit]
+
+  # ===== SPELL CHECKING: cspell =====
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v9.8.0
+    hooks:
+      - id: cspell
+        name: Spell check Markdown
+        files: \.md$
+        args: ['--config', '.github/.cspell.json', '--no-progress']
+        stages: [commit]
+
   # ===== MERGE CONFLICT CHECK =====
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

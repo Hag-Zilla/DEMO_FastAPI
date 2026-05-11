@@ -31,7 +31,7 @@ Detailed technical documentation for the FastAPI service in `services/api`.
 
 Defined in `services/api/core/enums.py`, used throughout the application for type safety and validation:
 
-**UserRole**
+#### UserRole
 
 ```python
 class UserRole(str, Enum):
@@ -40,7 +40,7 @@ class UserRole(str, Enum):
     USER = "user"
 ```
 
-**UserStatus**
+#### UserStatus
 
 ```python
 class UserStatus(str, Enum):
@@ -49,7 +49,7 @@ class UserStatus(str, Enum):
     DISABLED = "disabled"    # Rejected or suspended
 ```
 
-**ExpenseCategory**
+#### ExpenseCategory
 
 ```python
 class ExpenseCategory(str, Enum):
@@ -102,13 +102,15 @@ class ExpenseCategory(str, Enum):
 
 Defined in `services/api/schemas/`, these Pydantic models validate and serialize API requests/responses:
 
-**User Operations**
+#### User Operations
+
 - `UserCreate`: username, password (min 6 chars), budget (>= 0, defaults to 0.0)
 - `UserSelfUpdate`: username/password/budget only (extra fields forbidden)
 - `UserUpdate`: admin update schema (username, password, budget, role, status)
 - `UserResponse`: includes id, role, status
 
-**Expense Operations**
+#### Expense Operations
+
 - `ExpenseCreate`: description, amount (> 0), category enum
 - `ExpenseUpdate`: all fields optional
 - `ExpenseResponse`: includes id, datetime, user_id

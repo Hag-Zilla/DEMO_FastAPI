@@ -27,11 +27,13 @@ A production-ready FastAPI demo showcasing a complete REST API for expense manag
 ---
 
 ## 📖 About
+
 ---
 
 A personal expense tracking API built with **FastAPI** and **SQLite**. Users can manage their expenses, set monthly budgets, receive alerts for budget overruns, and generate detailed expense reports. The project demonstrates best practices in API design, authentication, database modeling, and production-ready application structure.
 
 ## 🎯 Repository Scope
+
 ---
 
 This root README describes the repository as a whole (workspace layout, shared tooling, entry-point commands, and cross-cutting docs).
@@ -39,6 +41,7 @@ This root README describes the repository as a whole (workspace layout, shared t
 Service-level implementation details are intentionally kept out of this file and documented in each service README.
 
 ## 🚀 Quick Start
+
 ---
 
 ```bash
@@ -68,9 +71,10 @@ For all commands and workflows:
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#quick-reference)
 
 ## 📁 Project Structure
+
 ---
 
-```
+```text
 DEMO_FastAPI/
 │
 ├── services/                       # Application services workspace
@@ -92,18 +96,21 @@ This section intentionally stays at repository level.
 Service-internal layout should be documented in each service's own README rather than expanded in the root README.
 
 **Key Directories:**
+
 - **`services/`** - Contains the runnable services managed by the workspace
 - **`docs/`** - Holds cross-cutting documentation for development and standards
 - **`scripts/`** - Groups operational and bootstrap scripts
 - **`.github/`** - Stores CI/CD workflow definitions
 
 **Root Configuration:**
+
 - **`Makefile`** - Entry point for common local commands
 - **`pyproject.toml` + `uv.lock`** - Workspace and dependency lock configuration
 - **`.pre-commit-config.yaml`** - Repository-wide code quality automation
 - **`.github/dependabot.yml`** - Automated dependency update policy
 
 ## 🧩 Service Documentation
+
 ---
 
 Detailed service-level technical documentation is maintained under each service directory.
@@ -115,11 +122,13 @@ For the API service, use:
 ---
 
 ## 🛠️ Code Quality & Development Standards
+
 ---
 
 This project maintains strict code quality standards enforced through pre-commit hooks (10+ checks), type hints, Google-style docstrings, and Makefile automation.
 
 **For details:**
+
 - **[docs/STANDARDS.md](docs/STANDARDS.md)** — Code conventions, naming, docstrings, type hints
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — Development workflow, pre-commit setup, Makefile targets
 
@@ -137,6 +146,7 @@ For specialized topics and detailed guides:
 | **[docs/STANDARDS.md](docs/STANDARDS.md)** | Code standards, naming conventions, docstring format, type hints |
 
 ## 📚 Resources
+
 ---
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -148,9 +158,11 @@ For specialized topics and detailed guides:
 - [DBeaver Database Tool](https://dbeaver.io/)
 
 ## 🤝 Contributing
+
 ---
 
 Contributions are welcome! For detailed guidelines on how to contribute, including:
+
 - Development setup and environment
 - Code quality standards and style guides
 - Pre-commit hooks and testing requirements
@@ -159,6 +171,7 @@ Contributions are welcome! For detailed guidelines on how to contribute, includi
 Please see [**CONTRIBUTING.md**](CONTRIBUTING.md) for complete instructions.
 
 ## 💬 Support
+
 ---
 
 > Maintained by [Hag-Zilla](https://github.com/Hag-Zilla)

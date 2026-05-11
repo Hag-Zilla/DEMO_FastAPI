@@ -8,8 +8,8 @@ quality, and prompt governance.
 
 ## Language Configuration
 
-- **Interaction language**: English — all Copilot responses and comments directed at the
-  user must be in English, unless the user explicitly switches to another language.
+- **Interaction language**: French — all Copilot responses and comments directed at the
+  user must be in French, unless the user explicitly switches to another language.
 - **Development language**: Python — all source code, docstrings, and inline comments
   must be written in English (standard convention for code).
 
