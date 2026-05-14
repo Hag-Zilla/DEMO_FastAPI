@@ -161,7 +161,16 @@ For specialized topics and detailed guides:
 
 ---
 
-Contributions are welcome! For detailed guidelines on how to contribute, including:
+Contributions are welcome! This project follows the conventions and governance defined in
+[**MyBro**](https://github.com/Hag-Zilla/MyBro). Install it via the bootstrap script before contributing:
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/Hag-Zilla/MyBro/main/scripts/bootstrap-copilot.sh -o /tmp/bootstrap-copilot.sh && bash /tmp/bootstrap-copilot.sh && rm /tmp/bootstrap-copilot.sh
+```
+
+Review the standards and conventions it establishes before contributing.
+
+For detailed guidelines on how to contribute, including:
 
 - Development setup and environment
 - Code quality standards and style guides
