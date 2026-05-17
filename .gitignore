@@ -160,3 +160,9 @@ services/api/logs/*.jsonl.*
 
 # Pre-commit framework
 .pre-commit-framework/
+
+# MyBro
+.github/copilot-instructions.md
+.github/instructions
+.github/prompts
+.github/golden-prompts
