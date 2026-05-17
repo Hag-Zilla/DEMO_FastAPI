@@ -1,5 +1,5 @@
 ---
-applyTo: "src/ml/inference/**/*.py,src/ml/**/*predict*.py,src/ml/**/*serve*.py"
+applyTo: "services/api/ml/inference/**/*.py,services/api/ml/**/*predict*.py,services/api/ml/**/*serve*.py,src/ml/inference/**/*.py,src/ml/**/*predict*.py,src/ml/**/*serve*.py"
 ---
 
 ## Purpose

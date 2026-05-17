@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/metrics/**/*.py,src/**/monitoring/**/*.py,src/**/*metrics*.py,src/**/*monitoring*.py"
+applyTo: "services/api/**/metrics/**/*.py,services/api/**/monitoring/**/*.py,services/api/**/*metrics*.py,services/api/**/*monitoring*.py,src/**/metrics/**/*.py,src/**/monitoring/**/*.py,src/**/*metrics*.py,src/**/*monitoring*.py"
 ---
 
 ## Purpose

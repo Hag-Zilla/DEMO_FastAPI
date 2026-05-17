@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/auth/**/*.py,src/**/*auth*.py,src/**/*security*.py,src/**/*jwt*.py"
+applyTo: "services/api/**/auth/**/*.py,services/api/**/*auth*.py,services/api/**/*security*.py,services/api/**/*jwt*.py,src/**/auth/**/*.py,src/**/*auth*.py,src/**/*security*.py,src/**/*jwt*.py"
 ---
 
 ## Purpose

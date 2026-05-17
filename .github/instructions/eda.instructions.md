@@ -1,5 +1,5 @@
 ---
-applyTo: "notebooks/**/*.ipynb,src/**/eda/**/*.py,src/**/*eda*.py,src/**/*analysis*.py"
+applyTo: "notebooks/**/*.ipynb,services/api/**/eda/**/*.py,services/api/**/*eda*.py,services/api/**/*analysis*.py,src/**/eda/**/*.py,src/**/*eda*.py,src/**/*analysis*.py"
 ---
 
 ## Purpose

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**/pipelines/**/*.py,src/**/etl/**/*.py,src/**/*pipeline*.py,src/**/*etl*.py,dbt/**/*.sql"
+applyTo: "services/api/**/pipelines/**/*.py,services/api/**/etl/**/*.py,services/api/**/*pipeline*.py,services/api/**/*etl*.py,src/**/pipelines/**/*.py,src/**/etl/**/*.py,src/**/*pipeline*.py,src/**/*etl*.py,dbt/**/*.sql"
 ---
 
 ## Purpose

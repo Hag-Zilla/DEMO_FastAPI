@@ -1,5 +1,5 @@
 ---
-applyTo: "src/ml/training/**/*.py,src/ml/**/*train*.py"
+applyTo: "services/api/ml/training/**/*.py,services/api/ml/**/*train*.py,src/ml/training/**/*.py,src/ml/**/*train*.py"
 ---
 
 ## Purpose
@@ -8,7 +8,7 @@ Guide Copilot output for ML training code with reproducible and testable practic
 
 ## Scope
 
-Applies to training modules under `src/ml/training/` and files matching `src/ml/**/*train*.py`.
+Applies to training modules under `services/api/ml/training/`, `src/ml/training/`, and files matching `*train*.py`.
 
 ## Guidelines
 
