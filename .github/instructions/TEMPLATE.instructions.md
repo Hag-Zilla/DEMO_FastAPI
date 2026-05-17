@@ -1,5 +1,5 @@
 ---
-applyTo: "src/YOUR_MODULE/**/*.py"
+applyTo: "services/api/YOUR_MODULE/**/*.py"
 ---
 
 ## Purpose

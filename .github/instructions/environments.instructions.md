@@ -1,5 +1,5 @@
 ---
-applyTo: "services/api/**/config/**/*.py,services/api/**/*config*.py,services/api/**/*settings*.py,src/**/config/**/*.py,src/**/*config*.py,src/**/*settings*.py"
+applyTo: "services/api/**/config/**/*.py,services/api/**/*config*.py,services/api/**/*settings*.py"
 ---
 
 ## Purpose

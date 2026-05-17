@@ -1,5 +1,5 @@
 ---
-applyTo: "services/api/**/experiments/**/*.py,services/api/**/*experiment*.py,services/api/**/*tracking*.py,services/api/**/*mlflow*.py,src/**/experiments/**/*.py,src/**/*experiment*.py,src/**/*tracking*.py,src/**/*mlflow*.py"
+applyTo: "services/api/**/experiments/**/*.py,services/api/**/*experiment*.py,services/api/**/*tracking*.py,services/api/**/*mlflow*.py"
 ---
 
 ## Purpose

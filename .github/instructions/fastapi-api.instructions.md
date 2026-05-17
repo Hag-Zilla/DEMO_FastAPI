@@ -1,5 +1,5 @@
 ---
-applyTo: "services/api/main.py,services/api/routers/**/*.py,services/api/auth/router.py,src/api/**/*.py,src/routes/**/*.py,app/api/**/*.py"
+applyTo: "services/api/main.py,services/api/routers/**/*.py,services/api/auth/router.py"
 ---
 
 ## Purpose
@@ -8,7 +8,7 @@ Guide Copilot output for FastAPI modules with pragmatic, production-oriented def
 
 ## Scope
 
-Applies to FastAPI API code in `services/api/`, `src/api/`, `src/routes/`, and `app/`.
+Applies to FastAPI API code in `services/api/`.
 
 ## Guidelines
 

@@ -1,5 +1,5 @@
 ---
-applyTo: "apps/**,domains/**,infra/**,transverse/**,tools/**,docs/**,security/**,supply-chain/**,services/**,src/**,tests/**,scripts/**,notebooks/**"
+applyTo: "apps/**,domains/**,infra/**,transverse/**,tools/**,docs/**,security/**,supply-chain/**,services/**,tests/**,scripts/**,notebooks/**"
 ---
 
 ## Purpose
