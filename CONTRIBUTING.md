@@ -36,14 +36,25 @@ git remote add upstream https://github.com/Hag-Zilla/DEMO_FastAPI.git
 ### 1. Create a Feature Branch
 
 ```bash
-git checkout -b feature/your-feature-name
+git checkout develop
+git pull upstream develop
+git checkout -b feature/1234-add-expense-export
 ```
 
-Use descriptive branch names like:
+Use branch names aligned with the repository standard:
 
-- `feature/add-expense-export` — for new features
-- `fix/auth-token-expiry` — for bug fixes
-- `docs/update-deployment-guide` — for documentation
+- `feature/<ticket>-<description>`
+
+Examples:
+
+- `feature/1234-add-expense-export` — for new features
+- `feature/2451-fix-auth-token-expiry` — for bug fixes
+- `feature/3020-update-deployment-guide` — for documentation
+
+Branch policy reminder:
+
+- Open pull requests to `develop` first
+- `main` stays release-stable and is updated through controlled merges
 
 ### 2. Set Up Development Environment
 
@@ -105,7 +116,7 @@ This will automatically:
 
 ```bash
 git add -A
-git commit -m "Your message"
+git commit -m "feat(expenses): add monthly export endpoint"
 ```
 
 ## Making Changes
@@ -184,7 +195,7 @@ Fixes #98
 ### 1. Push to Your Fork
 
 ```bash
-git push origin feature/your-feature-name
+git push origin feature/1234-add-expense-export
 ```
 
 ### 2. Open a Pull Request on GitHub
