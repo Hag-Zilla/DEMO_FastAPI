@@ -136,32 +136,6 @@ Follow the existing structure in [docs/STANDARDS.md](docs/STANDARDS.md):
 - Clear variable naming
 - Organized imports
 
-### Example Code Style
-
-```python
-def validate_expense(amount: float, category: ExpenseCategory) -> bool:
-    """
-    Validate that an expense is valid.
-
-    Args:
-        amount: The expense amount in dollars (must be > 0).
-        category: The expense category (must be valid enum).
-
-    Returns:
-        True if valid, False otherwise.
-
-    Raises:
-        ValueError: If amount is zero or negative.
-
-    Example:
-        >>> validate_expense(50.0, ExpenseCategory.FOOD)
-        True
-    """
-    if amount <= 0:
-        raise ValueError(f"Amount must be positive, got {amount}")
-    return category in ExpenseCategory
-```
-
 ## Commit Message Guidelines
 
 Use semantic commit messages with the following format:
